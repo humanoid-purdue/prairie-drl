@@ -31,7 +31,7 @@ class UnitreeEnv(PipelineEnv):
 
         self.control_range = system.actuator_ctrlrange
         self.initial_state = jnp.array(system.mj_model.keyframe('stand').qpos)
-        self.joint_limit = jnp.array(model.joint_limit)
+        self.joint_limit = jnp.array(model.jnt_range)
         self.standing = system.mj_model.keyframe('stand').ctrl
         self.jnt_size = len(self.standing)
         self.nv = system.nv
@@ -51,10 +51,13 @@ class UnitreeEnv(PipelineEnv):
             "vel_command": self.control_commands(rng),
             "feet_air_time": jnp.zeros(2),
             "step": 0,
-            "rng": rng
+            "rng": rng,
+            "step_total": 0,
+            "distance": 0,
+            "reward": 0.0
         }
         reward, done = jnp.zeros(2)
-        metrics = {'Total distance': 0.0,
+        metrics = {'distance': 0.0,
                    'reward': 0.0}
 
         obs = self.state2Obs(state_info, pipeline_state)
@@ -106,8 +109,8 @@ class UnitreeEnv(PipelineEnv):
         l_site_pos = pipeline_state.site_xpos[self.left_site]
         r_site_pos = pipeline_state.site_xpos[self.right_site]
 
-        left_contact = l_site_pos < self.contact_limit
-        right_contact = r_site_pos < self.contact_limit
+        left_contact = l_site_pos[2] < self.contact_limit
+        right_contact = r_site_pos[2] < self.contact_limit
         contact_arr = jnp.array([left_contact, right_contact])
         first_contact = (state.info['feet_air_time'] > 0) * contact_arr
         state.info['feet_air_time'] += self.timestep
@@ -149,6 +152,8 @@ class UnitreeEnv(PipelineEnv):
         state.info["reward"] = reward
         state.info["prev_torque"] = scaled_action
         state.info['step'] += 1
+        state.info["step_total"] += 1
+        state.info['distance'] = math.normalize(body_pos.pos[self.pelvis_id - 1][:2])[1]
 
         state.info['vel_command'] = jnp.where(
             # condition: step>500
@@ -159,6 +164,8 @@ class UnitreeEnv(PipelineEnv):
             state.info['vel_command']
         )
 
+        state.metrics['distance'] = state.info['distance']
+        state.metrics['reward'] = reward
         # reset the step counter when the episode is terminated or reached 500 steps
         state.info['step'] = jnp.where(
             # condition: done or step>500
@@ -177,6 +184,7 @@ class UnitreeEnv(PipelineEnv):
             reward=reward,
             done=done,
         )
+
 
         return state
 
@@ -216,8 +224,8 @@ class UnitreeEnv(PipelineEnv):
 
     def rewardJointLimit(self, joint_angle):
         limit = self.joint_limit * 0.95
-        out_of_limit = -jnp.clip(joint_angle - limit[:, 0], a_max=0., a_min=None)
-        out_of_limit += jnp.clip(joint_angle - limit[:, 1], a_max=None, a_min=0.)
+        out_of_limit = -jnp.clip(joint_angle[6:] - limit[:, 0], a_max=0., a_min=None)
+        out_of_limit += jnp.clip(joint_angle[6:] - limit[:, 1], a_max=None, a_min=0.)
         return jnp.sum(out_of_limit)
 
     def rewardOrien(self, body_pos):

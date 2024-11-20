@@ -28,3 +28,4 @@ print(pelvis_id)
 print(left_foot_id)
 
 print(len(system.actuator_ctrlrange))
+
