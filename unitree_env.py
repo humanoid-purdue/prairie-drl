@@ -53,7 +53,7 @@ class UnitreeEnv(PipelineEnv):
             "step": 0,
             "rng": rng,
             "step_total": 0,
-            "distance": 0,
+            "distance": 0.0,
             "reward": 0.0
         }
         reward, done = jnp.zeros(2)
@@ -224,8 +224,8 @@ class UnitreeEnv(PipelineEnv):
 
     def rewardJointLimit(self, joint_angle):
         limit = self.joint_limit * 0.95
-        out_of_limit = -jnp.clip(joint_angle[6:] - limit[:, 0], a_max=0., a_min=None)
-        out_of_limit += jnp.clip(joint_angle[6:] - limit[:, 1], a_max=None, a_min=0.)
+        out_of_limit = -jnp.clip(joint_angle[6:] - limit[:, 0], max=0., min=None)
+        out_of_limit += jnp.clip(joint_angle[6:] - limit[:, 1], max=None, min=0.)
         return jnp.sum(out_of_limit)
 
     def rewardOrien(self, body_pos):
@@ -294,4 +294,7 @@ class UnitreeEnv(PipelineEnv):
         obs_vec = jnp.concatenate([inv_pelvis_rot, grav_unit_vec, pelvis_vel, pelvis_angvel,
                                    commanded_vel, prev_action, joint_angle, joint_vel,
                                    left_foot_pos, right_foot_pos])
-        return obs_vec
+
+        obs = obs_vec + self.obs_noise * jax.random.uniform(
+            state_info['Random generator'], shape = obs_vec.shape, minval=-1, maxval=1)
+        return obs
