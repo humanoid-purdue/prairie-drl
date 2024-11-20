@@ -20,7 +20,7 @@ class UnitreeEnv(PipelineEnv):
         self.timestep = 0.025
         self.action_scale = 0.5
 
-        model = mujoco.MjModel.from_xml_path("unitree_g1/g1.xml")
+        model = mujoco.MjModel.from_xml_path("unitree_g1/scene.xml")
         system = mjcf.load_model(model)
 
         super().__init__(
@@ -92,6 +92,7 @@ class UnitreeEnv(PipelineEnv):
         bottom_limit = self.control_range[:, 0]
         top_limit = self.control_range[:, 1]
         scaled_action = ( (action + 1) * (top_limit - bottom_limit) / 2 + bottom_limit ) * self.action_scale
+
         #scaled action is the torque commands given to the motors
 
 
@@ -114,7 +115,6 @@ class UnitreeEnv(PipelineEnv):
         contact_arr = jnp.array([left_contact, right_contact])
         first_contact = (state.info['feet_air_time'] > 0) * contact_arr
         state.info['feet_air_time'] += self.timestep
-        state.info['feet_air_time'] *= ~contact_arr
 
         done = body_pos.pos[self.pelvis_id - 1, 2] < self.done_limit
 
@@ -127,12 +127,15 @@ class UnitreeEnv(PipelineEnv):
         reward_move = self.rewardMovement(state.info["vel_command"], pipeline_state.q) * -1
         reward_swing =  self.rewardSwing(state.info['feet_air_time'], first_contact, state.info["vel_command"]) * 8
         reward_single = self.rewardSingleSupport(contact_arr, state.info["vel_command"]) * 0.3
-        reward_terminate = self.rewardTermination(done, state.info["step"]) * -1
+        reward_terminate = self.rewardTermination(done, state.info["step_total"]) * -1
         reward_jlimit = self.rewardJointLimit(pipeline_state.q) * -2
         reward_orien = self.rewardOrien(body_pos) * -1
         reward_cross = self.rewardCross(body_pos) * -2
         reward_pelvisz = self.rewardPelvisZ(body_pos) * -2
         #reward_yorein = self.rewardYOrien()
+
+
+        state.info['feet_air_time'] *= ~contact_arr
 
         reward = (reward_linvel +
                   reward_zvel +
@@ -257,7 +260,7 @@ class UnitreeEnv(PipelineEnv):
         return reward
 
     def rewardPelvisZ(self, body_pos):
-        reward = jnp.abs(0.65 - body_pos.pos[self.pelvis_id - 1, 2])
+        reward = jnp.abs(1.0 - body_pos.pos[self.pelvis_id - 1, 2])
         return reward
 
     def rewardYOrien(self, orientation, body_pos):
@@ -296,5 +299,5 @@ class UnitreeEnv(PipelineEnv):
                                    left_foot_pos, right_foot_pos])
 
         obs = obs_vec + self.obs_noise * jax.random.uniform(
-            state_info['Random generator'], shape = obs_vec.shape, minval=-1, maxval=1)
+            state_info['rng'], shape = obs_vec.shape, minval=-1, maxval=1)
         return obs
