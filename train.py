@@ -38,14 +38,27 @@ make_networks_factory = functools.partial(
         policy_hidden_layer_sizes=(128, 128, 128, 128))
 
 train_fn = functools.partial(
-      ppo.train, num_timesteps=200000000,num_evals=10,
+      ppo.train, num_timesteps=200000000,num_evals=10, episode_length = 1000,
        normalize_observations=True, unroll_length=20, num_minibatches=32,
       num_updates_per_batch=4, discounting=0.99, learning_rate=3.0e-4,
       entropy_cost=1e-3, num_envs=1024, batch_size=512,
       network_factory=make_networks_factory)
 
+x_data = []
+y_data = []
+ydataerr = []
+times = [datetime.now()]
+
 def progress(num_steps, metrics):
-    print(num_steps, metrics)
+    times.append(datetime.now())
+    x_data.append(num_steps)
+    y_data.append(metrics['eval/episode_reward'])
+    plt.xlim([0, train_fn.keywords['num_timesteps']])
+    plt.xlabel('# environment steps')
+    plt.ylabel('reward per episode')
+    plt.title(f'y={y_data[-1]:.3f}')
+    plt.plot(x_data, y_data)
+    plt.show()
 
 make_inference_fn, params, _= train_fn(environment=env,
                                        progress_fn=progress,

@@ -10,23 +10,32 @@ import mujoco
 
 class UnitreeEnv(PipelineEnv):
 
-    def __init__(self):
+    def __init__(self,
+            obs_noise: float = 0.05,
+            disturbance_vel: float = 0.05,
+            contact_limit: float = 0.021,
+            done_limit: float = 0.5,
+            timestep: float = 0.025,
+            action_scale: float = 0.5,
+            **kwargs,):
 
-        self.obs_noise = 0.05
-        self.disturbance_vel = 0.05
+        self.obs_noise = obs_noise
+        self.disturbance_vel = disturbance_vel
 
-        self.contact_limit = 0.021
-        self.done_limit = 0.5
-        self.timestep = 0.025
-        self.action_scale = 0.5
+        self.contact_limit = contact_limit
+        self.done_limit = done_limit
+        self.timestep = timestep
+        self.action_scale = action_scale
 
         model = mujoco.MjModel.from_xml_path("unitree_g1/scene.xml")
         system = mjcf.load_model(model)
 
+        n_frames = kwargs.pop('n_frames', 4)
+
         super().__init__(
-            sys=system,
+            sys = system,
             backend='mjx',
-            n_frames= 50
+            n_frames = n_frames
         )
 
         self.control_range = system.actuator_ctrlrange
