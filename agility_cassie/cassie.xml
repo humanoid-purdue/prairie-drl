@@ -1,5 +1,5 @@
 <mujoco model="cassie">
-  <compiler eulerseq="zyx" meshdir="agility_cassie/assets" texturedir="agility_cassie/assets" autolimits="true"/>
+  <compiler eulerseq="zyx" meshdir="assets" texturedir="assets" autolimits="true"/>
 
   <option timestep="0.0005" iterations="1" ls_iterations="4">
     <flag eulerdamp="disable"/>
