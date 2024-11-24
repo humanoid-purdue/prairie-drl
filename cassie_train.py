@@ -840,8 +840,8 @@ class CassieEnv(PipelineEnv):
         limit = self.joint_limit * 0.95
 
         # calculate the joint angles has larger or smaller than the limit
-        out_of_limit = -jp.clip(limited_angle - limit[:, 0], a_max=0., a_min=None)
-        out_of_limit += jp.clip(limited_angle - limit[:, 1], a_max=None, a_min=0.)
+        out_of_limit = -jp.clip(limited_angle - limit[:, 0], max=0., min=None)
+        out_of_limit += jp.clip(limited_angle - limit[:, 1], max=None, min=0.)
 
         # calculate the reward
         reward = jp.sum(out_of_limit)

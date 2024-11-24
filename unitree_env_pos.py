@@ -7,18 +7,16 @@ from brax.base import Base, Motion, Transform
 from brax import math
 import numpy as np
 import mujoco
-from mujoco import mjx
 
-class UnitreeEnv(PipelineEnv):
 
-    def __init__(self,
-            obs_noise: float = 0.05,
+class UnitreeEnvPos(PipelineEnv):
+    def __init__(self, obs_noise: float = 0.05,
             disturbance_vel: float = 0.05,
-            contact_limit: float = 0.021,
+            contact_limit: float = 0.051,
             done_limit: float = 0.5,
             timestep: float = 0.025,
             action_scale: float = 0.5,
-            **kwargs,):
+            **kwargs):
 
         self.obs_noise = obs_noise
         self.disturbance_vel = disturbance_vel
@@ -29,16 +27,14 @@ class UnitreeEnv(PipelineEnv):
         self.action_scale = action_scale
 
         model = mujoco.MjModel.from_xml_path("unitree_g1/scene.xml")
-
-
         system = mjcf.load_model(model)
 
         n_frames = kwargs.pop('n_frames', 4)
 
         super().__init__(
-            sys = system,
+            sys=system,
             backend='positional',
-            n_frames = n_frames
+            n_frames=n_frames
         )
 
         self.control_range = system.actuator_ctrlrange
@@ -55,35 +51,7 @@ class UnitreeEnv(PipelineEnv):
         self.left_site = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, 'left_foot')
         self.right_site = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, 'right_foot')
 
-    def reset(self, rng: jax.Array) -> State:
-        rng, key = jax.random.split(rng)
-        pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
-        state_info = {
-            "prev_torque": jnp.zeros(self.nu),
-            "vel_command": self.control_commands(rng),
-            "feet_air_time": jnp.zeros(2),
-            "step": 0,
-            "rng": rng,
-            "step_total": 0,
-            "distance": 0.0,
-            "reward": 0.0
-        }
-        reward, done = jnp.zeros(2)
-        metrics = {'distance': 0.0,
-                   'reward': 0.0}
-
-
-
-        obs = self.state2Obs(state_info, pipeline_state)
-        state = State(
-            pipeline_state = pipeline_state,
-            obs = obs,
-            reward = reward,
-            done = done,
-            metrics = metrics,
-            info = state_info
-        )
-        return state
+        return
 
     def control_commands(
             self,
@@ -98,6 +66,60 @@ class UnitreeEnv(PipelineEnv):
                                                 maxval=velocity_y_limit[1])
         col_command = jnp.array([velocity_x_command[0], velocity_y_command[0]])
         return col_command
+
+    def state2Obs(self, state_info, pipeline_state):
+        inv_pelvis_rot = math.quat_inv(pipeline_state.x.rot[self.pelvis_id - 1])
+        grav_unit_vec = math.rotate(jnp.array([0,0,-1]),inv_pelvis_rot)
+
+        pelvis_vel = pipeline_state.xd.vel[self.pelvis_id - 1]
+        pelvis_angvel = pipeline_state.xd.ang[self.pelvis_id - 1]
+
+        commanded_vel = state_info["vel_command"] #size 2 x y vel command
+
+        prev_action = state_info["prev_torque"]
+
+        joint_angle = pipeline_state.q
+        joint_vel = pipeline_state.qd
+
+        left_foot_pos = pipeline_state.x.pos[self.left_foot_id].flatten() - pipeline_state.x.pos[self.pelvis_id - 1].flatten()
+        right_foot_pos = pipeline_state.x.pos[self.left_foot_id].flatten() - pipeline_state.x.pos[self.pelvis_id - 1].flatten()
+
+        obs_vec = jnp.concatenate([inv_pelvis_rot, grav_unit_vec, pelvis_vel, pelvis_angvel,
+                                   commanded_vel, prev_action, joint_angle, joint_vel,
+                                   left_foot_pos, right_foot_pos])
+
+        obs = obs_vec + self.obs_noise * jax.random.uniform(
+            state_info['rng'], shape = obs_vec.shape, minval=-1, maxval=1)
+        return obs
+
+    def reset(self, rng: jax.Array) -> State:
+        rng, key = jax.random.split(rng)
+        pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
+
+        state_info = {
+            "prev_torque": jnp.zeros(self.nu),
+            "vel_command": self.control_commands(rng),
+            "feet_air_time": jnp.zeros(2),
+            "step": 0,
+            "rng": rng,
+            "step_total": 0,
+            "distance": 0.0,
+            "reward": 0.0
+        }
+        reward, done = jnp.zeros(2)
+        metrics = {'distance': 0.0,
+                   'reward': 0.0}
+
+        obs = self.state2Obs(state_info, pipeline_state)
+        state = State(
+            pipeline_state=pipeline_state,
+            obs=obs,
+            reward=reward,
+            done=done,
+            metrics=metrics,
+            info=state_info
+        )
+        return state
 
     def step(self, state: State, action: jax.Array) -> State:
         rng, ctl_rng, disturb_rng = jax.random.split(state.info['rng'], 3)
@@ -121,8 +143,8 @@ class UnitreeEnv(PipelineEnv):
 
         #get contact status and contact time for helping setup reward costs
 
-        l_site_pos = pipeline_state.site_xpos[self.left_site]
-        r_site_pos = pipeline_state.site_xpos[self.right_site]
+        l_site_pos = pipeline_state.x.pos[self.left_foot_id]
+        r_site_pos = pipeline_state.x.pos[self.right_foot_id]
 
         left_contact = l_site_pos[2] < self.contact_limit
         right_contact = r_site_pos[2] < self.contact_limit
@@ -136,7 +158,7 @@ class UnitreeEnv(PipelineEnv):
         reward_linvel = self.rewardLinearVel(state.info, body_vel) * 2.0
         reward_zvel = self.rewardZVel(body_vel) * -1
         reward_angvel = self.rewardAngVel(body_vel) * -0.5
-        reward_jt = self.rewardTorque(pipeline_state.qfrc_actuator) * -0.00005
+        reward_jt = self.rewardTorque(scaled_action) * -0.00005
         reward_dt = self.rewardDeltaTau(scaled_action, state.info["prev_torque"]) * -0.1
         reward_move = self.rewardMovement(state.info["vel_command"], pipeline_state.q) * -1
         reward_swing =  self.rewardSwing(state.info['feet_air_time'], first_contact, state.info["vel_command"]) * 8
@@ -290,28 +312,3 @@ class UnitreeEnv(PipelineEnv):
         reward = jnp.sum(jnp.abs(orientation - local_x))
 
         return reward
-
-    def state2Obs(self, state_info, pipeline_state):
-        inv_pelvis_rot = math.quat_inv(pipeline_state.x.rot[self.pelvis_id - 1])
-        grav_unit_vec = math.rotate(jnp.array([0,0,-1]),inv_pelvis_rot)
-
-        pelvis_vel = pipeline_state.xd.vel[self.pelvis_id - 1]
-        pelvis_angvel = pipeline_state.xd.ang[self.pelvis_id - 1]
-
-        commanded_vel = state_info["vel_command"] #size 2 x y vel command
-
-        prev_action = state_info["prev_torque"]
-
-        joint_angle = pipeline_state.q
-        joint_vel = pipeline_state.qd
-
-        left_foot_pos = pipeline_state.xpos[self.left_foot_id].flatten() - pipeline_state.xpos[self.pelvis_id - 1].flatten()
-        right_foot_pos = pipeline_state.xpos[self.left_foot_id].flatten() - pipeline_state.xpos[self.pelvis_id - 1].flatten()
-
-        obs_vec = jnp.concatenate([inv_pelvis_rot, grav_unit_vec, pelvis_vel, pelvis_angvel,
-                                   commanded_vel, prev_action, joint_angle, joint_vel,
-                                   left_foot_pos, right_foot_pos])
-
-        obs = obs_vec + self.obs_noise * jax.random.uniform(
-            state_info['rng'], shape = obs_vec.shape, minval=-1, maxval=1)
-        return obs

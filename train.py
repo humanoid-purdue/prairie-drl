@@ -27,9 +27,9 @@ import mujoco
 import mujoco.viewer
 from mujoco import mjx
 
-from unitree_env import UnitreeEnv
+from unitree_env_pos import UnitreeEnvPos
 
-envs.register_environment('g1', UnitreeEnv)
+envs.register_environment('g1', UnitreeEnvPos)
 env = envs.get_environment('g1')
 eval_env = envs.get_environment('g1')
 
