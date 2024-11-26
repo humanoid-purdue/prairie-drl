@@ -14,7 +14,7 @@ class UnitreeEnvPos(PipelineEnv):
             disturbance_vel: float = 0.05,
             contact_limit: float = 0.051,
             done_limit: float = 0.5,
-            timestep: float = 0.025,
+            timestep: float = 0.01,
             action_scale: float = 0.5,
             **kwargs):
 
@@ -29,7 +29,7 @@ class UnitreeEnvPos(PipelineEnv):
         model = mujoco.MjModel.from_xml_path("unitree_g1/scene.xml")
         system = mjcf.load_model(model)
 
-        n_frames = kwargs.pop('n_frames', 4)
+        n_frames = kwargs.pop('n_frames', 10)
 
         super().__init__(
             sys=system,
