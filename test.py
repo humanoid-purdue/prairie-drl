@@ -45,6 +45,7 @@ state.info['Control commands'] = command
 rollout = [state.pipeline_state]
 
 model_path = 'walk_policy'
+full_path = "inference_fn"
 
 # load saved model
 saved_params = model.load_params(model_path)
