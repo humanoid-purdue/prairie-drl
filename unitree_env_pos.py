@@ -8,6 +8,16 @@ from brax import math
 import numpy as np
 import mujoco
 
+#Positional environment:
+#Obeservation: robot joint pos and vel, robot centroid vels, Centroid positions relative to base, Command Velocity, Orientations, Facing Angle
+#Initial task, fixed orien and command vel
+#Base rewards include rewards for: alive, velocity reward, z vel, z pelvis, angvel, toruqe reward
+#Periodic reward from https://arxiv.org/pdf/2011.01387 to help shape walk trajectory
+# Expected value left * speed + Expected value right * speed
+# Estimate force for other half: constant for if less than height, 0 if above height to approximate
+# Initial periodic gait has no von mises, approximation with 1 - (2x - 1)^6
+#
+#to implement: code to prop hold upper body action to zero
 
 class UnitreeEnvPos(PipelineEnv):
     def __init__(self, obs_noise: float = 0.05,
@@ -75,6 +85,7 @@ class UnitreeEnvPos(PipelineEnv):
         pelvis_angvel = pipeline_state.xd.ang[self.pelvis_id - 1]
 
         commanded_vel = state_info["vel_command"] #size 2 x y vel command
+        #command_orien_vec = state_info["orien_vec_cmd"] # size 2 xy orien unit vec
 
         prev_action = state_info["prev_torque"]
 
@@ -99,8 +110,6 @@ class UnitreeEnvPos(PipelineEnv):
         state_info = {
             "prev_torque": jnp.zeros(self.nu),
             "vel_command": self.control_commands(rng),
-            "feet_air_time": jnp.zeros(2),
-            "step": 0,
             "rng": rng,
             "step_total": 0,
             "distance": 0.0,
@@ -140,83 +149,52 @@ class UnitreeEnvPos(PipelineEnv):
         #Convert pipeline_state to an observation vector passable to the MLP
 
         obs = self.state2Obs(state.info, pipeline_state)
-
-        #get contact status and contact time for helping setup reward costs
-
-        l_site_pos = pipeline_state.x.pos[self.left_foot_id]
-        r_site_pos = pipeline_state.x.pos[self.right_foot_id]
-
-        left_contact = l_site_pos[2] < self.contact_limit
-        right_contact = r_site_pos[2] < self.contact_limit
-        contact_arr = jnp.array([left_contact, right_contact])
-        first_contact = (state.info['feet_air_time'] > 0) * contact_arr
-        state.info['feet_air_time'] += self.timestep
-
         done = body_pos.pos[self.pelvis_id - 1, 2] < self.done_limit
+
 
 
         reward_linvel = self.rewardLinearVel(state.info, body_vel) * 2.0
         reward_zvel = self.rewardZVel(body_vel) * -1
         reward_angvel = self.rewardAngVel(body_vel) * -0.5
         reward_jt = self.rewardTorque(scaled_action) * -0.00005
-        reward_dt = self.rewardDeltaTau(scaled_action, state.info["prev_torque"]) * -0.1
-        reward_move = self.rewardMovement(state.info["vel_command"], pipeline_state.q) * -1
-        reward_swing =  self.rewardSwing(state.info['feet_air_time'], first_contact, state.info["vel_command"]) * 8
-        reward_single = self.rewardSingleSupport(contact_arr, state.info["vel_command"]) * 0.3
-        reward_terminate = self.rewardTermination(done, state.info["step_total"]) * -1
-        reward_jlimit = self.rewardJointLimit(pipeline_state.q) * -2
-        reward_orien = self.rewardOrien(body_pos) * -1
-        reward_cross = self.rewardCross(body_pos) * -2
         reward_pelvisz = self.rewardPelvisZ(body_pos) * -2
-        #reward_yorein = self.rewardYOrien()
 
 
-        state.info['feet_air_time'] *= ~contact_arr
+        left_contact_force = self.psuedoContactForce(body_pos, self.left_foot_id)
+        right_contact_force = self.psuedoContactForce(body_pos, self.right_foot_id)
 
-        reward = (reward_linvel +
+        left_vel = self.normFootVel(body_vel, self.left_foot_id)
+        right_vel = self.normFootVel(body_vel, self.right_foot_id)
+
+        prop = jnp.mod(state.info["step_total"] * self.timestep, 0.8) / 0.8
+
+        left_coeff_force, left_coeff_speed = self.prop2ExpectCoeff(prop)
+        right_coeff_force, right_coeff_speed = self.prop2ExpectCoeff(jnp.mod(prop + 0.5, 1.))
+
+        reward_base = (reward_linvel +
                   reward_zvel +
                   reward_angvel +
                   reward_jt +
-                  reward_dt +
-                  reward_move +
-                  reward_swing +
-                  reward_single +
-                  reward_terminate +
-                  reward_jlimit +
-                  reward_orien +
-                  reward_cross +
                   reward_pelvisz)
+
+        reward_period = 1 * (left_coeff_force * left_contact_force + left_coeff_speed * left_vel + right_coeff_force * right_contact_force + right_coeff_speed * right_vel)
+
+        reward = reward_base + reward_period
+
 
         state.info["rng"] = rng
         state.info["reward"] = reward
         state.info["prev_torque"] = scaled_action
-        state.info['step'] += 1
         state.info["step_total"] += 1
         state.info['distance'] = math.normalize(body_pos.pos[self.pelvis_id - 1][:2])[1]
 
         state.info['vel_command'] = jnp.where(
-            # condition: step>500
-            state.info['step'] > 500,
-            # if true
+            state.info['step_total'] > 500,
             self.control_commands(ctl_rng),
-            # if false
             state.info['vel_command']
         )
-
-        state.metrics['distance'] = state.info['distance']
         state.metrics['reward'] = reward
-        # reset the step counter when the episode is terminated or reached 500 steps
-        state.info['step'] = jnp.where(
-            # condition: done or step>500
-            done | (state.info['step'] > 500),
-            # if true
-            0,
-            # if false
-            state.info['step']
-        )
-
         done = jnp.float32(done)
-        # Wrap the state
         state = state.replace(
             pipeline_state=pipeline_state,
             obs=obs,
@@ -241,74 +219,23 @@ class UnitreeEnvPos(PipelineEnv):
     def rewardTorque(self, joint_torque):
         return jnp.sqrt(jnp.sum(jnp.square(joint_torque)))
 
-    def rewardDeltaTau(self, action, prev_action):
-        return jnp.mean((action - prev_action)**2)
-
-    def rewardMovement(self, command, joint_angle):
-        return jnp.mean((joint_angle - self.initial_state) ** 2) * (math.normalize(command[:2])[1] < 0.1)
-
-    def rewardSwing(self, air_time, first_contact, vel_command):
-        reward = jnp.sum((air_time - 0.3) * first_contact)
-        reward *= (math.normalize(vel_command[:2])[1] > 0.1)
-        return reward
-
-    def rewardSingleSupport(self, contact, vel_command):
-        singe_contact = jnp.sum(contact) == 1
-        return singe_contact * (math.normalize(vel_command[:2])[1] > 0.1)
-
-    def rewardTermination(self, done, step):
-        terminal_early = done * (step < 950)
-        reward = (950 - step) * terminal_early
-        return reward
-
-    def rewardJointLimit(self, joint_angle):
-        limit = self.joint_limit * 0.95
-        out_of_limit = -jnp.clip(joint_angle[6:] - limit[:, 0], max=0., min=None)
-        out_of_limit += jnp.clip(joint_angle[6:] - limit[:, 1], max=None, min=0.)
-        return jnp.sum(out_of_limit)
-
-    def rewardOrien(self, body_pos):
-        up = jnp.array([0.0, 0.0, 1.0])
-        rot_up = math.rotate(up, body_pos.rot[self.pelvis_id - 1])
-        reward = jnp.sum(jnp.square(rot_up[:2]))
-        return reward
-
-    def rewardCross(self, body_pos):
-        global_y = jnp.array([0.0, 1.0, 0.0])
-        local_y = math.rotate(global_y, math.quat_inv(body_pos.rot[self.pelvis_id - 1]))
-        left_feet_pos = body_pos.pos[self.left_foot_id - 1] - body_pos.pos[self.pelvis_id - 1]
-        right_feet_pos = body_pos.pos[self.right_foot_id - 1] - body_pos.pos[self.pelvis_id - 1]
-
-        # ignore z-axis
-        local_y = local_y[:2]
-        left_feet_pos = left_feet_pos[:2]
-        right_feet_pos = right_feet_pos[:2]
-
-        # project the feet position to local y-axis
-        left_feet_y = jnp.dot(left_feet_pos, local_y) / math.normalize(local_y)[0]
-        right_feet_y = jnp.dot(right_feet_pos, local_y) / math.normalize(local_y)[0]
-
-        # check its local position
-        # left feet should have a positive value, right feet should have a negative value
-        reward = left_feet_y[1] < 0
-        reward |= right_feet_y[1] > 0
-
-        return reward
-
     def rewardPelvisZ(self, body_pos):
         reward = jnp.abs(1.0 - body_pos.pos[self.pelvis_id - 1, 2])
         return reward
 
-    def rewardYOrien(self, orientation, body_pos):
-        global_x = jnp.array([1.0, 0.0, 0.0])
+    def psuedoContactForce(self, body_pos, foot_id):
+        # Ground contacct threshold, 0.7m
+        ground_threshold = 0.08
+        foot_pos = body_pos.pos[foot_id]
+        delta = foot_pos[2] - ground_threshold
+        return jnp.where( delta < 0, 300, 0)
 
-        # calculate the local y-axis
-        local_x = math.rotate(global_x, body_pos.rot[self.pelvis_id - 1])
+    def normFootVel(self, body_vel, foot_id):
+        return jnp.sum(jnp.square(body_vel.vel[foot_id]))
 
-        # ignore z-axis
-        local_x = local_x[:2]
-
-        # calculate the error
-        reward = jnp.sum(jnp.abs(orientation - local_x))
-
-        return reward
+    def prop2ExpectCoeff(self, prop):
+        #0 to 0.6 support phase, 0.6 to 1, swing phase
+        #during support phase
+        coeff_force = jnp.where(prop < 0.6, 0, -1)
+        coeff_speed = jnp.where(prop < 0.6, -1, 0)
+        return coeff_force, coeff_speed

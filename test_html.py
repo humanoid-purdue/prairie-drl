@@ -33,7 +33,7 @@ from unitree_env_pos import UnitreeEnvPos
 
 envs.register_environment('g1', UnitreeEnvPos)
 env_name = 'g1'
-env = envs.get_environment(env_name)
+env = envs.create(env_name='g1', backend='positional')
 
 jit_reset = jax.jit(env.reset)
 jit_step = jax.jit(env.step)
@@ -76,4 +76,4 @@ for i in range(n_steps):
     ss.append(state)
     rollout.append(state.pipeline_state)
 
-media.show_video(env.render(rollout, camera='track'), fps=1.0 / env.dt)
+HTML(html.render(env.sys.tree_replace({'opt.timestep': env.dt}), rollout))
