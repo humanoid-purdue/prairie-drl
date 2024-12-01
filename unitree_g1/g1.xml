@@ -205,8 +205,6 @@
         <geom type="mesh" mesh="torso_link" class="collision"/>
         <geom type="mesh" class="visual" material="black" mesh="head_link"/>
         <geom type="mesh" mesh="head_link" class="collision"/>
-        <geom type="mesh" class="visual" material="black" mesh="logo_link"/>
-        <geom type="mesh" mesh="logo_link" class="collision"/>
       </body>
     </body>
   </worldbody>
