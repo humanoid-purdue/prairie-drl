@@ -37,7 +37,7 @@
       <default class="collision">
         <geom contype="1" group="3" type="capsule"/>
         <default class="foot">
-          <geom type="sphere" size="0.001"/>
+          <geom type="sphere" size="0.01"/>
         </default>
       </default>
     </default>
