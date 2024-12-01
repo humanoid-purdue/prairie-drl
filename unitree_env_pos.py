@@ -68,7 +68,7 @@ class UnitreeEnvPos(PipelineEnv):
             rng: jax.Array,
     ) -> jax.Array:
         key1, key2, key3 = jax.random.split(rng, 3)
-        velocity_x_limit = [0.0, 1.5]
+        velocity_x_limit = [0.0, 0.8]
         velocity_y_limit = [-0.5, 0.5]
         velocity_x_command = jax.random.uniform(key1, shape=(1,), minval=velocity_x_limit[0],
                                                 maxval=velocity_x_limit[1])
@@ -154,10 +154,8 @@ class UnitreeEnvPos(PipelineEnv):
 
 
         reward_linvel = self.rewardLinearVel(state.info, body_vel) * 2.0
-        reward_zvel = self.rewardZVel(body_vel) * -1
-        reward_angvel = self.rewardAngVel(body_vel) * -0.5
-        reward_jt = self.rewardTorque(scaled_action) * -0.00005
-        reward_pelvisz = self.rewardPelvisZ(body_pos) * -2
+        reward_jt = self.rewardTorque(scaled_action) * -0.005
+        reward_term = done * -500
 
 
         left_contact_force = self.psuedoContactForce(body_pos, self.left_foot_id)
@@ -172,14 +170,12 @@ class UnitreeEnvPos(PipelineEnv):
         right_coeff_force, right_coeff_speed = self.prop2ExpectCoeff(jnp.mod(prop + 0.5, 1.))
 
         reward_base = (reward_linvel +
-                  reward_zvel +
-                  reward_angvel +
                   reward_jt +
-                  reward_pelvisz)
+                  reward_term)
 
         reward_period = 1 * (left_coeff_force * left_contact_force + left_coeff_speed * left_vel + right_coeff_force * right_contact_force + right_coeff_speed * right_vel)
 
-        reward = reward_base + reward_period
+        reward = reward_base # + reward_period
 
 
         state.info["rng"] = rng
@@ -187,12 +183,6 @@ class UnitreeEnvPos(PipelineEnv):
         state.info["prev_torque"] = scaled_action
         state.info["step_total"] += 1
         state.info['distance'] = math.normalize(body_pos.pos[self.pelvis_id - 1][:2])[1]
-
-        state.info['vel_command'] = jnp.where(
-            state.info['step_total'] > 500,
-            self.control_commands(ctl_rng),
-            state.info['vel_command']
-        )
         state.metrics['reward'] = reward
         done = jnp.float32(done)
         state = state.replace(
