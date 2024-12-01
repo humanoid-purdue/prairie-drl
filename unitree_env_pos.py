@@ -23,7 +23,7 @@ class UnitreeEnvPos(PipelineEnv):
     def __init__(self, obs_noise: float = 0.05,
             disturbance_vel: float = 0.05,
             contact_limit: float = 0.051,
-            done_limit: float = 0.5,
+            done_limit: float = 0.4,
             timestep: float = 0.01,
             action_scale: float = 0.5,
             **kwargs):

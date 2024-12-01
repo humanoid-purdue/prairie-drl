@@ -1,9 +1,24 @@
 <mujoco model="g1">
   <compiler angle="radian" meshdir="assets" autolimits="true"/>
 
-  <option timestep="0.001" iterations="1" ls_iterations="4">
+  <option timestep="0.001" iterations="8" ls_iterations="4">
     <flag eulerdamp="disable"/>
   </option>
+
+  <custom>
+        <!-- brax custom params -->
+        <numeric data="2500" name="constraint_limit_stiffness"/>
+        <numeric data="27000" name="constraint_stiffness"/>
+        <numeric data="30" name="constraint_ang_damping"/>
+        <numeric data="80" name="constraint_vel_damping"/>
+        <numeric data="-0.05" name="ang_damping"/>
+        <numeric data="0.5" name="joint_scale_pos"/>
+        <numeric data="0.1" name="joint_scale_ang"/>
+        <numeric data="0" name="spring_mass_scale"/>
+        <numeric data="1" name="spring_inertia_scale"/>
+        <numeric data="20" name="matrix_inv_iterations"/>
+        <numeric data="15" name="solver_maxls"/>
+    </custom>
 
   <visual>
     <global ellipsoidinertia="true"/>
