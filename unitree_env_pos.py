@@ -177,7 +177,7 @@ class UnitreeEnvPos(PipelineEnv):
 
         reward_period = 1 * (left_coeff_force * left_contact_force + left_coeff_speed * left_vel + right_coeff_force * right_contact_force + right_coeff_speed * right_vel)
 
-        reward = reward_base # + reward_period
+        reward = reward_base + reward_period
 
 
         state.info["rng"] = rng
