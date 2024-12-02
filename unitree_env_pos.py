@@ -7,6 +7,7 @@ from brax.base import Base, Motion, Transform
 from brax import math
 import numpy as np
 import mujoco
+from brax import actuator
 
 #Positional environment:
 #Obeservation: robot joint pos and vel, robot centroid vels, Centroid positions relative to base, Command Velocity, Orientations, Facing Angle
@@ -78,16 +79,33 @@ class UnitreeEnvPos(PipelineEnv):
         return col_command
 
     def state2Obs(self, state_info, pipeline_state):
-        inv_pelvis_rot = math.quat_inv(pipeline_state.x.rot[self.pelvis_id - 1])
+        # Previous action
+        # Pelvis quaternion
+        # Pelvis z position
+        # Joint positions
+        # Joint velocities
+        # Joint angvel
+        # qfrc_actuator
+
+        pelvis_rot = pipeline_state.x.rot[self.pelvis_id - 1]
+        inv_pelvis_rot = math.quat_inv(pelvis_rot)
         grav_unit_vec = math.rotate(jnp.array([0,0,-1]),inv_pelvis_rot)
 
         pelvis_vel = pipeline_state.xd.vel[self.pelvis_id - 1]
         pelvis_angvel = pipeline_state.xd.ang[self.pelvis_id - 1]
+        pelvis_z = pipeline_state.x.pos[self.pelvis_id - 1]
 
         commanded_vel = state_info["vel_command"] #size 2 x y vel command
         #command_orien_vec = state_info["orien_vec_cmd"] # size 2 xy orien unit vec
 
-        prev_action = state_info["prev_torque"]
+        qfrc_actuator = actuator.to_tau(
+            self.sys, state_info["prev_torque"], pipeline_state.q, pipeline_state.qd)
+
+        com, inertia, mass_sum, x_i = self._com(pipeline_state)
+        cinr = x_i.replace(pos=x_i.pos - com).vmap().do(inertia)
+        com_inertia = jnp.hstack(
+            [cinr.i.reshape((cinr.i.shape[0], -1)), inertia.mass[:, None]]
+        )
 
         joint_angle = pipeline_state.q
         joint_vel = pipeline_state.qd
@@ -95,13 +113,30 @@ class UnitreeEnvPos(PipelineEnv):
         left_foot_pos = pipeline_state.x.pos[self.left_foot_id].flatten() - pipeline_state.x.pos[self.pelvis_id - 1].flatten()
         right_foot_pos = pipeline_state.x.pos[self.left_foot_id].flatten() - pipeline_state.x.pos[self.pelvis_id - 1].flatten()
 
-        obs_vec = jnp.concatenate([inv_pelvis_rot, grav_unit_vec, pelvis_vel, pelvis_angvel,
-                                   commanded_vel, prev_action, joint_angle, joint_vel,
-                                   left_foot_pos, right_foot_pos])
+        obs_vec = jnp.concatenate([commanded_vel, pelvis_rot, grav_unit_vec, pelvis_vel, pelvis_angvel,
+                                   joint_angle, joint_vel,
+                                   left_foot_pos, right_foot_pos, pelvis_z, qfrc_actuator, com_inertia.ravel()])
 
         obs = obs_vec + self.obs_noise * jax.random.uniform(
             state_info['rng'], shape = obs_vec.shape, minval=-1, maxval=1)
         return obs
+
+    def _com(self, pipeline_state) -> jax.Array:
+        inertia = self.sys.link.inertia
+        if self.backend in ['spring', 'positional']:
+            inertia = inertia.replace(
+                i=jax.vmap(jnp.diag)(
+                    jax.vmap(jnp.diagonal)(inertia.i)
+                    ** (1 - self.sys.spring_inertia_scale)
+                ),
+                mass=inertia.mass ** (1 - self.sys.spring_mass_scale),
+            )
+        mass_sum = jnp.sum(inertia.mass)
+        x_i = pipeline_state.x.vmap().do(inertia.transform)
+        com = (
+                jnp.sum(jax.vmap(jnp.multiply)(inertia.mass, x_i.pos), axis=0) / mass_sum
+        )
+        return com, inertia, mass_sum, x_i
 
     def reset(self, rng: jax.Array) -> State:
         rng, key = jax.random.split(rng)
@@ -131,6 +166,10 @@ class UnitreeEnvPos(PipelineEnv):
         return state
 
     def step(self, state: State, action: jax.Array) -> State:
+
+        #Draconic rewards Fix forward vector, force reward footsteps, Function that with time, returns footstep positions
+        #and contact truth value
+
         rng, ctl_rng, disturb_rng = jax.random.split(state.info['rng'], 3)
 
         #rescale tanh to torque limits
@@ -150,8 +189,6 @@ class UnitreeEnvPos(PipelineEnv):
 
         obs = self.state2Obs(state.info, pipeline_state)
         done = body_pos.pos[self.pelvis_id - 1, 2] < self.done_limit
-
-
 
         reward_linvel = self.rewardLinearVel(state.info, body_vel) * 2.0
         reward_jt = self.rewardTorque(scaled_action) * -0.00005
