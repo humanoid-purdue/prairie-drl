@@ -69,8 +69,8 @@ class UnitreeEnvPos(PipelineEnv):
             rng: jax.Array,
     ) -> jax.Array:
         key1, key2, key3 = jax.random.split(rng, 3)
-        velocity_x_limit = [0.0, 0.8]
-        velocity_y_limit = [-0.5, 0.5]
+        velocity_x_limit = [0.7, 0.8]
+        velocity_y_limit = [-0.1, 0.1]
         velocity_x_command = jax.random.uniform(key1, shape=(1,), minval=velocity_x_limit[0],
                                                 maxval=velocity_x_limit[1])
         velocity_y_command = jax.random.uniform(key2, shape=(1,), minval=velocity_y_limit[0],
