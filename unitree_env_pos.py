@@ -154,7 +154,9 @@ class UnitreeEnvPos(PipelineEnv):
 
 
         reward_linvel = self.rewardLinearVel(state.info, body_vel) * 2.0
-        reward_jt = self.rewardTorque(scaled_action) * -0.005
+        reward_jt = self.rewardTorque(scaled_action) * -0.00005
+        reward_z = self.rewardPelvisZ(body_pos) * -2
+        reward_orien = self.rewardOrien(body_pos) * -1
         reward_term = done * -500
 
 
@@ -210,7 +212,7 @@ class UnitreeEnvPos(PipelineEnv):
         return jnp.sqrt(jnp.sum(jnp.square(joint_torque)))
 
     def rewardPelvisZ(self, body_pos):
-        reward = jnp.abs(1.0 - body_pos.pos[self.pelvis_id - 1, 2])
+        reward = jnp.abs(0.65 - body_pos.pos[self.pelvis_id - 1, 2])
         return reward
 
     def psuedoContactForce(self, body_pos, foot_id):
@@ -222,6 +224,12 @@ class UnitreeEnvPos(PipelineEnv):
 
     def normFootVel(self, body_vel, foot_id):
         return jnp.sum(jnp.square(body_vel.vel[foot_id]))
+
+    def rewardOrien(self, body_pos):
+        up = jnp.array([0.0, 0.0, 1.0])
+        rot_up = math.rotate(up, body_pos.rot[self.pelvis_id - 1])
+        reward = jnp.sum(jnp.square(rot_up[:2]))
+        return reward
 
     def prop2ExpectCoeff(self, prop):
         #0 to 0.6 support phase, 0.6 to 1, swing phase
