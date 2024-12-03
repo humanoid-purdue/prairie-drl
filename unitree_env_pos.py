@@ -87,6 +87,7 @@ class UnitreeEnvPos(PipelineEnv):
         # Joint angvel
         # qfrc_actuator
 
+
         pelvis_rot = pipeline_state.x.rot[self.pelvis_id - 1]
         inv_pelvis_rot = math.quat_inv(pelvis_rot)
         grav_unit_vec = math.rotate(jnp.array([0,0,-1]),inv_pelvis_rot)
@@ -148,7 +149,9 @@ class UnitreeEnvPos(PipelineEnv):
             "rng": rng,
             "step_total": 0,
             "distance": 0.0,
-            "reward": 0.0
+            "reward": 0.0,
+            "contact_state": jnp.array([1, 1]),
+            "air_time": 0.0
         }
         reward, done = jnp.zeros(2)
         metrics = {'distance': 0.0,
@@ -167,8 +170,13 @@ class UnitreeEnvPos(PipelineEnv):
 
     def step(self, state: State, action: jax.Array) -> State:
 
-        #Draconic rewards Fix forward vector, force reward footsteps, Function that with time, returns footstep positions
-        #and contact truth value
+        #Replace periodic reward structure with one from dial mpc
+        #Reward from  foot z position and target z position
+        #Reward foot air time
+        #Predicted position error reward
+        #Reward upright
+        #Reward 0 yaw
+        #Reward z height
 
         rng, ctl_rng, disturb_rng = jax.random.split(state.info['rng'], 3)
 
@@ -190,31 +198,24 @@ class UnitreeEnvPos(PipelineEnv):
         obs = self.state2Obs(state.info, pipeline_state)
         done = body_pos.pos[self.pelvis_id - 1, 2] < self.done_limit
 
+        time_elapsed = state.info["step_total"] * 0.01
+
         reward_linvel = self.rewardLinearVel(state.info, body_vel) * 2.0
-        reward_jt = self.rewardTorque(scaled_action) * -0.00005
+        reward_footz = self.rewardFootZ(body_pos, time_elapsed) * 5.0
+        reward_pos = self.rewardPos(body_pos, state.info) * 1.0
+        reward_upright = self.rewardUpright(body_pos) * 0.5
+        #reward_yaw = self.rewardYaw(body_pos)
+        reward_air, cs, air_time = self.rewardAirtime(state.info, body_pos)
+        reward_air = reward_air * 0.5
+        reward_jt = self.rewardTorque(scaled_action) * -0.001
         reward_z = self.rewardPelvisZ(body_pos) * -2
-        reward_orien = self.rewardOrien(body_pos) * -1
         reward_term = done * -500
 
+        reward = reward_linvel + reward_footz + reward_pos + reward_upright + reward_air + reward_jt + reward_z + reward_term
 
-        left_contact_force = self.psuedoContactForce(body_pos, self.left_foot_id)
-        right_contact_force = self.psuedoContactForce(body_pos, self.right_foot_id)
-
-        left_vel = self.normFootVel(body_vel, self.left_foot_id)
-        right_vel = self.normFootVel(body_vel, self.right_foot_id)
 
         prop = jnp.mod(state.info["step_total"] * self.timestep, 0.8) / 0.8
 
-        left_coeff_force, left_coeff_speed = self.prop2ExpectCoeff(prop)
-        right_coeff_force, right_coeff_speed = self.prop2ExpectCoeff(jnp.mod(prop + 0.5, 1.))
-
-        reward_base = (reward_linvel +
-                  reward_jt +
-                  reward_term)
-
-        reward_period = 1 * (left_coeff_force * left_contact_force + left_coeff_speed * left_vel + right_coeff_force * right_contact_force + right_coeff_speed * right_vel)
-
-        reward = reward_base + reward_period
 
 
         state.info["rng"] = rng
@@ -222,6 +223,8 @@ class UnitreeEnvPos(PipelineEnv):
         state.info["prev_torque"] = scaled_action
         state.info["step_total"] += 1
         state.info['distance'] = math.normalize(body_pos.pos[self.pelvis_id - 1][:2])[1]
+        state.info["contact_state"] = cs
+        state.info["air_time"] = air_time
         state.metrics['reward'] = reward
         done = jnp.float32(done)
         state = state.replace(
@@ -235,42 +238,59 @@ class UnitreeEnvPos(PipelineEnv):
         return state
 
     def rewardLinearVel(self, state_info, body_vel):
-        linear_vel_err = jnp.sum(jnp.square(state_info["vel_command"][:2] - body_vel.vel[self.pelvis_id-1][:2]))
-        reward = jnp.exp(-linear_vel_err/0.25)
+        reward = -jnp.sum(jnp.square(state_info["vel_command"][:2] - body_vel.vel[self.pelvis_id-1][:2]))
         return reward
-
-    def rewardZVel(self, body_vel):
-        return jnp.square(body_vel.vel[self.pelvis_id-1,2])
-
-    def rewardAngVel(self, body_vel):
-        return jnp.sum(jnp.square(body_vel.ang[self.pelvis_id-1,:2]))
 
     def rewardTorque(self, joint_torque):
         return jnp.sqrt(jnp.sum(jnp.square(joint_torque)))
 
     def rewardPelvisZ(self, body_pos):
-        reward = jnp.abs(0.65 - body_pos.pos[self.pelvis_id - 1, 2])
+        reward = jnp.square(0.65 - body_pos.pos[self.pelvis_id - 1, 2])
         return reward
 
-    def psuedoContactForce(self, body_pos, foot_id):
-        # Ground contacct threshold, 0.7m
-        ground_threshold = 0.08
-        foot_pos = body_pos.pos[foot_id]
-        delta = foot_pos[2] - ground_threshold
-        return jnp.where( delta < 0, 300, 0)
+    def rewardFootZ(self, body_pos, time_elapsed):
+        left_z = body_pos.pos[self.left_foot_id, 2]
+        right_z = body_pos.pos[self.left_foot_id, 2]
+        left_target, right_target = self.footstepZHeights(time_elapsed)
+        reward_l = -1 * jnp.sum(jnp.square(left_target - left_z))
+        reward_r = -1 * jnp.sum(jnp.square(right_target - right_z))
+        return reward_l + reward_r
 
-    def normFootVel(self, body_vel, foot_id):
-        return jnp.sum(jnp.square(body_vel.vel[foot_id]))
+    def rewardPos(self, body_pos, state_info):
+        linear_vel = state_info["vel_command"]
+        expected_postiion = linear_vel * state_info["step_total"] * 0.01
+        reward_pos = -jnp.sum((body_pos.pos[self.pelvis_id - 1] - expected_postiion) ** 2)
+        return reward_pos
 
-    def rewardOrien(self, body_pos):
-        up = jnp.array([0.0, 0.0, 1.0])
-        rot_up = math.rotate(up, body_pos.rot[self.pelvis_id - 1])
-        reward = jnp.sum(jnp.square(rot_up[:2]))
-        return reward
+    def rewardUpright(self, body_pos):
+        vec_tar = jnp.array([0.0, 0.0, 1.0])
+        vec = math.rotate(vec_tar, body_pos.rot[self.pelvis_id - 1])
+        return -jnp.sum(jnp.square(vec - vec_tar))
 
-    def prop2ExpectCoeff(self, prop):
-        #0 to 0.6 support phase, 0.6 to 1, swing phase
-        #during support phase
-        coeff_force = jnp.where(prop < 0.6, 0, -1)
-        coeff_speed = jnp.where(prop < 0.6, -1, 0)
-        return coeff_force, coeff_speed
+    def rewardYaw(self, body_pos):
+        yaw = math.quat_to_euler(body_pos.rot[self.pelvis_id - 1])[2]
+        reward_yaw = -jnp.square(jnp.atan2(jnp.sin(yaw), jnp.cos(yaw)))
+        return reward_yaw
+
+    def footstepZHeights(self, time_elapsed):
+        z_height = 0.15
+        swing_time = 0.5
+        stance_time = 0.2
+        def zCycle(time_elapsed):
+            t2 = jnp.mod(time_elapsed, ( swing_time + stance_time ) * 2)
+            swing_component = jnp.sin(time_elapsed) * z_height
+            return jnp.where(t2 < swing_time, swing_component, 0)
+        left_height = zCycle(time_elapsed - stance_time)
+        right_height = zCycle(time_elapsed - stance_time * 2 - swing_time)
+        return left_height, right_height
+
+    def rewardAirtime(self, state_info, body_pos): #Sum airtime until contact is made and add the reward
+        left_contact = body_pos.pos[self.left_foot_id] < 0.04
+        right_contact = body_pos.pos[self.right_foot_id] < 0.04
+        cs = jnp.concatenate([left_contact, right_contact], axis = 0)
+        prev_cs = state_info["contact_state"]
+        #When goes from [0, 1] to [1, 1], give reward. Any other transition remove reward
+        single_contact = jnp.sum(cs - prev_cs == 1) == 1
+        reward = single_contact * (state_info["air_time"] - 0.1)
+        air_time = ( state_info["air_time"] + 0.01 ) * (jnp.sum(cs) != 2)
+        return reward, cs, air_time
