@@ -150,7 +150,7 @@ class UnitreeEnvPos(PipelineEnv):
             "step_total": 0,
             "distance": 0.0,
             "reward": 0.0,
-            "contact_state": jnp.array([1, 1]),
+            "contact_state": jnp.array([1., 1.]),
             "air_time": 0.0
         }
         reward, done = jnp.zeros(2)
@@ -258,8 +258,9 @@ class UnitreeEnvPos(PipelineEnv):
 
     def rewardPos(self, body_pos, state_info):
         linear_vel = state_info["vel_command"]
+        xy_pos = body_pos.pos[self.pelvis_id - 1][0:2]
         expected_postiion = linear_vel * state_info["step_total"] * 0.01
-        reward_pos = -jnp.sum((body_pos.pos[self.pelvis_id - 1] - expected_postiion) ** 2)
+        reward_pos = -jnp.sum(( xy_pos - expected_postiion) ** 2)
         return reward_pos
 
     def rewardUpright(self, body_pos):
@@ -285,9 +286,9 @@ class UnitreeEnvPos(PipelineEnv):
         return left_height, right_height
 
     def rewardAirtime(self, state_info, body_pos): #Sum airtime until contact is made and add the reward
-        left_contact = body_pos.pos[self.left_foot_id] < 0.04
-        right_contact = body_pos.pos[self.right_foot_id] < 0.04
-        cs = jnp.concatenate([left_contact, right_contact], axis = 0)
+        left_contact = body_pos.pos[self.left_foot_id][2] < 0.04
+        right_contact = body_pos.pos[self.right_foot_id][2] < 0.04
+        cs = jnp.array([left_contact * 1., right_contact * 1.])
         prev_cs = state_info["contact_state"]
         #When goes from [0, 1] to [1, 1], give reward. Any other transition remove reward
         single_contact = jnp.sum(cs - prev_cs == 1) == 1
