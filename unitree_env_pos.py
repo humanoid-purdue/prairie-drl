@@ -209,7 +209,7 @@ class UnitreeEnvPos(PipelineEnv):
         reward_air = reward_air * 0.5
         reward_jt = self.rewardTorque(scaled_action) * -0.001
         reward_z = self.rewardPelvisZ(body_pos) * -2
-        reward_term = done * -500
+        reward_term = done * -1500
 
         reward = reward_linvel + reward_footz + reward_pos + reward_upright + reward_air + reward_jt + reward_z + reward_term
 
