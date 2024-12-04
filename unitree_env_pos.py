@@ -44,7 +44,7 @@ class UnitreeEnvPos(PipelineEnv):
 
         super().__init__(
             sys=system,
-            backend='positional',
+            backend='mjx',
             n_frames=n_frames
         )
 
