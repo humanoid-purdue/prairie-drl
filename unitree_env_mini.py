@@ -1,11 +1,7 @@
 import jax
 from brax.envs import PipelineEnv, State
 from jax import numpy as jnp
-import brax
 from brax.io import mjcf
-from brax.base import Base, Motion, Transform
-from brax import math
-import numpy as np
 import mujoco
 from mujoco import mjx
 
@@ -22,7 +18,7 @@ class UnitreeEnvMini(PipelineEnv):
         n_frames = 10
 
         super().__init__(sys = system,
-            backend='positional',
+            backend='mjx',
             n_frames = n_frames
         )
 
@@ -57,7 +53,7 @@ class UnitreeEnvMini(PipelineEnv):
         metrics = {'distance': 0.0,
                    'reward': 0.0}
 
-        obs = self._get_obs(pipeline_state, state_info["prev_torque"])
+        obs = self._get_obs(pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,

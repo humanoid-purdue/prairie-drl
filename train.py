@@ -27,9 +27,9 @@ import mujoco
 import mujoco.viewer
 from mujoco import mjx
 import dill
+from unitree_env_mini import UnitreeEnvMini
 
-
-envs.register_environment('g1', UnitreeEnv)
+envs.register_environment('g1', UnitreeEnvMini)
 env = envs.get_environment('g1')
 eval_env = envs.get_environment('g1')
 
