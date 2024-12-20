@@ -135,10 +135,10 @@ class UnitreeEnvMini(PipelineEnv):
 
     def joint_limit_reward(self, data1):
         #within soft limit
-        upper_filt = jnp.where(data1.q[1:,:] < self.joint_limit[1:, 1] * 0.8, 0., 1.)
-        lower_filt = jnp.where(data1.q[1:, :] > self.joint_limit[1:, 0] * 0.8, 0., 1.)
+        upper_filt = jnp.where(data1.q[1:] < self.joint_limit[1:, 1] * 0.8, 0., 1.)
+        lower_filt = jnp.where(data1.q[1:] > self.joint_limit[1:, 0] * 0.8, 0., 1.)
 
-        upper_penalty = jnp.exp( (data1.q[1:,:] - self.joint_limit[1:,1] * 0.8) * 3) - 1
-        lower_penalty = jnp.exp( (self.joint_limit[1:,0] * 0.8 - data1.q[1:,:]) * 3) - 1
+        upper_penalty = jnp.exp( (data1.q[1:] - self.joint_limit[1:,1] * 0.8) * 3) - 1
+        lower_penalty = jnp.exp( (self.joint_limit[1:,0] * 0.8 - data1.q[1:]) * 3) - 1
 
         return (upper_penalty * upper_filt + lower_penalty * lower_filt) * -1
