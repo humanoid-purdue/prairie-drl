@@ -77,6 +77,16 @@ class UnitreeEnvMini(PipelineEnv):
         #constrained reward structure for forward walk:
         #Upright reward, vel target reward, joint limit reward
 
+        #development plan:
+        #1) Controlled velocity Failure
+        #2) periodic reward
+        #3) forced straight line footstep
+        #4) randomized footsteps
+        #5)
+        #Parallel:
+        #PD control
+        #Remove qfrc_actuator
+
         bottom_limit = self.control_range[:, 0]
         top_limit = self.control_range[:, 1]
         scaled_action = ( (action + 1) * (top_limit - bottom_limit) / 2 + bottom_limit )
@@ -85,7 +95,7 @@ class UnitreeEnvMini(PipelineEnv):
         data = self.pipeline_step(data0, scaled_action)
 
 
-        forward_reward = self.velocity_reward(data0, data) * 3.0
+        forward_reward = self.simple_vel_reward(data0, data) * 3.0
 
         upright_reward = self.upright_reward(data) * 1.0
 
@@ -117,14 +127,15 @@ class UnitreeEnvMini(PipelineEnv):
         velocity = (com_after - com_before) / self.dt
         vel_target = jnp.array([0., 0.5])
         vel_err = (velocity[0:2] - vel_target) ** 2
-        vel_err[1] = vel_err[1] * 2
+        vel_err = vel_err * jnp.array([1, 2])
         return jnp.exp(jnp.sum(vel_err) * -10)
 
     def simple_vel_reward(self, data0, data1):
         com_before = data0.subtree_com[1]
         com_after = data1.subtree_com[1]
         velocity = (com_after - com_before) / self.dt
-        return velocity[1]
+        vel_1 = jnp.where(velocity[1] > 0.5, 0.5, velocity[1])
+        return vel_1
 
     def upright_reward(self, data1):
         body_pos = data1.x
