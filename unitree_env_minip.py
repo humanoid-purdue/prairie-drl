@@ -85,7 +85,7 @@ class UnitreeEnvMini(PipelineEnv):
         data = self.pipeline_step(data0, scaled_action)
 
 
-        forward_reward = self.simple_vel_reward(data0, data) * 3.0
+        forward_reward = self.velocity_reward(data0, data) * 3.0
 
         upright_reward = self.upright_reward(data) * 1.0
 
@@ -135,10 +135,12 @@ class UnitreeEnvMini(PipelineEnv):
 
     def joint_limit_reward(self, data1):
         #within soft limit
-        upper_filt = jnp.where(data1.q[1:] < self.joint_limit[1:, 1] * 0.8, 0., 1.)
-        lower_filt = jnp.where(data1.q[1:] > self.joint_limit[1:, 0] * 0.8, 0., 1.)
+        limit = self.joint_limit * 0.95
 
-        upper_penalty = jnp.exp( (data1.q[1:] - self.joint_limit[1:,1] * 0.8) * 3) - 1
-        lower_penalty = jnp.exp( (self.joint_limit[1:,0] * 0.8 - data1.q[1:]) * 3) - 1
+        # calculate the joint angles has larger or smaller than the limit
+        out_of_limit = -jnp.clip(data1.q[7:] - limit[1:, 0], max=0., min=None)
+        out_of_limit += jnp.clip(data1.q[7:] - limit[1:, 1], max=None, min=0.)
 
-        return (upper_penalty * upper_filt + lower_penalty * lower_filt) * -1
+        # calculate the reward
+        reward = jnp.sum(out_of_limit)
+        return reward * -1
