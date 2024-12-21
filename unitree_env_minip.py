@@ -134,7 +134,7 @@ class UnitreeEnvMini(PipelineEnv):
         com_before = data0.subtree_com[1]
         com_after = data1.subtree_com[1]
         velocity = (com_after - com_before) / self.dt
-        vel_1 = jnp.where(velocity[1] > 0.5, 0.5, velocity[1])
+        vel_1 = jnp.where(velocity[0] > 0.5, 0.5, velocity[0])
         return vel_1
 
     def upright_reward(self, data1):
