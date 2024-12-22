@@ -7,6 +7,9 @@ from mujoco import mjx
 import rewards
 import numpy as np
 
+DS_TIME = 0.2
+SS_TIME = 0.5
+BU_TIME = 0.05
 
 class UnitreeEnvMini(PipelineEnv):
     def __init__(self):
@@ -44,7 +47,7 @@ class UnitreeEnvMini(PipelineEnv):
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
         position = data.qpos
-        l_coeff, r_coeff = rewards.dualCycleCC(0.15, 0.4, 0.04, t)
+        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
         # external_contact_forces are excluded
         return jnp.concatenate([
             position,
@@ -167,7 +170,7 @@ class UnitreeEnvMini(PipelineEnv):
     def periodic_reward(self, info, data1, data0):
         t = info["time"]
 
-        l_coeff, r_coeff = rewards.dualCycleCC(0.15, 0.4, 0.04, t)
+        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
