@@ -27,7 +27,7 @@ import mujoco
 import mujoco.viewer
 from mujoco import mjx
 import dill
-from unitree_env_mini import UnitreeEnvMini
+from unitree_env_hentak import UnitreeEnvMini
 
 envs.register_environment('g1', UnitreeEnvMini)
 env = envs.get_environment('g1')
@@ -41,10 +41,10 @@ pre_model_path = 'walk_policy'
 pre_model = model.load_params(pre_model_path)
 
 train_fn = functools.partial(
-      ppo.train, num_timesteps=200000000,num_evals=10, episode_length = 3000,
-       normalize_observations=True, unroll_length=20, num_minibatches=32,
-      num_updates_per_batch=4, discounting=0.99, learning_rate=3.0e-4,
-      entropy_cost=1e-3, num_envs=1024, batch_size=512,
+      ppo.train, num_timesteps=70000000, num_evals=40, episode_length = 2000,
+       normalize_observations=True, unroll_length=20, num_minibatches=64,
+      num_updates_per_batch=4, discounting=0.97, learning_rate=2.0e-4,
+      entropy_cost=1e-3, num_envs=2048, batch_size=1024,
       network_factory=make_networks_factory)
 
 x_data = []
