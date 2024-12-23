@@ -199,7 +199,7 @@ class UnitreeEnvMini(PipelineEnv):
         grf_reward = l_contact_coeff * l_grf + r_contact_coeff * r_grf
 
 
-        return vel_reward * 10 + grf_reward * 0.5
+        return vel_reward * 1 + grf_reward * 0.1
 
     def crudeGRF(self, data):
         lpos = data.x.pos[self.left_foot_id]
