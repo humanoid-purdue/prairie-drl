@@ -109,7 +109,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         upright_reward = self.upright_reward(data) * 1.0
 
-        jl_reward = self.joint_limit_reward(data) * 1.0
+        jl_reward = self.joint_limit_reward(data) * 5.0
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -182,6 +182,9 @@ class UnitreeEnvMini(PipelineEnv):
         l_grf = jnp.linalg.norm(l_grf)
         r_grf = jnp.linalg.norm(r_grf)
 
+        l_grf = jnp.clip(l_grf, -400, 400)
+        r_grf = jnp.clip(r_grf, -400, 400)
+
         def getVel(d1, d2, id):
             bp1 = d1.x
             bp2 = d2.x
@@ -196,7 +199,7 @@ class UnitreeEnvMini(PipelineEnv):
         grf_reward = l_contact_coeff * l_grf + r_contact_coeff * r_grf
 
 
-        return vel_reward * 10 + grf_reward
+        return vel_reward * 10 + grf_reward * 0.5
 
     def crudeGRF(self, data):
         lpos = data.x.pos[self.left_foot_id]

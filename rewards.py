@@ -107,6 +107,13 @@ def get_contact_forces(s, d):
         forces
     )
 
+def makeFootStepPlan(ds_time, ss_time, t):
+    #determine number of steps forward.
+    #swing right foot first
+    #
+    cycle_no = jnp.floor_divide(t, (ds_time + ss_time) * 2)
+
+
 if __name__ == "__main__":
     v1 = []
     v2 = []
