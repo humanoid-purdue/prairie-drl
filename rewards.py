@@ -112,22 +112,43 @@ def makeFootStepPlan(ds_time, ss_time, t):
     #swing right foot first
     # at each ds to ss transition iterate forward
     #initial_pos:
+    def moduloFootstep(t):
+        count = jnp.floor_divide(t, (2 * (ss_time + ds_time)))
+        return count
+    step_size = 0.2
     l_i = jnp.array([0., 0.117])
     r_i = jnp.array([0., -0.117])
 
     l_i2 = jnp.array([0., 0.11])
-    r_i2 = jnp.array([0., -0.11])
-    cycle_no = jnp.floor_divide(t, (ds_time + ss_time) * 2)
+    r_i2 = jnp.array([-0.1, -0.11])
+
+    right_count = moduloFootstep(t - ds_time) + 1
+    left_count = moduloFootstep(t - ds_time * 2 - ss_time) + 1
+
+    procedural_l_pos = l_i2 + left_count * jnp.array([step_size, 0.])
+    procedural_r_pos = r_i2 + right_count * jnp.array([step_size, 0.])
+
+
+    l_pos = jnp.where(t <= ds_time, l_i, procedural_l_pos)
+    r_pos = jnp.where(t <= ds_time, r_i, procedural_r_pos)
+
+    return l_pos, r_pos
+
 
 
 if __name__ == "__main__":
     v1 = []
     v2 = []
+    v3 = []
+    v4 = []
     for c in range(200):
+        lps, rps = makeFootStepPlan(0.15, 0.4, c / 100)
         rewl, rewr = dualCycleCC(0.15, 0.4, 0.04, c / 100)
         v1 += [rewl]
         v2 += [rewr]
+        v3 += [lps[0]]
+        v4 += [rps[0]]
     import matplotlib.pyplot as plt
-    plt.plot(v1)
-    plt.plot(v2)
+    plt.plot(v3)
+    plt.plot(v4)
     plt.show()
