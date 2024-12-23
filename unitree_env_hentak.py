@@ -111,6 +111,8 @@ class UnitreeEnvMini(PipelineEnv):
 
         jl_reward = self.joint_limit_reward(data) * 5.0
 
+        flatfoot_reward = self.flatfootReward(data) * 5
+
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
@@ -119,7 +121,7 @@ class UnitreeEnvMini(PipelineEnv):
         ctrl_cost = 0.05 * jnp.sum(jnp.square(action))
 
         obs = self._get_obs(data, action, state.info["time"])
-        reward = period_reward + healthy_reward - ctrl_cost + upright_reward + jl_reward
+        reward = period_reward + healthy_reward - ctrl_cost + upright_reward + jl_reward + flatfoot_reward
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -207,6 +209,13 @@ class UnitreeEnvMini(PipelineEnv):
         l_grf = jnp.where(lpos[2] < 0.04, 120, 0)
         r_grf = jnp.where(rpos[2] < 0.04, 120, 0)
         return l_grf, r_grf
+
+    def flatfootReward(self, data):
+        vec_tar = jnp.array([0.0, 0.0, 1.0])
+        vec_l = math.rotate(vec_tar, data.x.rot[self.left_foot_id])
+        vec_r = math.rotate(vec_tar, data.x.rot[self.right_foot_id])
+        rew = vec_l[2] + vec_r[2]
+        return rew
 
 
     def determineGRF(self, data):
