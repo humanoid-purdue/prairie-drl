@@ -181,9 +181,14 @@ class UnitreeEnvMini(PipelineEnv):
         return reward * -1
 
     def footstep_reward(self, info, data):
-        def pos2Rew(pos1, pos2):
-            delta = jnp.linalg.norm(pos1 - pos2)
-            return jnp.exp(-20 * delta)
+        tolerance = 0.1
+        k = 0.8
+        def pos2Rew(foot_pos, target_pos, pelvis_pos):
+            delta_foot = jnp.linalg.norm(foot_pos, target_pos)
+            delta_pelvis = jnp.linalg.norm(pelvis_pos, target_pos)
+            r_step = k * jnp.exp(-4 * delta_foot) + ( 1 - k ) * jnp.exp(-0.5 * delta_pelvis)
+            return jnp.where(delta_foot < tolerance, r_step, 0)
+        #determine which of the footsteps is more forward, only get reward from said footstep
         t = info["time"]
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
         check_coeff = l_coeff * r_coeff
@@ -191,10 +196,14 @@ class UnitreeEnvMini(PipelineEnv):
         l_xy = data.x.pos[self.left_foot_id][0:2]
         r_xy = data.x.pos[self.right_foot_id][0:2]
 
-        l_rew = pos2Rew(l_xy, l_pos)
-        r_rew = pos2Rew(r_xy, r_pos)
+        pelvis_loc = data.x.pos[self.pelvis_id][0:2]
 
-        rew = ( l_rew + r_rew ) * check_coeff
+        l_rew = pos2Rew(l_xy, l_pos, pelvis_loc)
+        r_rew = pos2Rew(r_xy, r_pos, pelvis_loc)
+
+        rew = jnp.where(l_pos[0] > r_pos[0], l_rew, r_rew)
+
+        rew = rew * check_coeff
         return rew
 
     def periodic_reward(self, info, data1, data0):

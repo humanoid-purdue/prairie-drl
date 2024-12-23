@@ -66,7 +66,9 @@ class UnitreeEnvMini(PipelineEnv):
 
         state_info = {
             "rng": rng,
-            "time": jnp.zeros(1)
+            "time": jnp.zeros(1),
+            "l_quat": [],
+            "r_quat": []
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0}
@@ -112,7 +114,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         jl_reward = self.joint_limit_reward(data) * 5.0
 
-        flatfoot_reward = self.flatfootReward(data) * 5
+        flatfoot_reward = self.flatfootReward(data) * 30
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -130,6 +132,10 @@ class UnitreeEnvMini(PipelineEnv):
             distance=jnp.linalg.norm(com_after),
         )
         state.info["time"] += self.dt
+        l_quat = data.x.rot[self.left_foot_id]
+        r_quat = data.x.rot[self.right_foot_id]
+        state.info["l_quat"] += [l_quat]
+        state.info["r_quat"] += [r_quat]
 
         return state.replace(
             pipeline_state=data, obs=obs, reward=reward, done=done
@@ -194,9 +200,9 @@ class UnitreeEnvMini(PipelineEnv):
             return (bp2.pos[id] - bp1.pos[id]) / self.dt
 
         l_vel = getVel(data0, data1, self.left_foot_id)
-        l_vel = jnp.clip(jnp.linalg.norm(l_vel), 0, 0.4)
+        #l_vel = jnp.clip(jnp.linalg.norm(l_vel), 0, 0.4)
         r_vel = getVel(data0, data1, self.right_foot_id)
-        r_vel = jnp.clip(jnp.linalg.norm(r_vel), 0, 0.4)
+        #r_vel = jnp.clip(jnp.linalg.norm(r_vel), 0, 0.4)
 
         vel_reward = l_vel_coeff * l_vel + r_vel_coeff * r_vel
         grf_reward = l_contact_coeff * l_grf + r_contact_coeff * r_grf
