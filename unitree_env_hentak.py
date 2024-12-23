@@ -6,6 +6,7 @@ import mujoco
 from mujoco import mjx
 import rewards
 import numpy as np
+from brax import math
 
 
 DS_TIME = 0.2
