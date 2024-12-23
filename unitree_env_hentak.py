@@ -67,6 +67,10 @@ class UnitreeEnvMini(PipelineEnv):
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
+            "l_force": jnp.zeros([1000, 6]),
+            "r_force": jnp.zeros([1000, 6]),
+            "l_orien": jnp.zeros([1000, 3]),
+            "r_orien": jnp.zeros([1000, 3])
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0}
@@ -106,13 +110,15 @@ class UnitreeEnvMini(PipelineEnv):
         data = self.pipeline_step(data0, scaled_action)
 
         #forward_reward = self.simple_vel_reward(data0, data) * 3.0
-        period_reward = self.periodic_reward(state.info, data, data0)[0] * 0.3
+        period_reward, l_grf, r_grf = self.periodic_reward(state.info, data, data0)
+        period_reward = period_reward[0] * 0.3
 
         upright_reward = self.upright_reward(data) * 1.0
 
         jl_reward = self.joint_limit_reward(data) * 5.0
 
-        flatfoot_reward = self.flatfootReward(data) * 30
+        flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
+        flatfoot_reward = flatfoot_reward * 10
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -131,6 +137,15 @@ class UnitreeEnvMini(PipelineEnv):
         )
         state.info["time"] += self.dt
 
+        l_force = jnp.concatenate([l_grf[None, :], state.info["l_force"][0:-1, :]], axis = 0)
+        r_force = jnp.concatenate([r_grf[None, :], state.info["r_force"][0:-1, :]], axis= 0)
+        state.info["l_force"] = l_force
+        state.info["r_force"] = r_force
+
+        l_orien = jnp.concatenate([l_vec[None, :], state.info["l_orien"][0:-1, :]], axis = 0)
+        r_orien = jnp.concatenate([r_vec[None, :], state.info["r_orien"][0:-1, :]], axis = 0)
+        state.info["l_orien"] = l_orien
+        state.info["r_orien"] = r_orien
         return state.replace(
             pipeline_state=data, obs=obs, reward=reward, done=done
         )
@@ -160,7 +175,7 @@ class UnitreeEnvMini(PipelineEnv):
 
     def joint_limit_reward(self, data1):
         #within soft limit
-        limit = self.joint_limit * 0.95
+        limit = self.joint_limit * 0.90
 
         # calculate the joint angles has larger or smaller than the limit
         out_of_limit = -jnp.clip(data1.q[7:] - limit[1:, 0], max=0., min=None)
@@ -182,11 +197,11 @@ class UnitreeEnvMini(PipelineEnv):
         r_vel_coeff = 1 - r_coeff
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_grf = jnp.linalg.norm(l_grf)
-        r_grf = jnp.linalg.norm(r_grf)
+        l_nf = jnp.linalg.norm(l_grf[0:3])
+        r_nf = jnp.linalg.norm(r_grf[0:3])
 
-        l_grf = jnp.clip(l_grf, -400, 400)
-        r_grf = jnp.clip(r_grf, -400, 400)
+        l_nf = jnp.clip(l_nf, -400, 400)
+        r_nf = jnp.clip(r_nf, -400, 400)
 
         def getVel(d1, d2, id):
             bp1 = d1.x
@@ -199,10 +214,10 @@ class UnitreeEnvMini(PipelineEnv):
         #r_vel = jnp.clip(jnp.linalg.norm(r_vel), 0, 0.4)
 
         vel_reward = l_vel_coeff * l_vel + r_vel_coeff * r_vel
-        grf_reward = l_contact_coeff * l_grf + r_contact_coeff * r_grf
+        grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 1 + grf_reward * 0.1
+        return vel_reward * 1 + grf_reward * 0.1, l_grf, r_grf
 
     def crudeGRF(self, data):
         lpos = data.x.pos[self.left_foot_id]
@@ -216,7 +231,7 @@ class UnitreeEnvMini(PipelineEnv):
         vec_l = math.rotate(vec_tar, data.x.rot[self.left_foot_id])
         vec_r = math.rotate(vec_tar, data.x.rot[self.right_foot_id])
         rew = vec_l[2] + vec_r[2]
-        return rew
+        return rew, vec_l, vec_r
 
 
     def determineGRF(self, data):
