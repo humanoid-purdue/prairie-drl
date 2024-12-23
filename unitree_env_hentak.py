@@ -81,7 +81,9 @@ class UnitreeEnvMini(PipelineEnv):
             "r_orien": jnp.zeros([1000, 3])
         }
         metrics = {'distance': 0.0,
-                   'reward': 0.0}
+                   'reward': 0.0,
+                   'flatfoot_reward': 0.0,
+                   'periodic_reward': 0.0}
 
         obs = self._get_obs(pipeline_state, jnp.zeros(self.nu), t = 0)
         reward, done, zero = jnp.zeros(3)
@@ -121,12 +123,12 @@ class UnitreeEnvMini(PipelineEnv):
         period_reward, l_grf, r_grf = self.periodic_reward(state.info, data, data0)
         period_reward = period_reward[0] * 0.3
 
-        upright_reward = self.upright_reward(data) * 10.0
+        upright_reward = self.upright_reward(data) * 5.0
 
         jl_reward = self.joint_limit_reward(data) * 5.0
 
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 15.0
+        flatfoot_reward = flatfoot_reward * 5.0
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -179,7 +181,7 @@ class UnitreeEnvMini(PipelineEnv):
         pelvis_xy = body_pos.pos[self.pelvis_id][0:2]
         head_xy = body_pos.pos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
-        return jnp.exp(xy_err * -10)
+        return jnp.exp(xy_err * -30)
 
     def joint_limit_reward(self, data1):
         #within soft limit
@@ -237,7 +239,7 @@ class UnitreeEnvMini(PipelineEnv):
     def flatfootReward(self, data):
         def sites2Rew(p1, p2):
             delta = jnp.abs(p1[2] - p2[2])
-            return jnp.exp( -1 * delta / 0.03)
+            return jnp.exp( -1 * delta / 0.01)
         vec_tar = jnp.array([0.0, 0.0, 1.0])
         vec_l = math.rotate(vec_tar, data.x.rot[self.left_foot_id])
         vec_r = math.rotate(vec_tar, data.x.rot[self.right_foot_id])
