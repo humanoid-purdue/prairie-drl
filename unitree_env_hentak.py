@@ -207,8 +207,9 @@ class UnitreeEnvMini(PipelineEnv):
         r_vel_coeff = 1 - r_coeff
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_nf = jnp.linalg.norm(l_grf[0:3])
-        r_nf = jnp.linalg.norm(r_grf[0:3])
+        #l_nf = jnp.linalg.norm(l_grf[0:3])
+        #r_nf = jnp.linalg.norm(r_grf[0:3])
+        l_nf, r_nf = self.crudeGRF(data1)
 
         l_nf = jnp.clip(l_nf, -400, 400)
         r_nf = jnp.clip(r_nf, -400, 400)
