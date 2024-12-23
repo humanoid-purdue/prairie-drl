@@ -47,6 +47,10 @@ jit_inference_fn = jax.jit(inference_fn)
 # grab a trajectory
 n_steps = 600
 ss=[]
+l_force = None
+r_force = None
+l_orien = None
+r_orien = None
 for i in range(n_steps):
     # if i == 750:
     #     command = jp.array([0.6,0.0])
@@ -56,3 +60,11 @@ for i in range(n_steps):
     state = jit_step(state, ctrl)
     ss.append(state)
     rollout.append(state.pipeline_state)
+    l_force = state.info["l_force"]
+    r_force = state.info["r_force"]
+    l_orien = state.info["l_orien"]
+    r_orien = state.info["r_orien"]
+import numpy as np
+v1 = {"l_force": np.array(l_force), "r_force": np.array(r_force),
+      "l_orien": np.array(l_orien), "r_orien": np.array(r_orien)}
+np.savez("dump.npz", **v1)

@@ -44,6 +44,14 @@ class UnitreeEnvMini(PipelineEnv):
         self.left_foot_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'left_ankle_roll_link')
         self.right_foot_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'right_ankle_roll_link')
 
+        self.left_foot_s1 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "left_foot_p1")
+        self.left_foot_s2 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "left_foot_p2")
+
+        self.right_foot_s1 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p1")
+        self.right_foot_s2 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p2")
+
+
+
     def _get_obs(
             self, data: mjx.Data, prev_action: jnp.ndarray, t = 0
     ) -> jnp.ndarray:
@@ -118,7 +126,7 @@ class UnitreeEnvMini(PipelineEnv):
         jl_reward = self.joint_limit_reward(data) * 5.0
 
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 10
+        flatfoot_reward = flatfoot_reward * 3.0
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -227,10 +235,21 @@ class UnitreeEnvMini(PipelineEnv):
         return l_grf, r_grf
 
     def flatfootReward(self, data):
+        def sites2Rew(p1, p2):
+            delta = jnp.abs(p1[2] - p2[2])
+            return jnp.exp( -1 * delta / 0.03)
         vec_tar = jnp.array([0.0, 0.0, 1.0])
         vec_l = math.rotate(vec_tar, data.x.rot[self.left_foot_id])
         vec_r = math.rotate(vec_tar, data.x.rot[self.right_foot_id])
-        rew = vec_l[2] + vec_r[2]
+
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+
+        rew = sites2Rew(lp1, lp2) + sites2Rew(rp1, rp2)
+
         return rew, vec_l, vec_r
 
 
