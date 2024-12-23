@@ -7,6 +7,7 @@ from mujoco import mjx
 import rewards
 import numpy as np
 
+
 DS_TIME = 0.2
 SS_TIME = 0.5
 BU_TIME = 0.05
@@ -103,7 +104,6 @@ class UnitreeEnvMini(PipelineEnv):
         data0 = state.pipeline_state
         data = self.pipeline_step(data0, scaled_action)
 
-
         #forward_reward = self.simple_vel_reward(data0, data) * 3.0
         period_reward = self.periodic_reward(state.info, data, data0)[0] * 0.3
 
@@ -178,7 +178,9 @@ class UnitreeEnvMini(PipelineEnv):
         l_vel_coeff = 1 - l_coeff
         r_vel_coeff = 1 - r_coeff
 
-        l_grf, r_grf = self.crudeGRF(data1)
+        l_grf, r_grf = self.determineGRF(data1)
+        l_grf = jnp.linalg.norm(l_grf)
+        r_grf = jnp.linalg.norm(r_grf)
 
         def getVel(d1, d2, id):
             bp1 = d1.x
@@ -205,18 +207,8 @@ class UnitreeEnvMini(PipelineEnv):
 
 
     def determineGRF(self, data):
-        contacts = [data.contact[i] for i in range(data.ncon)]
-        rfoot_grf = jnp.zeros(0)
-        lfoot_grf = jnp.zeros(0)
-        for i, c in enumerate(contacts):
-            geom1_body = self.model.body(self.model.geom_bodyid[c.geom1])
-            geom1_is_floor = (self.model.body(geom1_body.rootid).name != 'pelvis')
-            geom2_is_lfoot = (self.model.geom_bodyid[c.geom2] == self.left_foot_id)
-            geom2_is_rfoot = (self.model.geom_bodyid[c.geom2] == self.right_foot_id)
-            c_array = np.zeros(6, dtype=np.float64)
-            mujoco.mj_contactForce(self.model, data, i, c_array)
-            frc = np.linalg.norm(c_array)
-            rfoot_grf += frc * geom1_is_floor * geom2_is_rfoot
-            lfoot_grf += frc * geom1_is_floor * geom2_is_lfoot
+
+        forces = rewards.get_contact_forces(self.model, data)
+        lfoot_grf, rfoot_grf = rewards.get_feet_forces(self.model, data, forces)
 
         return lfoot_grf, rfoot_grf
