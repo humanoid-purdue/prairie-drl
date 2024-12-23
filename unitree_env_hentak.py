@@ -121,12 +121,12 @@ class UnitreeEnvMini(PipelineEnv):
         period_reward, l_grf, r_grf = self.periodic_reward(state.info, data, data0)
         period_reward = period_reward[0] * 0.3
 
-        upright_reward = self.upright_reward(data) * 1.0
+        upright_reward = self.upright_reward(data) * 10.0
 
         jl_reward = self.joint_limit_reward(data) * 5.0
 
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 3.0
+        flatfoot_reward = flatfoot_reward * 15.0
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
