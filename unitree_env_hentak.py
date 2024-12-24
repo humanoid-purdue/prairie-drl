@@ -207,9 +207,10 @@ class UnitreeEnvMini(PipelineEnv):
         r_vel_coeff = 1 - r_coeff
 
         l_grf, r_grf = self.determineGRF(data1)
-        #l_nf = jnp.linalg.norm(l_grf[0:3])
-        #r_nf = jnp.linalg.norm(r_grf[0:3])
-        l_nf, r_nf = self.crudeGRF(data1)
+        l_nf1, r_nf1 = self.crudeGRF(data1)
+        l_nf = jnp.linalg.norm(l_grf[0:3]) + l_nf1
+        r_nf = jnp.linalg.norm(r_grf[0:3]) + r_nf1
+
 
         l_nf = jnp.clip(l_nf, -400, 400)
         r_nf = jnp.clip(r_nf, -400, 400)
@@ -228,7 +229,7 @@ class UnitreeEnvMini(PipelineEnv):
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 1 + grf_reward * 0.1, l_grf, r_grf
+        return vel_reward * 1 + grf_reward * 0.05, l_grf, r_grf
 
     def crudeGRF(self, data):
         lp1 = data.site_xpos[self.left_foot_s1]
