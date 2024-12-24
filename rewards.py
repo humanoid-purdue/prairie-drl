@@ -60,6 +60,28 @@ def get_feet_forces(m, dx, forces):
 
   return total_left_forces, total_right_forces
 
+def linkPlan(ds_time, ss_time, t):
+    step_height = 0.2
+
+    init_l = jnp.array([ 8.06828946e-07, 1.17871300e-01, 0.0])
+    init_r = jnp.array([ 8.06828946e-07, -1.17871300e-01, 0.0])
+    init_c = jnp.array([0., 0., 0.75])
+
+    def dsCycle(t):
+        tmod = jnp.mod(t, 2 * (ss_time + ds_time))
+        tprop = tmod / ss_time
+        v1 = 4 * step_height * (tprop) * (1 - tprop)
+        return jnp.where(tmod < ss_time, v1, 0)
+
+    left_z = dsCycle( t - ds_time)
+    right_z = dsCycle( t - (ds_time * 2 + ss_time))
+
+    l_pos = init_l + jnp.array([0, 0, left_z[0]])
+    r_pos = init_r + jnp.array([0, 0, right_z[0]])
+
+    c_pos = jnp.array([0., 0., 0.55])
+    return l_pos, r_pos, c_pos
+
 def get_contact_forces(s, d):
     assert (s.opt.cone == mujoco.mjtCone.mjCONE_PYRAMIDAL)  # Assert cone is PYRAMIDAL
 
@@ -153,10 +175,9 @@ if __name__ == "__main__":
     for c in range(200):
         lps, rps = makeFootStepPlan(0.15, 0.4, c / 100)
         rewl, rewr = dualCycleCC(0.15, 0.4, 0.04, c / 100)
-        v1 += [rewl]
-        v2 += [rewr]
-        v3 += [lps[0]]
-        v4 += [rps[0]]
+        lps, rps, cps = linkPlan(0.15, 0.4, c / 100)
+        v3 += [lps[2]]
+        v4 += [rps[2]]
     import matplotlib.pyplot as plt
     plt.plot(v3)
     plt.plot(v4)
