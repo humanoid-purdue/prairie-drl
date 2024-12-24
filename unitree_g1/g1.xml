@@ -101,13 +101,13 @@
                 <joint name="left_ankle_pitch_joint" axis="0 1 0" range="-0.68 0.73"/>
                 <geom type="mesh" class="visual" mesh="left_ankle_pitch_link"/>
                 <body name="left_ankle_roll_link" pos="0 0 -0.017558">
-                  <site name="left_foot_p1" pos="0.05 0.03 0"/>
-                  <site name="left_foot_p2" pos="-0.05 -0.03 0"/>
+                  <site name="left_foot_p1" pos="0.05 0.03 -0.034"/>
+                  <site name="left_foot_p2" pos="-0.05 -0.03 -0.034"/>
                   <inertial pos="0.024762 2e-05 -0.012526" quat="0.000771333 0.734476 0.000921291 0.678634" mass="0.391"
                     diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="left_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="left_ankle_roll_link"/>
-                  <geom type="mesh" mesh="left_foot_simple" class="collision" name="left_foot"/>
+                  <geom type="mesh" mesh="left_foot_simple" class="collision" name="left_foot" rgba="0 0 0 0"/>
                   <geom pos="-0.06 0.02 -0.03" class="foot"/>
                   <geom pos="-0.06 -0.02 -0.03" class="foot"/>
                   <geom pos="0.13 0.02 -0.03" class="foot"/>
@@ -144,13 +144,13 @@
                 <joint name="right_ankle_pitch_joint" axis="0 1 0" range="-0.68 0.73"/>
                 <geom type="mesh" class="visual" mesh="right_ankle_pitch_link"/>
                 <body name="right_ankle_roll_link" pos="0 0 -0.017558">
-                  <site name="right_foot_p1" pos="0.05 -0.03 0"/>
-                  <site name="right_foot_p2" pos="-0.05 0.03 0"/>
+                  <site name="right_foot_p1" pos="0.05 -0.03 -0.034"/>
+                  <site name="right_foot_p2" pos="-0.05 0.03 -0.034"/>
                   <inertial pos="0.024762 -2e-05 -0.012526" quat="-0.000771333 0.734476 -0.000921291 0.678634"
                     mass="0.391" diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="right_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="right_ankle_roll_link"/>
-                  <geom type="mesh" mesh="right_foot_simple" class="collision" name="right_foot"/>
+                  <geom type="mesh" mesh="right_foot_simple" class="collision" name="right_foot" rgba="0 0 0 0"/>
                   <geom pos="-0.06 0.02 -0.03" class="foot"/>
                   <geom pos="-0.06 -0.02 -0.03" class="foot"/>
                   <geom pos="0.13 0.02 -0.03" class="foot"/>

@@ -207,9 +207,9 @@ class UnitreeEnvMini(PipelineEnv):
         r_vel_coeff = 1 - r_coeff
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_nf = jnp.linalg.norm(l_grf[0:3])
-        r_nf = jnp.linalg.norm(r_grf[0:3])
-        #l_nf, r_nf = self.crudeGRF(data1)
+        #l_nf = jnp.linalg.norm(l_grf[0:3])
+        #r_nf = jnp.linalg.norm(r_grf[0:3])
+        l_nf, r_nf = self.crudeGRF(data1)
 
         l_nf = jnp.clip(l_nf, -400, 400)
         r_nf = jnp.clip(r_nf, -400, 400)
@@ -231,11 +231,15 @@ class UnitreeEnvMini(PipelineEnv):
         return vel_reward * 1 + grf_reward * 0.1, l_grf, r_grf
 
     def crudeGRF(self, data):
-        lpos = data.x.pos[self.left_foot_id]
-        rpos = data.x.pos[self.right_foot_id]
-        l_grf = jnp.where(lpos[2] < 0.04, 120, 0)
-        r_grf = jnp.where(rpos[2] < 0.04, 120, 0)
-        return l_grf, r_grf
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+
+        l_grf = jnp.where(lp1[2] < 0.005, 1, 0) * jnp.where(lp2[2] < 0.005, 1, 0)
+        r_grf = jnp.where(rp1[2] < 0.005, 1, 0) * jnp.where(rp2[2] < 0.005, 1, 0)
+        return l_grf * 200, r_grf * 200
 
     def flatfootReward(self, data):
         def sites2Rew(p1, p2):
