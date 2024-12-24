@@ -239,7 +239,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         l_grf = jnp.where(lp1[2] < 0.005, 1, 0) * jnp.where(lp2[2] < 0.005, 1, 0)
         r_grf = jnp.where(rp1[2] < 0.005, 1, 0) * jnp.where(rp2[2] < 0.005, 1, 0)
-        return l_grf * 200, r_grf * 200
+        return l_grf * 400, r_grf * 400
 
     def flatfootReward(self, data):
         def sites2Rew(p1, p2):
