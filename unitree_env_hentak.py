@@ -238,9 +238,9 @@ class UnitreeEnvMini(PipelineEnv):
         rp1 = data.site_xpos[self.right_foot_s1]
         rp2 = data.site_xpos[self.right_foot_s2]
 
-        l_grf = jnp.where(lp1[2] < 0.005, 1, 0) * jnp.where(lp2[2] < 0.005, 1, 0)
-        r_grf = jnp.where(rp1[2] < 0.005, 1, 0) * jnp.where(rp2[2] < 0.005, 1, 0)
-        return l_grf * 400, r_grf * 400
+        l_grf = jnp.where(lp1[2] < 0.01, 1, 0) * jnp.where(lp2[2] < 0.01, 1, 0)
+        r_grf = jnp.where(rp1[2] < 0.01, 1, 0) * jnp.where(rp2[2] < 0.01, 1, 0)
+        return l_grf, r_grf
 
     def flatfootReward(self, data):
         def sites2Rew(p1, p2):
@@ -256,6 +256,8 @@ class UnitreeEnvMini(PipelineEnv):
         rp1 = data.site_xpos[self.right_foot_s1]
         rp2 = data.site_xpos[self.right_foot_s2]
 
+
+
         rew = sites2Rew(lp1, lp2) + sites2Rew(rp1, rp2)
 
         return rew, vec_l, vec_r
@@ -266,4 +268,6 @@ class UnitreeEnvMini(PipelineEnv):
         forces = rewards.get_contact_forces(self.model, data)
         lfoot_grf, rfoot_grf = rewards.get_feet_forces(self.model, data, forces)
 
-        return lfoot_grf, rfoot_grf
+        l_filt, r_filt = self.crudeGRF(data)
+
+        return lfoot_grf * l_filt, rfoot_grf * r_filt
