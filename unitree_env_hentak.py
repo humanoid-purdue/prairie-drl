@@ -270,4 +270,10 @@ class UnitreeEnvMini(PipelineEnv):
 
         l_filt, r_filt = self.crudeGRF(data)
 
-        return lfoot_grf * l_filt, rfoot_grf * r_filt
+        l_filt_grf = l_filt * lfoot_grf
+        r_filt_grf = r_filt * rfoot_grf
+
+        l_grf = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, l_filt_grf, lfoot_grf)
+        r_grf = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, r_filt_grf, rfoot_grf)
+
+        return l_grf, r_grf
