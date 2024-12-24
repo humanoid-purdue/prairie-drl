@@ -40,10 +40,13 @@ def get_feet_forces(m, dx, forces):
   # Find contacts that involve both the floor and the respective foot
   # This assumes dx.contact.geom contains two entries per contact, one for each of the two contacting geometries
   right_bm = jnp.sum(jnp.abs(dx.contact.geom - jnp.array([[floor_id, right_foot_id]])), axis = 1)
-  right_bm = jnp.where(right_bm == 0, 1, 0)
+  right_bm2 = jnp.sum(jnp.abs(dx.contact.geom - jnp.array([[right_foot_id, floor_id]])), axis=1)
+  right_bm = jnp.where(right_bm == 0 or right_bm2 == 0, 1, 0)
+
 
   left_bm = jnp.sum(jnp.abs(dx.contact.geom - jnp.array([[floor_id, left_foot_id]])), axis=1)
-  left_bm = jnp.where(left_bm == 0, 1, 0)
+  left_bm2 = jnp.sum(jnp.abs(dx.contact.geom - jnp.array([[left_foot_id, floor_id]])), axis=1)
+  left_bm = jnp.where(left_bm == 0 or left_bm2 == 0, 1, 0)
 
   # Sum forces for the identified contacts
   total_right_forces = jnp.sum(forces * right_bm[:, None], axis=0)
