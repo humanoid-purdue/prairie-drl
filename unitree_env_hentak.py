@@ -40,7 +40,8 @@ class UnitreeEnvMini(PipelineEnv):
 
 
         self.pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
-        self.head_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'head_link')
+        self.head_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE.value, 'head')
+
         self.left_foot_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'left_ankle_roll_link')
         self.right_foot_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'right_ankle_roll_link')
 
@@ -179,7 +180,7 @@ class UnitreeEnvMini(PipelineEnv):
     def upright_reward(self, data1):
         body_pos = data1.x
         pelvis_xy = body_pos.pos[self.pelvis_id][0:2]
-        head_xy = body_pos.pos[self.head_id][0:2]
+        head_xy = data1.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
         return jnp.exp(xy_err * -30)
 
@@ -276,4 +277,4 @@ class UnitreeEnvMini(PipelineEnv):
         l_grf = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, l_filt_grf, lfoot_grf)
         r_grf = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, r_filt_grf, rfoot_grf)
 
-        return l_grf, r_grf
+        return lfoot_grf, rfoot_grf
