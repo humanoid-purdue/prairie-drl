@@ -27,7 +27,7 @@ import mujoco
 import mujoco.viewer
 from mujoco import mjx
 import dill
-from unitree_env_footforcing import UnitreeEnvMini
+from unitree_env_forward_walk import UnitreeEnvMini
 
 envs.register_environment('g1', UnitreeEnvMini)
 env = envs.get_environment('g1')

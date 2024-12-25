@@ -131,7 +131,9 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
 
-        simple_vel_reward = self.simple_vel_reward(data0, data) * 10.0
+        simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
+        simple_vel_reward = simple_vel_reward * 10
+        side_rew = side_rew * 2
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -141,7 +143,7 @@ class UnitreeEnvMini(PipelineEnv):
         ctrl_cost = 0.05 * jnp.sum(jnp.square(action))
 
         obs = self._get_obs(data, action, state.info["time"])
-        reward = period_reward + healthy_reward - ctrl_cost + upright_reward + jl_reward + flatfoot_reward + simple_vel_reward
+        reward = period_reward + healthy_reward - ctrl_cost + upright_reward + jl_reward + flatfoot_reward + simple_vel_reward + side_rew
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -172,12 +174,15 @@ class UnitreeEnvMini(PipelineEnv):
         vel_err = vel_err * jnp.array([1, 2])
         return jnp.exp(jnp.sum(vel_err) * -10)
 
+
     def simple_vel_reward(self, data0, data1):
         com_before = data0.subtree_com[1]
         com_after = data1.subtree_com[1]
         velocity = (com_after - com_before) / self.dt
-        vel_1 = jnp.where(velocity[0] > 0.3, 0.3, velocity[0])
-        return vel_1
+        vel_1 = jnp.where(velocity[0] > 0.6, 0.6, velocity[0])
+        side_rew = jnp.exp(-10 * jnp.abs(velocity[1]))
+
+        return vel_1, side_rew
 
     def upright_reward(self, data1):
         body_pos = data1.x
