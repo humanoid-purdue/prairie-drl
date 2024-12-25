@@ -77,12 +77,14 @@ class UnitreeEnvMini(PipelineEnv):
             "time": jnp.zeros(1),
             "track_reward": jnp.zeros(1),
             "pelvis_loc": jnp.zeros([3]),
-            "head_loc": jnp.zeros([3])
+            "head_loc": jnp.zeros([3]),
+            "contact_id": jnp.zeros([32, 2])
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0,
                    'flatfoot_reward': 0.0,
-                   'periodic_reward': 0.0}
+                   'periodic_reward': 0.0,
+                   }
 
         obs = self._get_obs(pipeline_state, jnp.zeros(self.nu), t = 0)
         reward, done, zero = jnp.zeros(3)
@@ -150,6 +152,10 @@ class UnitreeEnvMini(PipelineEnv):
         state.info["time"] += self.dt
         state.info["pelvis_loc"] = pelvis_xyz
         state.info["head_loc"] = head_xyz
+
+        geom_mat = data.contact.geom
+        geom_mat = jnp.concatenate([geom_mat, jnp.zeros([32 - geom_mat.shape[0], 2])], axis = 0)
+        state.info["contact_id"] = geom_mat
 
         return state.replace(
             pipeline_state=data, obs=obs, reward=reward, done=done

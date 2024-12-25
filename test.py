@@ -64,8 +64,10 @@ for i in range(n_steps):
     rew_track = state.info["track_reward"]
     head_pos = state.info["head_loc"]
     pelvis_pos = state.info["pelvis_loc"]
+    cid = state.info["contact_id"]
 
-    print(t, rew_track, head_pos, pelvis_pos)
+    print(cid)
+
 
 #import numpy as np
 #v1 = {"l_force": np.array(l_force), "r_force": np.array(r_force),
