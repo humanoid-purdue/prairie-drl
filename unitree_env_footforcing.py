@@ -40,7 +40,7 @@ class UnitreeEnvMini(PipelineEnv):
 
 
         self.pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
-        self.head_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'head_link')
+        self.head_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE.value, 'head')
         self.left_foot_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'left_ankle_roll_link')
         self.right_foot_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'right_ankle_roll_link')
 
@@ -75,6 +75,9 @@ class UnitreeEnvMini(PipelineEnv):
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
+            "track_reward": jnp.zeros(1),
+            "pelvis_loc": jnp.zeros([3]),
+            "head_loc": jnp.zeros([3])
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0,
@@ -141,7 +144,12 @@ class UnitreeEnvMini(PipelineEnv):
             reward=reward,
             distance=jnp.linalg.norm(com_after),
         )
+        pelvis_xyz = data.x.pos[self.pelvis_id]
+        head_xyz = data.x.pos[self.head_id]
+        state.info["track_reward"] += force_reward
         state.info["time"] += self.dt
+        state.info["pelvis_loc"] = pelvis_xyz
+        state.info["head_loc"] = head_xyz
 
         return state.replace(
             pipeline_state=data, obs=obs, reward=reward, done=done
@@ -166,7 +174,7 @@ class UnitreeEnvMini(PipelineEnv):
     def upright_reward(self, data1):
         body_pos = data1.x
         pelvis_xy = body_pos.pos[self.pelvis_id][0:2]
-        head_xy = body_pos.pos[self.head_id][0:2]
+        head_xy = data1.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
         return jnp.exp(xy_err * -30)
 
@@ -226,4 +234,4 @@ class UnitreeEnvMini(PipelineEnv):
         r_rew = pos2Rew(rpos, r_tar, 0.1)
         c_rew = pos2Rew(cpos, c_tar, 0.2)
 
-        return l_rew * 2 + r_rew * 2 + c_rew
+        return l_rew * 2 + r_rew * 2

@@ -3,7 +3,7 @@ import jax
 from brax import envs
 from brax.io import html, mjcf, model
 
-from unitree_env_hentak import UnitreeEnvMini
+from unitree_env_footforcing import UnitreeEnvMini
 
 
 envs.register_environment('g1', UnitreeEnvMini)
@@ -60,11 +60,14 @@ for i in range(n_steps):
     state = jit_step(state, ctrl)
     ss.append(state)
     rollout.append(state.pipeline_state)
-    l_force = state.info["l_force"]
-    r_force = state.info["r_force"]
-    l_orien = state.info["l_orien"]
-    r_orien = state.info["r_orien"]
-import numpy as np
-v1 = {"l_force": np.array(l_force), "r_force": np.array(r_force),
-      "l_orien": np.array(l_orien), "r_orien": np.array(r_orien)}
-np.savez("dump.npz", **v1)
+    t = state.info["time"]
+    rew_track = state.info["track_reward"]
+    head_pos = state.info["head_loc"]
+    pelvis_pos = state.info["pelvis_loc"]
+
+    print(t, rew_track, head_pos, pelvis_pos)
+
+#import numpy as np
+#v1 = {"l_force": np.array(l_force), "r_force": np.array(r_force),
+#      "l_orien": np.array(l_orien), "r_orien": np.array(r_orien)}
+#np.savez("dump.npz", **v1)
