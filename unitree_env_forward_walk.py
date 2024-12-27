@@ -71,7 +71,7 @@ class UnitreeEnvMini(PipelineEnv):
             data.cinert[1:].ravel(),
             data.cvel[1:].ravel(),
             data.qfrc_actuator,
-            prev_action, l_coeff, r_coeff, l_vec, r_vec
+            prev_action, l_coeff, r_coeff
         ])
 
     def reset(self, rng: jax.Array) -> State:
@@ -136,10 +136,10 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
 
-        footstep_reward = self.footstepReward(state.info, data)[0] * 7.0
+        footstep_reward = self.footstepReward(state.info, data)[0] * 5.0
 
         simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
-        simple_vel_reward = simple_vel_reward * 3
+        simple_vel_reward = simple_vel_reward * 2
         side_rew = side_rew * 1
 
         min_z, max_z = (0.4, 0.8)
