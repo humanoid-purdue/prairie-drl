@@ -62,6 +62,8 @@ class UnitreeEnvMini(PipelineEnv):
         """Observes humanoid body position, velocities, and angles."""
         position = data.qpos
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+        l_vec, r_vec, _, _ = self.fsp.getStepInfo(t)
+
         # external_contact_forces are excluded
         return jnp.concatenate([
             position,
@@ -69,7 +71,7 @@ class UnitreeEnvMini(PipelineEnv):
             data.cinert[1:].ravel(),
             data.cvel[1:].ravel(),
             data.qfrc_actuator,
-            prev_action, l_coeff, r_coeff
+            prev_action, l_coeff, r_coeff, l_vec, r_vec
         ])
 
     def reset(self, rng: jax.Array) -> State:
