@@ -318,6 +318,6 @@ class UnitreeEnvMini(PipelineEnv):
         delta_pelvis = jnp.linalg.norm(pelvis_pos - forward_pos)
         pel_rew = jnp.exp(-0.5 * delta_pelvis)
 
-        rew = l_rew * l_coeff + r_rew * r_coeff + pel_rew * 0.3
+        rew = l_rew * l_coeff + r_rew * r_coeff # + pel_rew * 0.3
 
         return rew

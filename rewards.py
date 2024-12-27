@@ -217,5 +217,5 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     plt.plot(l_x)
-    plt.plot(l_y)
+    #plt.plot(l_y)
     plt.show()
