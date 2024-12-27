@@ -4,6 +4,7 @@ from jax import numpy as jnp
 from brax.io import mjcf
 import mujoco
 from mujoco import mjx
+
 import rewards
 import numpy as np
 from brax import math
@@ -37,6 +38,8 @@ class UnitreeEnvMini(PipelineEnv):
         self.nu = system.nu
         self.control_range = system.actuator_ctrlrange
         self.joint_limit = jnp.array(model.jnt_range)
+
+        self.fsp = rewards.FootstepPlan(DS_TIME, SS_TIME, BU_TIME)
 
 
         self.pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
@@ -131,9 +134,11 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
 
+        footstep_reward = self.footstepReward(state.info, data)[0] * 7.0
+
         simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
-        simple_vel_reward = simple_vel_reward * 10
-        side_rew = side_rew * 2
+        simple_vel_reward = simple_vel_reward * 3
+        side_rew = side_rew * 1
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -143,7 +148,7 @@ class UnitreeEnvMini(PipelineEnv):
         ctrl_cost = 0.05 * jnp.sum(jnp.square(action))
 
         obs = self._get_obs(data, action, state.info["time"])
-        reward = period_reward + healthy_reward - ctrl_cost + upright_reward + jl_reward + flatfoot_reward + simple_vel_reward + side_rew
+        reward = period_reward + healthy_reward - ctrl_cost + footstep_reward + upright_reward + jl_reward + flatfoot_reward + simple_vel_reward + side_rew
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -179,7 +184,7 @@ class UnitreeEnvMini(PipelineEnv):
         com_before = data0.subtree_com[1]
         com_after = data1.subtree_com[1]
         velocity = (com_after - com_before) / self.dt
-        vel_1 = jnp.where(velocity[0] > 0.45, 0.45, velocity[0])
+        vel_1 = jnp.where(velocity[0] > 0.3, 0.3, velocity[0])
         side_rew = jnp.exp(-10 * jnp.abs(velocity[1]))
 
         return vel_1, side_rew
@@ -285,3 +290,40 @@ class UnitreeEnvMini(PipelineEnv):
         r_grf = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, r_filt_grf, rfoot_grf)
 
         return lfoot_grf, rfoot_grf
+
+    def footstepReward(self, info, data):
+        tolerance = 0.1
+        k = 0.8
+
+        def pos2Rew(p1, p2, target_pos, target_orien):
+            foot_orien = (p1 - p2)
+            foot_orien = foot_orien / jnp.linalg.norm(foot_orien)
+            orien_rew = jnp.sum(foot_orien * target_orien)
+            foot_pos = (p1 + p2) * 0.5
+            delta_foot = jnp.linalg.norm(foot_pos - target_pos)
+            r_step = jnp.exp(-4 * delta_foot)
+            r_step = r_step + 0.2 * orien_rew
+            return jnp.where(delta_foot < tolerance, r_step, 0)
+
+        t = info["time"]
+        lvec, rvec, l_coeff, r_coeff = self.fsp.getStepInfo(t)
+
+        lf1 = data.site_xpos[self.left_foot_s1][0:2]
+        lf2 = data.site_xpos[self.left_foot_s2][0:2]
+
+        rf1 = data.site_xpos[self.right_foot_s1][0:2]
+        rf2 = data.site_xpos[self.right_foot_s2][0:2]
+
+        pelvis_pos = data.x.pos[self.pelvis_id][0:2]
+
+        l_rew = pos2Rew(lf1, lf2, lvec[0:2], lvec[2:4])
+        r_rew = pos2Rew(rf1, rf2, rvec[0:2], rvec[2:4])
+
+        forward_x = jnp.fmax(lvec[0], rvec[0])
+        forward_pos = jnp.array([forward_x, 0.0])
+        delta_pelvis = jnp.linalg.norm(pelvis_pos - forward_pos)
+        pel_rew = jnp.exp(-0.5 * delta_pelvis)
+
+        rew = l_rew * l_coeff + r_rew * r_coeff + pel_rew * 0.3
+
+        return rew

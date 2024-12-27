@@ -40,23 +40,25 @@ class UnitreeEnvMini(PipelineEnv):
 
 
         self.pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
-        self.head_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'head_link')
+        self.head_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE.value, 'head')
+
         self.left_foot_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'left_ankle_roll_link')
         self.right_foot_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'right_ankle_roll_link')
+
+        self.left_foot_s1 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "left_foot_p1")
+        self.left_foot_s2 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "left_foot_p2")
+
+        self.right_foot_s1 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p1")
+        self.right_foot_s2 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p2")
+
+
 
     def _get_obs(
             self, data: mjx.Data, prev_action: jnp.ndarray, t = 0
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
-        #get the footstep plan for the next 10 time steps / 3s
-        pos_vecs = jnp.zeros([0])
-        for c in range(10):
-            l_pos, r_pos = rewards.makeFootStepPlan(DS_TIME, SS_TIME, t + c * 0.3)
-            pos_vecs = jnp.concatenate([pos_vecs, l_pos, r_pos])
-
         position = data.qpos
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
-
         # external_contact_forces are excluded
         return jnp.concatenate([
             position,
@@ -64,7 +66,7 @@ class UnitreeEnvMini(PipelineEnv):
             data.cinert[1:].ravel(),
             data.cvel[1:].ravel(),
             data.qfrc_actuator,
-            prev_action, l_coeff, r_coeff, pos_vecs
+            prev_action, l_coeff, r_coeff
         ])
 
     def reset(self, rng: jax.Array) -> State:
@@ -73,10 +75,16 @@ class UnitreeEnvMini(PipelineEnv):
 
         state_info = {
             "rng": rng,
-            "time": jnp.zeros(1)
+            "time": jnp.zeros(1),
+            "l_force": jnp.zeros([1000, 6]),
+            "r_force": jnp.zeros([1000, 6]),
+            "l_orien": jnp.zeros([1000, 3]),
+            "r_orien": jnp.zeros([1000, 3])
         }
         metrics = {'distance': 0.0,
-                   'reward': 0.0}
+                   'reward': 0.0,
+                   'flatfoot_reward': 0.0,
+                   'periodic_reward': 0.0}
 
         obs = self._get_obs(pipeline_state, jnp.zeros(self.nu), t = 0)
         reward, done, zero = jnp.zeros(3)
@@ -113,15 +121,19 @@ class UnitreeEnvMini(PipelineEnv):
         data = self.pipeline_step(data0, scaled_action)
 
         #forward_reward = self.simple_vel_reward(data0, data) * 3.0
-        period_reward = self.periodic_reward(state.info, data, data0)[0] * 0.1
+        period_reward, l_grf, r_grf = self.periodic_reward(state.info, data, data0)
+        period_reward = period_reward[0] * 0.3
 
-        footstep_reward = self.footstep_reward(state.info, data)[0] * 20
-
-        upright_reward = self.upright_reward(data) * 1.0
+        upright_reward = self.upright_reward(data) * 5.0
 
         jl_reward = self.joint_limit_reward(data) * 5.0
 
-        flatfoot_reward = self.flatfootReward(data) * 10
+        flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
+        flatfoot_reward = flatfoot_reward * 5.0
+
+        simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
+        simple_vel_reward = simple_vel_reward * 10
+        side_rew = side_rew * 2
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -131,8 +143,7 @@ class UnitreeEnvMini(PipelineEnv):
         ctrl_cost = 0.05 * jnp.sum(jnp.square(action))
 
         obs = self._get_obs(data, action, state.info["time"])
-        reward = (period_reward + healthy_reward - ctrl_cost + upright_reward +
-                  jl_reward + footstep_reward + flatfoot_reward)
+        reward = period_reward + healthy_reward - ctrl_cost + upright_reward + jl_reward + flatfoot_reward + simple_vel_reward + side_rew
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -141,6 +152,15 @@ class UnitreeEnvMini(PipelineEnv):
         )
         state.info["time"] += self.dt
 
+        l_force = jnp.concatenate([l_grf[None, :], state.info["l_force"][0:-1, :]], axis = 0)
+        r_force = jnp.concatenate([r_grf[None, :], state.info["r_force"][0:-1, :]], axis= 0)
+        state.info["l_force"] = l_force
+        state.info["r_force"] = r_force
+
+        l_orien = jnp.concatenate([l_vec[None, :], state.info["l_orien"][0:-1, :]], axis = 0)
+        r_orien = jnp.concatenate([r_vec[None, :], state.info["r_orien"][0:-1, :]], axis = 0)
+        state.info["l_orien"] = l_orien
+        state.info["r_orien"] = r_orien
         return state.replace(
             pipeline_state=data, obs=obs, reward=reward, done=done
         )
@@ -154,23 +174,26 @@ class UnitreeEnvMini(PipelineEnv):
         vel_err = vel_err * jnp.array([1, 2])
         return jnp.exp(jnp.sum(vel_err) * -10)
 
+
     def simple_vel_reward(self, data0, data1):
         com_before = data0.subtree_com[1]
         com_after = data1.subtree_com[1]
         velocity = (com_after - com_before) / self.dt
-        vel_1 = jnp.where(velocity[0] > 0.5, 0.5, velocity[0])
-        return vel_1
+        vel_1 = jnp.where(velocity[0] > 0.35, 0.35, velocity[0])
+        side_rew = jnp.exp(-10 * jnp.abs(velocity[1]))
+
+        return vel_1, side_rew
 
     def upright_reward(self, data1):
         body_pos = data1.x
         pelvis_xy = body_pos.pos[self.pelvis_id][0:2]
-        head_xy = body_pos.pos[self.head_id][0:2]
+        head_xy = data1.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
-        return jnp.exp(xy_err * -15)
+        return jnp.exp(xy_err * -30)
 
     def joint_limit_reward(self, data1):
         #within soft limit
-        limit = self.joint_limit * 0.95
+        limit = self.joint_limit * 0.90
 
         # calculate the joint angles has larger or smaller than the limit
         out_of_limit = -jnp.clip(data1.q[7:] - limit[1:, 0], max=0., min=None)
@@ -179,32 +202,6 @@ class UnitreeEnvMini(PipelineEnv):
         # calculate the reward
         reward = jnp.sum(out_of_limit)
         return reward * -1
-
-    def footstep_reward(self, info, data):
-        tolerance = 0.1
-        k = 0.8
-        def pos2Rew(foot_pos, target_pos, pelvis_pos):
-            delta_foot = jnp.linalg.norm(foot_pos, target_pos)
-            delta_pelvis = jnp.linalg.norm(pelvis_pos, target_pos)
-            r_step = k * jnp.exp(-4 * delta_foot) + ( 1 - k ) * jnp.exp(-0.5 * delta_pelvis)
-            return jnp.where(delta_foot < tolerance, r_step, 0)
-        #determine which of the footsteps is more forward, only get reward from said footstep
-        t = info["time"]
-        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
-        check_coeff = l_coeff * r_coeff
-        l_pos, r_pos = rewards.makeFootStepPlan(DS_TIME, SS_TIME, t)
-        l_xy = data.x.pos[self.left_foot_id][0:2]
-        r_xy = data.x.pos[self.right_foot_id][0:2]
-
-        pelvis_loc = data.x.pos[self.pelvis_id][0:2]
-
-        l_rew = pos2Rew(l_xy, l_pos, pelvis_loc)
-        r_rew = pos2Rew(r_xy, r_pos, pelvis_loc)
-
-        rew = jnp.where(l_pos[0] > r_pos[0], l_rew, r_rew)
-
-        rew = rew * check_coeff
-        return rew
 
     def periodic_reward(self, info, data1, data0):
         t = info["time"]
@@ -218,11 +215,13 @@ class UnitreeEnvMini(PipelineEnv):
         r_vel_coeff = 1 - r_coeff
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_grf = jnp.linalg.norm(l_grf)
-        r_grf = jnp.linalg.norm(r_grf)
+        l_nf1, r_nf1 = self.crudeGRF(data1)
+        l_nf = jnp.linalg.norm(l_grf[0:3]) + l_nf1
+        r_nf = jnp.linalg.norm(r_grf[0:3]) + r_nf1
 
-        l_grf = jnp.clip(l_grf, -400, 400)
-        r_grf = jnp.clip(r_grf, -400, 400)
+
+        l_nf = jnp.clip(l_nf, -400, 400)
+        r_nf = jnp.clip(r_nf, -400, 400)
 
         def getVel(d1, d2, id):
             bp1 = d1.x
@@ -230,29 +229,46 @@ class UnitreeEnvMini(PipelineEnv):
             return (bp2.pos[id] - bp1.pos[id]) / self.dt
 
         l_vel = getVel(data0, data1, self.left_foot_id)
-        l_vel = jnp.clip(jnp.linalg.norm(l_vel), 0, 0.4)
+        #l_vel = jnp.clip(jnp.linalg.norm(l_vel), 0, 0.4)
         r_vel = getVel(data0, data1, self.right_foot_id)
-        r_vel = jnp.clip(jnp.linalg.norm(r_vel), 0, 0.4)
+        #r_vel = jnp.clip(jnp.linalg.norm(r_vel), 0, 0.4)
 
         vel_reward = l_vel_coeff * l_vel + r_vel_coeff * r_vel
-        grf_reward = l_contact_coeff * l_grf + r_contact_coeff * r_grf
+        grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 1 + grf_reward * 0.1
+        return vel_reward * 1 + grf_reward * 0.05, l_grf, r_grf
+
+    def crudeGRF(self, data):
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+
+        l_grf = jnp.where(lp1[2] < 0.01, 1, 0) * jnp.where(lp2[2] < 0.01, 1, 0)
+        r_grf = jnp.where(rp1[2] < 0.01, 1, 0) * jnp.where(rp2[2] < 0.01, 1, 0)
+        return l_grf, r_grf
 
     def flatfootReward(self, data):
+        def sites2Rew(p1, p2):
+            delta = jnp.abs(p1[2] - p2[2])
+            return jnp.exp( -1 * delta / 0.01)
         vec_tar = jnp.array([0.0, 0.0, 1.0])
         vec_l = math.rotate(vec_tar, data.x.rot[self.left_foot_id])
         vec_r = math.rotate(vec_tar, data.x.rot[self.right_foot_id])
-        rew = vec_l[2] + vec_r[2]
-        return rew
 
-    def crudeGRF(self, data):
-        lpos = data.x.pos[self.left_foot_id]
-        rpos = data.x.pos[self.right_foot_id]
-        l_grf = jnp.where(lpos[2] < 0.04, 120, 0)
-        r_grf = jnp.where(rpos[2] < 0.04, 120, 0)
-        return l_grf, r_grf
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+
+
+
+        rew = sites2Rew(lp1, lp2) + sites2Rew(rp1, rp2)
+
+        return rew, vec_l, vec_r
 
 
     def determineGRF(self, data):
@@ -260,4 +276,15 @@ class UnitreeEnvMini(PipelineEnv):
         forces = rewards.get_contact_forces(self.model, data)
         lfoot_grf, rfoot_grf = rewards.get_feet_forces(self.model, data, forces)
 
+        l_filt, r_filt = self.crudeGRF(data)
+
+        l_filt_grf = l_filt * lfoot_grf
+        r_filt_grf = r_filt * rfoot_grf
+
+        l_grf = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, l_filt_grf, lfoot_grf)
+        r_grf = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, r_filt_grf, rfoot_grf)
+
         return lfoot_grf, rfoot_grf
+
+    def footstepReward(self, info, data):
+        tolerance = 0.1

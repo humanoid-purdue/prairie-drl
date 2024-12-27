@@ -165,20 +165,57 @@ def makeFootStepPlan(ds_time, ss_time, t):
 
     return l_pos, r_pos
 
+class FootstepPlan:
+    def __init__(self, ds_time, ss_time, buffer_time):
+        self.ds_time = ds_time
+        self.ss_time = ss_time
+        self.buffer_time = buffer_time
+        #footstep plan consists of an array of n by 4 array
+        #Each footstep represented by 4 numbers, first 2 are pos, last 2 are direction vector
+        c = 20
+        step_size = 0.2
+        self.left_plan = np.zeros([c, 4])
+        self.right_plan = np.zeros([c, 4])
+        self.left_plan[0, :] = np.array([0., 0.117, 1.0, 0.])
+        self.right_plan[0, :] = np.array([0., -0.117, 1.0, 0.])
+        for i in range(c - 1):
+            l_x = (i // 2) * 0.2 + 0.1
+            r_x = ((i + 1) // 2) * 0.2
+            self.left_plan[i + 1, :] = np.array([l_x, 0.10, 1.0, 0.0])
+            self.right_plan[i + 1, :] = np.array([r_x, 0.10, 1.0, 0.0])
 
+        self.left_plan = jnp.array(self.left_plan)
+        self.right_plan = jnp.array(self.right_plan)
+
+        self.bottom_limit = jnp.arange(c) * (self.ds_time + self.ss_time) - self.ss_time
+        self.top_limit = (jnp.arange(c) + 1) * (self.ds_time + self.ss_time) - self.ss_time
+
+    def getNumInfo(self, t):
+        #Function gets the current footstep number and determines which legs are ground contact
+        step_no = jnp.int32(jnp.floor_divide(t + self.ss_time, self.ds_time + self.ss_time))
+        #Determine which legs are contacting ground
+        l_cc, r_cc = dualCycleCC(self.ds_time, self.ss_time, self.buffer_time, t)
+        return step_no, l_cc, r_cc
+
+    def getStepInfo(self, t):
+        weight_vec = jnp.where( self.bottom_limit < t, 1, 0) * jnp.where( self.top_limit > t, 1, 0)
+        l_step = jnp.sum(self.left_plan * weight_vec[:, None], axis = 0)
+        r_step = jnp.sum(self.right_plan * weight_vec[:, None], axis = 0)
+        l_cc, r_cc = dualCycleCC(self.ds_time, self.ss_time, self.buffer_time, t)
+        return l_step, r_step, l_cc, r_cc
 
 if __name__ == "__main__":
-    v1 = []
-    v2 = []
-    v3 = []
-    v4 = []
+    ds_time = 0.15
+    ss_time = 0.4
+    fsp = FootstepPlan(ds_time, ss_time, 0.05)
+    l_x = []
+    l_y = []
     for c in range(200):
-        lps, rps = makeFootStepPlan(0.15, 0.4, c / 100)
-        rewl, rewr = dualCycleCC(0.15, 0.4, 0.04, c / 100)
-        lps, rps, cps = linkPlan(0.15, 0.4, c / 100)
-        v3 += [lps[2]]
-        v4 += [rps[2]]
+        l, r, lcc, rcc = fsp.getStepInfo(c / 100)
+        l_x += [l[0]]
+        l_y += [r[0]]
+
     import matplotlib.pyplot as plt
-    plt.plot(v3)
-    plt.plot(v4)
+    plt.plot(l_x)
+    plt.plot(l_y)
     plt.show()
