@@ -173,14 +173,14 @@ class FootstepPlan:
         #footstep plan consists of an array of n by 4 array
         #Each footstep represented by 4 numbers, first 2 are pos, last 2 are direction vector
         c = 20
-        step_size = 0.2
+        step_size = 0.35
         self.left_plan = np.zeros([c, 4])
         self.right_plan = np.zeros([c, 4])
         self.left_plan[0, :] = np.array([0., 0.117, 1.0, 0.])
         self.right_plan[0, :] = np.array([0., -0.117, 1.0, 0.])
         for i in range(c - 1):
-            l_x = (i // 2) * 0.2 + 0.1
-            r_x = ((i + 1) // 2) * 0.2
+            l_x = (i // 2) * step_size + step_size / 2
+            r_x = ((i + 1) // 2) * step_size
             self.left_plan[i + 1, :] = np.array([l_x, 0.1, 1.0, 0.0])
             self.right_plan[i + 1, :] = np.array([r_x, -0.1, 1.0, 0.0])
 
