@@ -3,7 +3,7 @@ import jax
 from brax import envs
 from brax.io import html, mjcf, model
 
-from unitree_env_footforcing import UnitreeEnvMini
+from unitree_env_forward_walk import UnitreeEnvMini
 
 
 envs.register_environment('g1', UnitreeEnvMini)
@@ -47,10 +47,6 @@ jit_inference_fn = jax.jit(inference_fn)
 # grab a trajectory
 n_steps = 600
 ss=[]
-l_force = None
-r_force = None
-l_orien = None
-r_orien = None
 for i in range(n_steps):
     # if i == 750:
     #     command = jp.array([0.6,0.0])
@@ -60,13 +56,9 @@ for i in range(n_steps):
     state = jit_step(state, ctrl)
     ss.append(state)
     rollout.append(state.pipeline_state)
-    t = state.info["time"]
-    rew_track = state.info["track_reward"]
-    head_pos = state.info["head_loc"]
-    pelvis_pos = state.info["pelvis_loc"]
-    cid = state.info["contact_id"]
+    l_vec = state.info["l_vec"]
+    print(l_vec)
 
-    print(cid)
 
 
 #import numpy as np

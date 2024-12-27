@@ -181,8 +181,8 @@ class FootstepPlan:
         for i in range(c - 1):
             l_x = (i // 2) * 0.2 + 0.1
             r_x = ((i + 1) // 2) * 0.2
-            self.left_plan[i + 1, :] = np.array([l_x, 0.08, 1.0, 0.0])
-            self.right_plan[i + 1, :] = np.array([r_x, -0.08, 1.0, 0.0])
+            self.left_plan[i + 1, :] = np.array([l_x, 0.1, 1.0, 0.0])
+            self.right_plan[i + 1, :] = np.array([r_x, -0.1, 1.0, 0.0])
 
         self.left_plan = jnp.array(self.left_plan)
         self.right_plan = jnp.array(self.right_plan)

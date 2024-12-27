@@ -81,10 +81,7 @@ class UnitreeEnvMini(PipelineEnv):
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
-            "l_force": jnp.zeros([1000, 6]),
-            "r_force": jnp.zeros([1000, 6]),
-            "l_orien": jnp.zeros([1000, 3]),
-            "r_orien": jnp.zeros([1000, 3])
+            "l_vec": jnp.zeros([4])
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0,
@@ -157,17 +154,12 @@ class UnitreeEnvMini(PipelineEnv):
             reward=reward,
             distance=jnp.linalg.norm(com_after),
         )
+
+        lvec, rvec, l_coeff, r_coeff = self.fsp.getStepInfo(state.info["time"])
         state.info["time"] += self.dt
+        state.info["l_vec"] = lvec
 
-        l_force = jnp.concatenate([l_grf[None, :], state.info["l_force"][0:-1, :]], axis = 0)
-        r_force = jnp.concatenate([r_grf[None, :], state.info["r_force"][0:-1, :]], axis= 0)
-        state.info["l_force"] = l_force
-        state.info["r_force"] = r_force
 
-        l_orien = jnp.concatenate([l_vec[None, :], state.info["l_orien"][0:-1, :]], axis = 0)
-        r_orien = jnp.concatenate([r_vec[None, :], state.info["r_orien"][0:-1, :]], axis = 0)
-        state.info["l_orien"] = l_orien
-        state.info["r_orien"] = r_orien
         return state.replace(
             pipeline_state=data, obs=obs, reward=reward, done=done
         )
@@ -294,7 +286,7 @@ class UnitreeEnvMini(PipelineEnv):
         return lfoot_grf, rfoot_grf
 
     def footstepReward(self, info, data):
-        tolerance = 0.1
+        tolerance = 1.0
         k = 0.8
 
         def pos2Rew(p1, p2, target_pos, target_orien):
