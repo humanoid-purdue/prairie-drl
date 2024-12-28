@@ -135,13 +135,13 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
 
-        footstep_reward = self.footstepReward(state.info, data)[0] * 0.0
+        footstep_reward = self.footstepReward(state.info, data)[0] * 15.0
 
         #simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
         #simple_vel_reward = simple_vel_reward * 2
         #side_rew = side_rew * 1
 
-        velocity_reward = self.velocity_reward(state.info, data) * 5
+        velocity_reward = self.velocity_reward(state.info, data) * 10
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -304,7 +304,7 @@ class UnitreeEnvMini(PipelineEnv):
             foot_pos = (p1 + p2) * 0.5
             delta_foot = jnp.linalg.norm(foot_pos - target_pos)
             r_step = jnp.exp(-4 * delta_foot)
-            r_step = r_step + 0.2 * orien_rew
+            r_step = r_step + 1.0 * orien_rew
             return jnp.where(delta_foot < tolerance, r_step, 0)
 
         t = info["time"]
