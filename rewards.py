@@ -190,6 +190,10 @@ class FootstepPlan:
         self.bottom_limit = jnp.arange(c) * (self.ds_time + self.ss_time) - self.ss_time
         self.top_limit = (jnp.arange(c) + 1) * (self.ds_time + self.ss_time) - self.ss_time
 
+        final_pos = ( self.left_plan[-1, :2] + self.right_plan[-1, :2] ) / 2
+        final_time = ( self.bottom_limit[-1] + self.top_limit[-1] ) / 2
+        self.vel = final_pos / final_time
+
     def getNumInfo(self, t):
         #Function gets the current footstep number and determines which legs are ground contact
         step_no = jnp.int32(jnp.floor_divide(t + self.ss_time, self.ds_time + self.ss_time))

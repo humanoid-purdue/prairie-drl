@@ -81,7 +81,9 @@ class UnitreeEnvMini(PipelineEnv):
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
-            "l_vec": jnp.zeros([4])
+            "l_vec": jnp.zeros([4]),
+            "fs_rew": jnp.zeros(1),
+            "pos_xy": jnp.zeros([100, 2])
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0,
@@ -133,11 +135,13 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
 
-        footstep_reward = self.footstepReward(state.info, data)[0] * 5.0
+        footstep_reward = self.footstepReward(state.info, data)[0] * 3.0
 
-        simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
-        simple_vel_reward = simple_vel_reward * 2
-        side_rew = side_rew * 1
+        #simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
+        #simple_vel_reward = simple_vel_reward * 2
+        #side_rew = side_rew * 1
+
+        velocity_reward = self.velocity_reward(state.info, data) * 5
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -147,7 +151,7 @@ class UnitreeEnvMini(PipelineEnv):
         ctrl_cost = 0.05 * jnp.sum(jnp.square(action))
 
         obs = self._get_obs(data, action, state.info["time"])
-        reward = period_reward + healthy_reward - ctrl_cost + footstep_reward + upright_reward + jl_reward + flatfoot_reward + simple_vel_reward + side_rew
+        reward = period_reward + healthy_reward - ctrl_cost + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -158,19 +162,23 @@ class UnitreeEnvMini(PipelineEnv):
         lvec, rvec, l_coeff, r_coeff = self.fsp.getStepInfo(state.info["time"])
         state.info["time"] += self.dt
         state.info["l_vec"] = lvec
+        state.info["fs_rew"] += footstep_reward
 
+        pos_xy = data.subtree_com[1][0:2]
+        new_pxy = jnp.concatenate([pos_xy[None, :], state.info["pos_xy"][:-1, :]])
+        state.info["pos_xy"] = new_pxy
 
         return state.replace(
             pipeline_state=data, obs=obs, reward=reward, done=done
         )
 
-    def velocity_reward(self, data0, data1):
-        com_before = data0.subtree_com[1]
-        com_after = data1.subtree_com[1]
-        velocity = (com_after - com_before) / self.dt
-        vel_target = jnp.array([0., 0.5])
-        vel_err = (velocity[0:2] - vel_target) ** 2
-        vel_err = vel_err * jnp.array([1, 2])
+    def velocity_reward(self, info, data):
+        com = data.subtree_com[1]
+        vel_target = self.fsp.vel
+        p0 = jnp.where(info["time"] < 1, jnp.array([0, 0]), info["pos_xy"][-1, :])
+        t = jnp.where(info["time"] < 1, info["time"], 1)
+        vel = ( com[0:2] - p0 ) / t
+        vel_err = (vel - vel_target) ** 2
         return jnp.exp(jnp.sum(vel_err) * -10)
 
 

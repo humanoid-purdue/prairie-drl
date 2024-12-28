@@ -57,7 +57,8 @@ for i in range(n_steps):
     ss.append(state)
     rollout.append(state.pipeline_state)
     l_vec = state.info["l_vec"]
-    print(l_vec)
+    rew = state.info["fs_rew"]
+    print(rew)
 
 
 
