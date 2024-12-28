@@ -135,7 +135,7 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
 
-        footstep_reward = self.footstepReward(state.info, data)[0] * 15.0
+        footstep_reward = self.footstepReward(state.info, data)[0] * 5.0
 
         #simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
         #simple_vel_reward = simple_vel_reward * 2
