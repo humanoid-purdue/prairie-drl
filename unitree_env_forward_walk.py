@@ -43,6 +43,7 @@ class UnitreeEnvMini(PipelineEnv):
 
 
         self.pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
+        self.pelvis_b_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
         self.pelvis_f_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
         self.head_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE.value, 'head')
 
@@ -202,16 +203,17 @@ class UnitreeEnvMini(PipelineEnv):
         return vel_1, side_rew
 
     def pelvisAngle(self, data):
-        pelvis_c = data.x.pos[self.pelvis_id]
-        pelvis_f = data.site_xpos[self.pelvis_f_id]
+        pelvis_c = data.site_xpos[self.pelvis_b_id][0:2]
+        pelvis_f = data.site_xpos[self.pelvis_f_id][0:2]
         vec = pelvis_f - pelvis_c
-        facing_vec = vec[0:2] / jnp.linalg.norm(vec[0:2])
+        facing_vec = vec / jnp.linalg.norm(vec)
         return facing_vec
 
     def pelvisAngleReward(self, facing_vec, state):
         ave_angle = jnp.sum(state.info["pelvis_angle"], axis = 0)
         ave_angle = ave_angle / jnp.linalg.norm(ave_angle)
         vec = jnp.where(state.info["time"] < 1.0, facing_vec, ave_angle)
+        vec = jnp.reshape(vec, [2])
         target = jnp.array([1.0, 0.0])
         rew = jnp.sum(target * vec)
         return rew
