@@ -173,7 +173,7 @@ class FootstepPlan:
         #footstep plan consists of an array of n by 4 array
         #Each footstep represented by 4 numbers, first 2 are pos, last 2 are direction vector
         c = 20
-        step_size = 0.35
+        step_size = 0.30
         self.left_plan = np.zeros([c, 4])
         self.right_plan = np.zeros([c, 4])
         self.left_plan[0, :] = np.array([0., 0.117, 1.0, 0.])
