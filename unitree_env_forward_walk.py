@@ -304,7 +304,7 @@ class UnitreeEnvMini(PipelineEnv):
             foot_pos = (p1 + p2) * 0.5
             delta_foot = jnp.linalg.norm(foot_pos - target_pos)
             r_step = jnp.exp(-4 * delta_foot)
-            r_step = r_step + 0.5 * orien_rew
+            r_step = r_step * 0.0 + 1.0 * orien_rew
             return jnp.where(delta_foot < tolerance, r_step, 0)
 
         t = info["time"]
