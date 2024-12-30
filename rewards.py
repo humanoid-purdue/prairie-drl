@@ -216,10 +216,10 @@ if __name__ == "__main__":
     l_y = []
     for c in range(200):
         l, r, lcc, rcc = fsp.getStepInfo(c / 100)
-        l_x += [l[0]]
-        l_y += [r[0]]
+        l_x += [lcc]
+        l_y += [rcc]
 
     import matplotlib.pyplot as plt
     plt.plot(l_x)
-    #plt.plot(l_y)
+    plt.plot(l_y)
     plt.show()

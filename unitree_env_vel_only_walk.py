@@ -147,7 +147,7 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward = flatfoot_reward * 5.0
 
         footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.2
-        stride_length_reward = self.strideLengthReward(state.info, data)[0] * 30
+        stride_length_reward = self.strideLengthReward(state.info, data)[0] * 300
 
         #simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
         #simple_vel_reward = simple_vel_reward * 2
