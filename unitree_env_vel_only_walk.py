@@ -141,7 +141,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         jl_reward = self.joint_limit_reward(data) * 5.0
 
-        jm_reward = self.jointMagReward(data) * 10.0
+        jm_reward = self.jointMagReward(data) * 0.0
 
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
@@ -163,7 +163,7 @@ class UnitreeEnvMini(PipelineEnv):
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 5.0 * is_healthy
 
-        ctrl_cost = 0.15 * jnp.sum(jnp.square(action))
+        ctrl_cost = 0.05 * jnp.sum(jnp.square(action))
 
         obs = self._get_obs(data, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
         reward = period_reward + healthy_reward - ctrl_cost + jm_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward
