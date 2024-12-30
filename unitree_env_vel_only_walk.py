@@ -53,9 +53,11 @@ class UnitreeEnvMini(PipelineEnv):
 
         self.left_foot_s1 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "left_foot_p1")
         self.left_foot_s2 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "left_foot_p2")
+        self.left_foot_s3 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "left_foot_p3")
 
         self.right_foot_s1 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p1")
         self.right_foot_s2 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p2")
+        self.right_foot_s3 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p3")
 
 
 
@@ -87,7 +89,6 @@ class UnitreeEnvMini(PipelineEnv):
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
-            "l_vec": jnp.zeros([4]),
             "fs_rew": jnp.zeros(1),
             "pos_xy": jnp.zeros([100, 2]),
             "pelvis_angle": jnp.zeros([100, 2]),
@@ -143,7 +144,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         jm_reward = self.jointMagReward(data) * 0.0
 
-        flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
+        flatfoot_reward = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
 
         footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.2
@@ -178,7 +179,6 @@ class UnitreeEnvMini(PipelineEnv):
 
         lvec, rvec, l_coeff, r_coeff = self.fsp.getStepInfo(state.info["time"])
         state.info["time"] += self.dt
-        state.info["l_vec"] = lvec
         state.info["fs_rew"] += footstep_reward
 
         pos_xy = data.subtree_com[1][0:2]
@@ -248,13 +248,12 @@ class UnitreeEnvMini(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        l_vel_coeff = 1 - l_coeff
-        r_vel_coeff = 1 - r_coeff
+        l_vel_coeff = 1 - l_coeff * 2
+        r_vel_coeff = 1 - r_coeff * 2
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_nf1, r_nf1 = self.crudeGRF(data1)
-        l_nf = jnp.linalg.norm(l_grf[0:3]) + l_nf1
-        r_nf = jnp.linalg.norm(r_grf[0:3]) + r_nf1
+        l_nf = jnp.linalg.norm(l_grf[0:3])
+        r_nf = jnp.linalg.norm(r_grf[0:3])
 
 
         l_nf = jnp.clip(l_nf, -400, 400)
@@ -276,36 +275,27 @@ class UnitreeEnvMini(PipelineEnv):
 
         return vel_reward * 1 + grf_reward * 0.05, l_grf, r_grf
 
-    def crudeGRF(self, data):
-        lp1 = data.site_xpos[self.left_foot_s1]
-        lp2 = data.site_xpos[self.left_foot_s2]
-
-        rp1 = data.site_xpos[self.right_foot_s1]
-        rp2 = data.site_xpos[self.right_foot_s2]
-
-        l_grf = jnp.where(lp1[2] < 0.01, 1, 0) * jnp.where(lp2[2] < 0.01, 1, 0)
-        r_grf = jnp.where(rp1[2] < 0.01, 1, 0) * jnp.where(rp2[2] < 0.01, 1, 0)
-        return l_grf, r_grf
-
     def flatfootReward(self, data):
-        def sites2Rew(p1, p2):
-            delta = jnp.abs(p1[2] - p2[2])
-            return jnp.exp( -1 * delta / 0.01)
         vec_tar = jnp.array([0.0, 0.0, 1.0])
-        vec_l = math.rotate(vec_tar, data.x.rot[self.left_foot_id])
-        vec_r = math.rotate(vec_tar, data.x.rot[self.right_foot_id])
+
+        def sites2Rew(p1, p2, p3):
+            v1 = p1 - p3
+            v2 = p2 - p3
+            dot = jnp.cross(v1, v2)
+            normal_vec = dot / jnp.linalg.norm(dot)
+            return jnp.abs(normal_vec[2])
 
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
+        lp3 = data.site_xpos[self.left_foot_s3]
 
         rp1 = data.site_xpos[self.right_foot_s1]
         rp2 = data.site_xpos[self.right_foot_s2]
+        rp3 = data.site_xpos[self.right_foot_s3]
 
+        rew = sites2Rew(lp1, lp2, lp3) + sites2Rew(rp1, rp2, rp3)
 
-
-        rew = sites2Rew(lp1, lp2) + sites2Rew(rp1, rp2)
-
-        return rew, vec_l, vec_r
+        return rew
 
     def strideLengthReward(self, info, data):
         t = info["time"]
@@ -333,14 +323,6 @@ class UnitreeEnvMini(PipelineEnv):
 
         forces = rewards.get_contact_forces(self.model, data)
         lfoot_grf, rfoot_grf = rewards.get_feet_forces(self.model, data, forces)
-
-        l_filt, r_filt = self.crudeGRF(data)
-
-        l_filt_grf = l_filt * lfoot_grf
-        r_filt_grf = r_filt * rfoot_grf
-
-        l_grf = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, l_filt_grf, lfoot_grf)
-        r_grf = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, r_filt_grf, rfoot_grf)
 
         return lfoot_grf, rfoot_grf
 
