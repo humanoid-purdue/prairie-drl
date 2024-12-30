@@ -146,7 +146,7 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward, l_vec, r_vec = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
 
-        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 5.0
+        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.2
 
         #simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
         #simple_vel_reward = simple_vel_reward * 2
@@ -154,7 +154,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         facing_vec = self.pelvisAngle(data)
 
-        pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 10.0
+        pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 3.0
 
         velocity_reward = self.velocity_reward(state.info, data) * 10
 
