@@ -265,9 +265,9 @@ class UnitreeEnvMini(PipelineEnv):
             return (bp2.pos[id] - bp1.pos[id]) / self.dt
 
         l_vel = getVel(data0, data1, self.left_foot_id)
-        #l_vel = jnp.clip(jnp.linalg.norm(l_vel), 0, 0.4)
+        l_vel = jnp.clip(jnp.linalg.norm(l_vel), 0, 0.4)
         r_vel = getVel(data0, data1, self.right_foot_id)
-        #r_vel = jnp.clip(jnp.linalg.norm(r_vel), 0, 0.4)
+        r_vel = jnp.clip(jnp.linalg.norm(r_vel), 0, 0.4)
 
         vel_reward = l_vel_coeff * l_vel + r_vel_coeff * r_vel
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
