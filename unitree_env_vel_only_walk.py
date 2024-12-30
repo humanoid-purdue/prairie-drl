@@ -147,6 +147,7 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward = flatfoot_reward * 5.0
 
         footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.2
+        stride_length_reward = self.strideLengthReward(state.info, data)[0] * 30
 
         #simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
         #simple_vel_reward = simple_vel_reward * 2
@@ -166,7 +167,7 @@ class UnitreeEnvMini(PipelineEnv):
         ctrl_cost = 0.05 * jnp.sum(jnp.square(action))
 
         obs = self._get_obs(data, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
-        reward = period_reward + healthy_reward - ctrl_cost + jm_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward
+        reward = period_reward + healthy_reward - ctrl_cost + jm_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -306,6 +307,27 @@ class UnitreeEnvMini(PipelineEnv):
 
         return rew, vec_l, vec_r
 
+    def strideLengthReward(self, info, data):
+        t = info["time"]
+        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+        #only check distance when both are ds
+        ds_state = l_coeff * r_coeff
+        vel_mag = jnp.linalg.norm(info["centroid_velocity"])
+        stride_target = vel_mag * (DS_TIME + SS_TIME)
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+        lp = (lp1 + lp2) / 2
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+        rp = (rp1 + rp2) / 2
+
+        stride_length = jnp.linalg.norm(lp[0:2] - rp[0:2])
+
+        reward = stride_target - stride_length
+        reward = jnp.where(reward > 0, 0, reward)
+        reward = reward * ds_state
+        return reward
 
     def determineGRF(self, data):
 
