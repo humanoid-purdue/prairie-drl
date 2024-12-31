@@ -303,7 +303,7 @@ class UnitreeEnvMini(PipelineEnv):
         #only check distance when both are ds
         ds_state = l_coeff * r_coeff
         vel_mag = jnp.linalg.norm(info["centroid_velocity"])
-        stride_target = vel_mag * (DS_TIME + SS_TIME)
+        stride_target = vel_mag * (DS_TIME + SS_TIME) * 1.5
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
         lp = (lp1 + lp2) / 2
