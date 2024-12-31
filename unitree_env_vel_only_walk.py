@@ -248,7 +248,7 @@ class UnitreeEnvMini(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        gnd_vel_coeff = -4
+        gnd_vel_coeff = -2
         swing_vel_coeff = 1
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
