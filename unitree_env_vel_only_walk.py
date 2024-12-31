@@ -260,14 +260,21 @@ class UnitreeEnvMini(PipelineEnv):
         r_nf = jnp.clip(r_nf, -400, 400)
 
         def getVel(d1, d2, id):
-            bp1 = d1.x
-            bp2 = d2.x
-            return (bp2.pos[id] - bp1.pos[id]) / self.dt
+            bp1 = d1.site_xpos
+            bp2 = d2.site_xpos
+            return (bp2[id] - bp1[id]) / self.dt
 
-        l_vel = getVel(data0, data1, self.left_foot_id)
-        l_vel = jnp.clip(jnp.linalg.norm(l_vel), 0, 0.4)
-        r_vel = getVel(data0, data1, self.right_foot_id)
-        r_vel = jnp.clip(jnp.linalg.norm(r_vel), 0, 0.4)
+        l1_spd = jnp.linalg.norm(getVel(data0, data1, self.left_foot_s1))
+        l2_spd = jnp.linalg.norm(getVel(data0, data1, self.left_foot_s2))
+
+        r1_spd = jnp.linalg.norm(getVel(data0, data1, self.right_foot_s1))
+        r2_spd = jnp.linalg.norm(getVel(data0, data1, self.right_foot_s2))
+
+        l_spd = ( l1_spd + l2_spd ) / 2
+        r_spd = ( r1_spd + r2_spd ) / 2
+
+        l_vel = jnp.clip(l_spd, 0, 0.4)
+        r_vel = jnp.clip(r_spd, 0, 0.4)
 
         vel_reward = l_vel_coeff * l_vel + r_vel_coeff * r_vel
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
