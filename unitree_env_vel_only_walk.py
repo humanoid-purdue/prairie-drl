@@ -82,7 +82,7 @@ class UnitreeEnvMini(PipelineEnv):
         rng, key = jax.random.split(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
         r = random.uniform(key, [2])
-        mag = ( r[0] + 1 ) * 0.25
+        mag = ( r[0] + 1 ) * 0.3
         unit = jnp.array([1, r[1] - 0.5])
         unit = unit / jnp.linalg.norm(unit)
         vel = unit * mag
