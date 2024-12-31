@@ -273,14 +273,14 @@ class UnitreeEnvMini(PipelineEnv):
         l_spd = ( l1_spd + l2_spd ) / 2
         r_spd = ( r1_spd + r2_spd ) / 2
 
-        l_vel = jnp.clip(l_spd, 0, 0.4)
-        r_vel = jnp.clip(r_spd, 0, 0.4)
+        l_vel = jnp.clip(l_spd, 0, 0.2)
+        r_vel = jnp.clip(r_spd, 0, 0.2)
 
         vel_reward = l_vel_coeff * l_vel + r_vel_coeff * r_vel
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 1 + grf_reward * 0.05, l_grf, r_grf
+        return vel_reward * 10 + grf_reward * 0.05, l_grf, r_grf
 
     def flatfootReward(self, data):
         vec_tar = jnp.array([0.0, 0.0, 1.0])
