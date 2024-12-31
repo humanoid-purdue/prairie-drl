@@ -1,4 +1,3 @@
-import unitree_env
 import time
 import itertools
 import matplotlib.pyplot as plt

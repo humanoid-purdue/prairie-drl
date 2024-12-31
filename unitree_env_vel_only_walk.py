@@ -27,7 +27,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         system = mjcf.load_model(model)
 
-        n_frames = 10
+        n_frames = 1
 
         super().__init__(sys = system,
             backend='mjx',
@@ -39,6 +39,9 @@ class UnitreeEnvMini(PipelineEnv):
         self.nu = system.nu
         self.control_range = system.actuator_ctrlrange
         self.joint_limit = jnp.array(model.jnt_range)
+
+        self.actual_nframes = 10
+        self.delta_time = 0.01
 
         self.fsp = rewards.FootstepPlan(DS_TIME, SS_TIME, BU_TIME)
 
@@ -89,11 +92,15 @@ class UnitreeEnvMini(PipelineEnv):
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
-            "fs_rew": jnp.zeros(1),
-            "pos_xy": jnp.zeros([100, 2]),
-            "pelvis_angle": jnp.zeros([100, 2]),
+            "count": jnp.zeros(1),
+            "pos_xy": jnp.zeros([1000, 2]),
+            "pelvis_angle": jnp.zeros([1000, 2]),
             "centroid_velocity": vel,
-            "facing_vec": unit
+            "facing_vec": unit,
+            "desired_pos": jnp.zeros([self.nv - 6]),
+            "desired_vel": jnp.zeros([self.nv - 6]),
+            "p_gain": 400,
+            "d_gain": 0.0 # zero for now until custom network implementation
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0,
@@ -113,28 +120,65 @@ class UnitreeEnvMini(PipelineEnv):
         return state
 
     def step(self, state: State, action: jnp.ndarray):
+        count = state.info["count"]
+        old_q = state.info["desired_pos"]
+        old_qd = state.info["desired_vel"]
 
-        #constrained reward structure for forward walk:
-        #Upright reward, vel target reward, joint limit reward
+        bottom_limit = self.joint_limit[1:, 0]
+        top_limit = self.joint_limit[1:, 1]
+        new_q = ((action + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+        new_qd = jnp.zeros([self.nv - 6])
 
-        #development plan:
-        #1) Controlled velocity Failure
-        #2) periodic reward
-        #3) forced straight line footstep
-        #4) randomized footsteps
-        #5)
-        #Parallel:
-        #PD control
-        #Remove qfrc_actuator
+        use_new = jnp.ceil(jnp.mod(count, 10) / 10)
+        state.info["desired_pos"] = use_new * old_q + (1 - use_new) * new_q
+        state.info["desired_vel"] = new_qd
 
-        bottom_limit = self.control_range[:, 0]
-        top_limit = self.control_range[:, 1]
-        scaled_action = ( (action + 1) * (top_limit - bottom_limit) / 2 + bottom_limit )
+        action_pd = self.pdAction(state)
+        data0 = state.pipeline_state
+        data1 = self.pipeline_step(data0, action_pd)
+
+        reward, done = self.rewards(state, data1)
+
+        facing_vec = self.pelvisAngle(data1)
+        pos_xy = data1.subtree_com[1][0:2]
+        new_pxy = jnp.concatenate([pos_xy[None, :], state.info["pos_xy"][:-1, :]])
+        state.info["pos_xy"] = new_pxy
+
+        new_fv = jnp.concatenate([facing_vec[None, :], state.info["pelvis_angle"][:-1, :]])
+        state.info["pelvis_angle"] = new_fv
+
+        state.info["time"] += 0.001
+        state.info["count"] += 1
+
+        obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
+        return state.replace(
+            pipeline_state = data1, obs=obs, reward=reward, done=done
+        )
+
+
+    def pdAction(self, state):
+        d_q = state.info["desired_pos"]
+        d_qd = state.info["desired_vel"]
+        data = state.pipeline_state
+        c_q = data.q[7:]
+        c_qd = data.qd[6:]
+
+        gain_p = state.info["p_gain"]
+        gain_d = state.info["d_gain"]
+
+        p = (d_q - c_q) * gain_p
+        d = (d_qd - c_qd) * gain_d
+
+        action = p + d
+        action = jnp.clip(action, min = self.control_range[:, 0],
+                          max = self.control_range[:, 1])
+        return action
+
+
+    def rewards(self, state: State, data):
 
         data0 = state.pipeline_state
-        data = self.pipeline_step(data0, scaled_action)
 
-        #forward_reward = self.simple_vel_reward(data0, data) * 3.0
         period_reward, l_grf, r_grf = self.periodic_reward(state.info, data, data0)
         period_reward = period_reward[0] * 0.3
 
@@ -150,10 +194,6 @@ class UnitreeEnvMini(PipelineEnv):
         footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.2
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 300
 
-        #simple_vel_reward, side_rew = self.simple_vel_reward(data0, data)
-        #simple_vel_reward = simple_vel_reward * 2
-        #side_rew = side_rew * 1
-
         facing_vec = self.pelvisAngle(data)
 
         pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 3.0
@@ -165,10 +205,8 @@ class UnitreeEnvMini(PipelineEnv):
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 5.0 * is_healthy
 
-        ctrl_cost = 0.20 * jnp.sum(jnp.square(action))
 
-        obs = self._get_obs(data, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
-        reward = period_reward + healthy_reward - ctrl_cost + jm_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward
+        reward = period_reward + healthy_reward + jm_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -176,21 +214,7 @@ class UnitreeEnvMini(PipelineEnv):
             distance=jnp.linalg.norm(com_after),
         )
 
-
-        lvec, rvec, l_coeff, r_coeff = self.fsp.getStepInfo(state.info["time"])
-        state.info["time"] += self.dt
-        state.info["fs_rew"] += footstep_reward
-
-        pos_xy = data.subtree_com[1][0:2]
-        new_pxy = jnp.concatenate([pos_xy[None, :], state.info["pos_xy"][:-1, :]])
-        state.info["pos_xy"] = new_pxy
-
-        new_fv = jnp.concatenate([facing_vec[None, :], state.info["pelvis_angle"][:-1, :]])
-        state.info["pelvis_angle"] = new_fv
-
-        return state.replace(
-            pipeline_state=data, obs=obs, reward=reward, done=done
-        )
+        return reward, done
 
     def velocity_reward(self, info, data):
         com = data.subtree_com[1]
