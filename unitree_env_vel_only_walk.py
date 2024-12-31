@@ -165,7 +165,7 @@ class UnitreeEnvMini(PipelineEnv):
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 5.0 * is_healthy
 
-        ctrl_cost = 0.50 * jnp.sum(jnp.square(action))
+        ctrl_cost = 0.20 * jnp.sum(jnp.square(action))
 
         obs = self._get_obs(data, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
         reward = period_reward + healthy_reward - ctrl_cost + jm_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward
@@ -248,8 +248,10 @@ class UnitreeEnvMini(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        l_vel_coeff = 1 - l_coeff * 2
-        r_vel_coeff = 1 - r_coeff * 2
+        gnd_vel_coeff = -4
+        swing_vel_coeff = 1
+        l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
+        r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
 
         l_grf, r_grf = self.determineGRF(data1)
         l_nf = jnp.linalg.norm(l_grf[0:3])
@@ -273,14 +275,16 @@ class UnitreeEnvMini(PipelineEnv):
         l_spd = ( l1_spd + l2_spd ) / 2
         r_spd = ( r1_spd + r2_spd ) / 2
 
-        l_vel = jnp.clip(l_spd, 0, 0.2)
-        r_vel = jnp.clip(r_spd, 0, 0.2)
+        #l_vel = jnp.clip(l_spd, 0, 0.2)
+        #r_vel = jnp.clip(r_spd, 0, 0.2)
+        l_vel = l_spd
+        r_vel = r_spd
 
         vel_reward = l_vel_coeff * l_vel + r_vel_coeff * r_vel
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 10 + grf_reward * 0.05, l_grf, r_grf
+        return vel_reward * 2 + grf_reward * 0.05, l_grf, r_grf
 
     def flatfootReward(self, data):
         vec_tar = jnp.array([0.0, 0.0, 1.0])
