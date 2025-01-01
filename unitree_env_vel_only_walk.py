@@ -14,6 +14,7 @@ from jax import random
 DS_TIME = 0.2
 SS_TIME = 0.5
 BU_TIME = 0.05
+STEP_HEIGHT = 0.1
 
 class UnitreeEnvMini(PipelineEnv):
     def __init__(self):
@@ -27,7 +28,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         system = mjcf.load_model(model)
 
-        n_frames = 1
+        n_frames = 10
 
         super().__init__(sys = system,
             backend='mjx',
@@ -39,9 +40,6 @@ class UnitreeEnvMini(PipelineEnv):
         self.nu = system.nu
         self.control_range = system.actuator_ctrlrange
         self.joint_limit = jnp.array(model.jnt_range)
-
-        self.actual_nframes = 10
-        self.delta_time = 0.01
 
         self.fsp = rewards.FootstepPlan(DS_TIME, SS_TIME, BU_TIME)
 
@@ -97,10 +95,6 @@ class UnitreeEnvMini(PipelineEnv):
             "pelvis_angle": jnp.zeros([1000, 2]),
             "centroid_velocity": vel,
             "facing_vec": unit,
-            "desired_pos": jnp.zeros([self.nv - 6]),
-            "desired_vel": jnp.zeros([self.nv - 6]),
-            "p_gain": 400,
-            "d_gain": 0.0 # zero for now until custom network implementation
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0,
@@ -120,20 +114,11 @@ class UnitreeEnvMini(PipelineEnv):
         return state
 
     def step(self, state: State, action: jnp.ndarray):
-        count = state.info["count"]
-        old_q = state.info["desired_pos"]
-        old_qd = state.info["desired_vel"]
-
-        new_q = self.action2q(state.pipeline_state, action)
-        new_qd = jnp.zeros([self.nv - 6])
-
-        use_new = jnp.ceil(jnp.mod(count, 10) / 10)
-        state.info["desired_pos"] = use_new * old_q + (1 - use_new) * new_q
-        state.info["desired_vel"] = new_qd
-
-        action_pd = self.pdAction(state)
+        bottom_limit = self.control_range[:, 0]
+        top_limit = self.control_range[:, 1]
+        scaled_action = ((action + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
         data0 = state.pipeline_state
-        data1 = self.pipeline_step(data0, action_pd)
+        data1 = self.pipeline_step(data0, scaled_action)
 
         reward, done = self.rewards(state, data1)
 
@@ -145,42 +130,13 @@ class UnitreeEnvMini(PipelineEnv):
         new_fv = jnp.concatenate([facing_vec[None, :], state.info["pelvis_angle"][:-1, :]])
         state.info["pelvis_angle"] = new_fv
 
-        state.info["time"] += 0.001
+        state.info["time"] += self.dt
         state.info["count"] += 1
 
         obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
-
-    def action2q(self, data, action):
-        q = data.q[7:]
-        bottom_limit = self.joint_limit[1:, 0]
-        top_limit = self.joint_limit[1:, 1]
-        plus_scaling = action * (top_limit - q)
-        minus_scaling = action * ( q - bottom_limit )
-        q_des = jnp.where(action > 0, plus_scaling, minus_scaling) + q
-        return q_des
-
-
-    def pdAction(self, state):
-        d_q = state.info["desired_pos"]
-        d_qd = state.info["desired_vel"]
-        data = state.pipeline_state
-        c_q = data.q[7:]
-        c_qd = data.qd[6:]
-
-        gain_p = state.info["p_gain"]
-        gain_d = state.info["d_gain"]
-
-        p = (d_q - c_q) * gain_p
-        d = (d_qd - c_qd) * gain_d
-
-        action = p + d
-        action = jnp.clip(action, min = self.control_range[:, 0],
-                          max = self.control_range[:, 1])
-        return action
-
 
     def rewards(self, state: State, data):
 
@@ -192,8 +148,6 @@ class UnitreeEnvMini(PipelineEnv):
         upright_reward = self.upright_reward(data) * 5.0
 
         jl_reward = self.joint_limit_reward(data) * 5.0
-
-        jm_reward = self.jointMagReward(data) * 0.0
 
         flatfoot_reward = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 5.0
@@ -207,13 +161,15 @@ class UnitreeEnvMini(PipelineEnv):
 
         velocity_reward = self.velocity_reward(state.info, data) * 10
 
+        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 30
+
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 5.0 * is_healthy
 
 
-        reward = period_reward + healthy_reward + jm_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward
+        reward = period_reward + healthy_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward + swing_height_reward
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -267,9 +223,28 @@ class UnitreeEnvMini(PipelineEnv):
         reward = jnp.sum(out_of_limit)
         return reward * -1
 
-    def jointMagReward(self, data):
-        prop = data.q[7:] / ( self.joint_limit[1:, 1] - self.joint_limit[1:, 0] )
-        return jnp.sum(prop)
+    def swingHeightReward(self, info, data):
+        t = info["time"]
+        l_t, r_t = rewards.heightLimit(DS_TIME, SS_TIME, BU_TIME, STEP_HEIGHT, t)
+        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+        lp3 = data.site_xpos[self.left_foot_s3]
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+        rp3 = data.site_xpos[self.right_foot_s3]
+
+        l_h = ( lp1[2] + lp2[2] + lp3[3] ) / 3
+        r_h = ( rp1[2] + rp2[2] + rp3[3]) / 3
+
+        l_rew = jnp.clip(l_h - l_t, min = -10, max = 0)
+        r_rew = jnp.clip(r_h - r_t, min = -10, max = 0)
+
+        rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
+        return rew
+
 
     def periodic_reward(self, info, data1, data0):
         t = info["time"]
@@ -279,8 +254,8 @@ class UnitreeEnvMini(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        gnd_vel_coeff = -2
-        swing_vel_coeff = 1
+        gnd_vel_coeff = -3
+        swing_vel_coeff = 0
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
 

@@ -29,6 +29,17 @@ def dualCycleCC(ds_time, ss_time, buffer_time, t):
     right_cc = cycleContactCoeff(ds_time, ss_time, buffer_time, t - ds_time - ss_time + buffer_time)
     return left_cc, right_cc
 
+def heightLimit(ds_time, ss_time, buffer_time, step_height, t):
+    def cycleQuad(ds_time, ss_time, t):
+        tmod = jnp.mod(t, (ds_time + ss_time) * 2)
+        peak = jnp.cos( (tmod - (ds_time + ss_time * 0.5) ) * jnp.pi / ss_time) * step_height
+        sec_1 = jnp.where(tmod < ds_time, 0, 1)
+        sec_2 = jnp.where(tmod > ds_time + ss_time, 0, 1)
+        return peak * sec_1 * sec_2
+    left_peak = cycleQuad(ds_time, ss_time, t + buffer_time)
+    right_peak = cycleQuad(ds_time, ss_time, t - ds_time - ss_time + buffer_time)
+    return left_peak, right_peak
+
 import mujoco
 
 def get_feet_forces(m, dx, forces):
@@ -211,13 +222,13 @@ class FootstepPlan:
 if __name__ == "__main__":
     ds_time = 0.15
     ss_time = 0.4
-    fsp = FootstepPlan(ds_time, ss_time, 0.05)
+    buffer_time = 0.05
     l_x = []
     l_y = []
     for c in range(200):
-        l, r, lcc, rcc = fsp.getStepInfo(c / 100)
-        l_x += [lcc]
-        l_y += [rcc]
+        lh, rh = heightLimit(ds_time, ss_time, buffer_time, 0.1, c / 100)
+        l_x += [lh]
+        l_y += [rh]
 
     import matplotlib.pyplot as plt
     plt.plot(l_x)
