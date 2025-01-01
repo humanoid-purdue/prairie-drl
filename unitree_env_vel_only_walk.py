@@ -124,9 +124,7 @@ class UnitreeEnvMini(PipelineEnv):
         old_q = state.info["desired_pos"]
         old_qd = state.info["desired_vel"]
 
-        bottom_limit = self.joint_limit[1:, 0]
-        top_limit = self.joint_limit[1:, 1]
-        new_q = ((action + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+        new_q = self.action2q(state.pipeline_state, action)
         new_qd = jnp.zeros([self.nv - 6])
 
         use_new = jnp.ceil(jnp.mod(count, 10) / 10)
@@ -154,6 +152,15 @@ class UnitreeEnvMini(PipelineEnv):
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
+
+    def action2q(self, data, action):
+        q = data.q[7:]
+        bottom_limit = self.joint_limit[1:, 0]
+        top_limit = self.joint_limit[1:, 1]
+        plus_scaling = action * (top_limit - q)
+        minus_scaling = action * ( q - bottom_limit )
+        q_des = jnp.where(action > 0, plus_scaling, minus_scaling) + q
+        return q_des
 
 
     def pdAction(self, state):
