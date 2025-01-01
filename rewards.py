@@ -219,18 +219,26 @@ class FootstepPlan:
         l_cc, r_cc = dualCycleCC(self.ds_time, self.ss_time, self.buffer_time, t)
         return l_step, r_step, l_cc, r_cc
 
+def naiveFootstepPlan(ds_time, ss_time):
+    l_steps = jnp.array([[0., 0.117]])
+    r_steps = jnp.array([[0., -0.117]])
+    step_size = 0.30
+    c = 20
+    for i in range(c - 1):
+        l_x = (i // 2) * step_size + step_size / 2
+        r_x = ((i + 3) // 2) * step_size
+        l_steps = jnp.concatenate([l_steps, jnp.array([[l_x, 0.10]])], axis = 0)
+        r_steps = jnp.concatenate([r_steps, jnp.array([[r_x, -0.10]])], axis = 0)
+    combined = jnp.concatenate([l_steps, r_steps], axis = 0)
+    ave_vel = (l_steps[-1, :] + r_steps[-1, :]) / ((c - 1) * (2 * ds_time + ss_time))
+    return combined, ave_vel
+
 if __name__ == "__main__":
     ds_time = 0.15
     ss_time = 0.4
     buffer_time = 0.05
-    l_x = []
-    l_y = []
-    for c in range(200):
-        lh, rh = heightLimit(ds_time, ss_time, buffer_time, 0.1, c / 100)
-        l_x += [lh]
-        l_y += [rh]
-
+    combined, ave_vel = naiveFootstepPlan(ds_time, ss_time)
+    print(ave_vel)
     import matplotlib.pyplot as plt
-    plt.plot(l_x)
-    plt.plot(l_y)
+    plt.scatter(combined[:, 0], combined[:, 1])
     plt.show()
