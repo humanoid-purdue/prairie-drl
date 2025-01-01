@@ -82,17 +82,18 @@ class UnitreeEnvMini(PipelineEnv):
     def reset(self, rng: jax.Array) -> State:
         rng, key = jax.random.split(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
-        fsp, vel = rewards.naiveFootstepPlan(DS_TIME, SS_TIME)
+        l_fsp, r_fsp, vel = rewards.naiveFootstepPlan(DS_TIME, SS_TIME)
         unit = jnp.array([1., 0.])
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
             "count": jnp.zeros(1),
-            "pos_xy": jnp.zeros([1000, 2]),
-            "pelvis_angle": jnp.zeros([1000, 2]),
+            "pos_xy": jnp.zeros([100, 2]),
+            "pelvis_angle": jnp.zeros([100, 2]),
             "centroid_velocity": vel,
             "facing_vec": unit,
-            "footstep_plan": fsp
+            "l_footstep_plan": l_fsp,
+            "r_footstep_plan": r_fsp
         }
         metrics = {'distance': 0.0,
                    'reward': 0.0,
@@ -141,27 +142,27 @@ class UnitreeEnvMini(PipelineEnv):
         data0 = state.pipeline_state
 
         period_reward, l_grf, r_grf = self.periodic_reward(state.info, data, data0)
-        period_reward = period_reward[0] * 0.3
+        period_reward = period_reward[0] * 0.1
 
-        upright_reward = self.upright_reward(data) * 5.0
+        upright_reward = self.upright_reward(data) * 4.0
 
-        jl_reward = self.joint_limit_reward(data) * 5.0
+        jl_reward = self.joint_limit_reward(data) * 2.0
 
         flatfoot_reward = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 5.0
+        flatfoot_reward = flatfoot_reward * 2.0
 
         footstep_reward = self.footstepOrienReward(state.info, data)[0] * 1
-        stride_length_reward = self.strideLengthReward(state.info, data)[0] * 300
+        stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
 
-        footplace_reward = self.footplaceReward(state.info, data)[0] * 5
+        footplace_reward = self.footplaceReward(state.info, data)[0] * 2
 
         facing_vec = self.pelvisAngle(data)
 
         pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 3.0
 
-        velocity_reward = self.velocity_reward(state.info, data) * 5
+        velocity_reward = self.velocity_reward(state.info, data) * 3
 
-        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 30
+        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 10
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -180,6 +181,9 @@ class UnitreeEnvMini(PipelineEnv):
         return reward, done
 
     def footplaceReward(self, info, data):
+
+        l_target, r_target = self.fsp.getStepInfo(info["l_footstep_plan"], info["r_footstep_plan"], info["time"])
+
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
         lp3 = data.site_xpos[self.left_foot_s3]
@@ -191,18 +195,16 @@ class UnitreeEnvMini(PipelineEnv):
         l_xy = ( lp1[0:2] + lp2[0:2] + lp3[0:2] ) / 3
         r_xy = ( rp1[0:2] + rp2[0:2] + rp3[0:2] ) / 3
 
-        l_norms = jnp.linalg.norm(l_xy[None, :] - info["footstep_plan"], axis = 1)
-        r_norms = jnp.linalg.norm(r_xy[None, :] - info["footstep_plan"], axis = 1)
+        l_norms = jnp.linalg.norm(l_xy - l_target)
+        r_norms = jnp.linalg.norm(r_xy - r_target)
 
-        l_min = jnp.min(l_norms)
-        r_min = jnp.min(r_norms)
 
         def norm2Rew(norm):
             rew = jnp.exp(-1 * norm / 0.1)
             return jnp.where(norm < 0.1, 0, rew)
 
-        l_rew = norm2Rew(l_min)
-        r_rew = norm2Rew(r_min)
+        l_rew = norm2Rew(l_norms)
+        r_rew = norm2Rew(r_norms)
 
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, info["time"])
 

@@ -183,62 +183,45 @@ class FootstepPlan:
         self.buffer_time = buffer_time
         #footstep plan consists of an array of n by 4 array
         #Each footstep represented by 4 numbers, first 2 are pos, last 2 are direction vector
-        c = 20
-        step_size = 0.30
-        self.left_plan = np.zeros([c, 4])
-        self.right_plan = np.zeros([c, 4])
-        self.left_plan[0, :] = np.array([0., 0.117, 1.0, 0.])
-        self.right_plan[0, :] = np.array([0., -0.117, 1.0, 0.])
-        for i in range(c - 1):
-            l_x = (i // 2) * step_size + step_size / 2
-            r_x = ((i + 1) // 2) * step_size
-            self.left_plan[i + 1, :] = np.array([l_x, 0.1, 1.0, 0.0])
-            self.right_plan[i + 1, :] = np.array([r_x, -0.1, 1.0, 0.0])
+        c = 40
 
-        self.left_plan = jnp.array(self.left_plan)
-        self.right_plan = jnp.array(self.right_plan)
+        self.bottom_limit = jnp.arange(c) * (self.ds_time + self.ss_time) - self.ss_time - self.buffer_time
+        self.top_limit = (jnp.arange(c) + 1) * (self.ds_time + self.ss_time) - self.ss_time - self.buffer_time
 
-        self.bottom_limit = jnp.arange(c) * (self.ds_time + self.ss_time) - self.ss_time
-        self.top_limit = (jnp.arange(c) + 1) * (self.ds_time + self.ss_time) - self.ss_time
 
-        final_pos = ( self.left_plan[-1, :2] + self.right_plan[-1, :2] ) / 2
-        final_time = ( self.bottom_limit[-1] + self.top_limit[-1] ) / 2
-        self.vel = final_pos / final_time
-
-    def getNumInfo(self, t):
-        #Function gets the current footstep number and determines which legs are ground contact
-        step_no = jnp.int32(jnp.floor_divide(t + self.ss_time, self.ds_time + self.ss_time))
-        #Determine which legs are contacting ground
-        l_cc, r_cc = dualCycleCC(self.ds_time, self.ss_time, self.buffer_time, t)
-        return step_no, l_cc, r_cc
-
-    def getStepInfo(self, t):
+    def getStepInfo(self, left_plan, right_plan, t):
         weight_vec = jnp.where( self.bottom_limit < t, 1, 0) * jnp.where( self.top_limit > t, 1, 0)
-        l_step = jnp.sum(self.left_plan * weight_vec[:, None], axis = 0)
-        r_step = jnp.sum(self.right_plan * weight_vec[:, None], axis = 0)
-        l_cc, r_cc = dualCycleCC(self.ds_time, self.ss_time, self.buffer_time, t)
-        return l_step, r_step, l_cc, r_cc
+        l_step = jnp.sum(left_plan * weight_vec[:, None], axis = 0)
+        r_step = jnp.sum(right_plan * weight_vec[:, None], axis = 0)
+        return l_step, r_step
 
 def naiveFootstepPlan(ds_time, ss_time):
     l_steps = jnp.array([[0., 0.117]])
     r_steps = jnp.array([[0., -0.117]])
     step_size = 0.30
-    c = 20
+    c = 40
     for i in range(c - 1):
         l_x = (i // 2) * step_size + step_size / 2
-        r_x = ((i + 3) // 2) * step_size
+        r_x = ((i + 1) // 2) * step_size
         l_steps = jnp.concatenate([l_steps, jnp.array([[l_x, 0.10]])], axis = 0)
         r_steps = jnp.concatenate([r_steps, jnp.array([[r_x, -0.10]])], axis = 0)
-    combined = jnp.concatenate([l_steps, r_steps], axis = 0)
     ave_vel = (l_steps[-1, :] + r_steps[-1, :]) / ((c - 1) * (2 * ds_time + ss_time))
-    return combined, ave_vel
+    return l_steps, r_steps, ave_vel
+
 
 if __name__ == "__main__":
     ds_time = 0.15
-    ss_time = 0.4
+    ss_time = 0.40
     buffer_time = 0.05
-    combined, ave_vel = naiveFootstepPlan(ds_time, ss_time)
-    print(ave_vel)
+    l_plan, r_plan, vel = naiveFootstepPlan(ds_time, ss_time)
+    fsp = FootstepPlan(ds_time, ss_time, buffer_time)
+    v1 = []
+    v2 = []
+    for c in range(200):
+        l_xy, r_xy = fsp.getStepInfo(l_plan, r_plan, c / 100)
+        v1 += [l_xy[0]]
+        v2 += [r_xy[0]]
     import matplotlib.pyplot as plt
-    plt.scatter(combined[:, 0], combined[:, 1])
+    plt.plot(v1)
+    plt.plot(v2)
     plt.show()
