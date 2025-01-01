@@ -330,10 +330,11 @@ class UnitreeEnvMini(PipelineEnv):
         rp = (rp1 + rp2) / 2
 
         stride_length = jnp.linalg.norm(lp[0:2] - rp[0:2])
+        close_reward = jnp.clip(stride_length, min=0, max=0.1)
 
         reward = stride_target - stride_length
         reward = jnp.where(reward > 0, 0, reward)
-        reward = reward * ds_state
+        reward = reward * ds_state + close_reward
         return reward
 
     def determineGRF(self, data):
