@@ -198,6 +198,8 @@ class UnitreeEnvMini(PipelineEnv):
         l_norms = jnp.linalg.norm(l_xy - l_target)
         r_norms = jnp.linalg.norm(r_xy - r_target)
 
+        cpos = data.x.pos[self.pelvis_id]
+
 
         def norm2Rew(norm):
             rew = jnp.exp(-1 * norm / 0.1)
@@ -205,10 +207,12 @@ class UnitreeEnvMini(PipelineEnv):
 
         l_rew = norm2Rew(l_norms)
         r_rew = norm2Rew(r_norms)
+        pelvis_approx = ( l_xy + r_xy ) / 2
+        c_rew = jnp.exp(-1 * jnp.linalg.norm(cpos[0:2] - pelvis_approx[0:2]) / 0.5)
 
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, info["time"])
 
-        rew = l_rew * l_coeff + r_rew * r_coeff
+        rew = l_rew * l_coeff + r_rew * r_coeff + c_rew
         return rew
 
     def velocity_reward(self, info, data):
