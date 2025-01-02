@@ -91,8 +91,8 @@ class UnitreeEnvMini(PipelineEnv):
             "rng": rng,
             "time": jnp.zeros(1),
             "count": jnp.zeros(1),
-            "pos_xy": jnp.zeros([1000, 2]),
-            "pelvis_angle": jnp.zeros([1000, 2]),
+            "pos_xy": jnp.zeros([100, 2]),
+            "pelvis_angle": jnp.zeros([100, 2]),
             "centroid_velocity": vel,
             "facing_vec": unit,
         }
@@ -150,18 +150,20 @@ class UnitreeEnvMini(PipelineEnv):
         jl_reward = self.joint_limit_reward(data) * 5.0
 
         flatfoot_reward = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 5.0
+        flatfoot_reward = flatfoot_reward * 3.0
 
-        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.2
-        stride_length_reward = self.strideLengthReward(state.info, data)[0] * 300
+        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 2
+        stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
 
         facing_vec = self.pelvisAngle(data)
 
-        pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 3.0
+        pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 6.0
 
-        velocity_reward = self.velocity_reward(state.info, data) * 30
+        velocity_reward = self.velocity_reward(state.info, data) * 10
 
         swing_height_reward = self.swingHeightReward(state.info, data)[0] * 30
+
+        center_reward = self.centerReward(data) * 4
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -169,7 +171,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
 
 
-        reward = period_reward + healthy_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward + swing_height_reward
+        reward = period_reward + healthy_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward + swing_height_reward + center_reward
         done = 1.0 - is_healthy
         com_after = data.subtree_com[1]
         state.metrics.update(
@@ -213,7 +215,7 @@ class UnitreeEnvMini(PipelineEnv):
 
     def joint_limit_reward(self, data1):
         #within soft limit
-        limit = self.joint_limit * 0.90
+        limit = self.joint_limit * 0.80
 
         # calculate the joint angles has larger or smaller than the limit
         out_of_limit = -jnp.clip(data1.q[7:] - limit[1:, 0], max=0., min=None)
@@ -236,8 +238,8 @@ class UnitreeEnvMini(PipelineEnv):
         rp2 = data.site_xpos[self.right_foot_s2]
         rp3 = data.site_xpos[self.right_foot_s3]
 
-        l_h = ( lp1[2] + lp2[2] + lp3[3] ) / 3
-        r_h = ( rp1[2] + rp2[2] + rp3[3]) / 3
+        l_h = ( lp1[2] + lp2[2] + lp3[2] ) / 3
+        r_h = ( rp1[2] + rp2[2] + rp3[2]) / 3
 
         l_rew = jnp.clip(l_h - l_t, min = -10, max = 0)
         r_rew = jnp.clip(r_h - r_t, min = -10, max = 0)
@@ -334,7 +336,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         reward = stride_target - stride_length
         reward = jnp.where(reward > 0, 0, reward)
-        reward = reward * ds_state + close_reward
+        reward = reward * ds_state + close_reward * 0.5
         return reward
 
     def determineGRF(self, data):
@@ -365,4 +367,24 @@ class UnitreeEnvMini(PipelineEnv):
 
         rew = l_rew * l_coeff + r_rew * r_coeff
 
+        return rew
+
+    def centerReward(self, data):
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+        lp3 = data.site_xpos[self.left_foot_s3]
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+        rp3 = data.site_xpos[self.right_foot_s3]
+
+        l_h = ( lp1[2] + lp2[2] + lp3[2] ) / 3
+        r_h = ( rp1[2] + rp2[2] + rp3[2]) / 3
+
+        pelvis_loc = data.x.pos[self.pelvis_id]
+
+        l_norm = jnp.linalg.norm(pelvis_loc - l_h)
+        r_norm = jnp.linalg.norm(pelvis_loc - r_h)
+
+        rew = jnp.exp(-1 * jnp.abs(l_norm - r_norm) / 0.1)
         return rew

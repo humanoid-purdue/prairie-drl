@@ -249,7 +249,7 @@ class UnitreeEnvMini(PipelineEnv):
 
     def joint_limit_reward(self, data1):
         #within soft limit
-        limit = self.joint_limit * 0.90
+        limit = self.joint_limit * 0.80
 
         # calculate the joint angles has larger or smaller than the limit
         out_of_limit = -jnp.clip(data1.q[7:] - limit[1:, 0], max=0., min=None)
@@ -290,7 +290,7 @@ class UnitreeEnvMini(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        gnd_vel_coeff = -3
+        gnd_vel_coeff = -1
         swing_vel_coeff = 0
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
