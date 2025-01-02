@@ -47,19 +47,34 @@ train_fn = functools.partial(
       network_factory=make_networks_factory)
 
 x_data = []
-y_data = []
-ydataerr = []
+y_data = {
+        'reward': [],
+        'flatfoot_reward': [],
+        'periodic_reward': [],
+        'upright_reward': [],
+        'limit_reward': [],
+        'foot_orien_reward': [],
+        'stride_reward': [],
+        'pelvis_orien_reward': [],
+        'velocity_reward': [],
+        'swing_height_reward': [],
+        'center_reward': [],
+        'healthy_reward': [],
+        'ctrl_reward': []}
+prefix = "eval/episode_"
 times = [datetime.now()]
 
 def progress(num_steps, metrics):
     times.append(datetime.now())
     x_data.append(num_steps)
-    y_data.append(metrics['eval/episode_reward'])
+    for key in y_data.keys():
+        y_data[key].append(metrics[prefix + key])
     plt.xlim([0, train_fn.keywords['num_timesteps']])
     plt.xlabel('# environment steps')
     plt.ylabel('reward per episode')
-    plt.title(f'y={y_data[-1]:.3f}')
-    plt.plot(x_data, y_data)
+    for key in y_data.keys():
+        plt.plot(x_data, y_data[key], label = key)
+    plt.legend()
     plt.show()
 
 make_inference_fn, params, _= train_fn(environment=env,

@@ -96,10 +96,20 @@ class UnitreeEnvMini(PipelineEnv):
             "centroid_velocity": vel,
             "facing_vec": unit,
         }
-        metrics = {'distance': 0.0,
+        metrics = {
                    'reward': 0.0,
                    'flatfoot_reward': 0.0,
-                   'periodic_reward': 0.0}
+                   'periodic_reward': 0.0,
+                    'upright_reward': 0.0,
+                    'limit_reward': 0.0,
+                    'foot_orien_reward': 0.0,
+                    'stride_reward': 0.0,
+                    'pelvis_orien_reward': 0.0,
+                    'velocity_reward': 0.0,
+                    'swing_height_reward': 0.0,
+                    'center_reward': 0.0,
+                    'healthy_reward': 0.0,
+                    'ctrl_reward': 0.0}
 
         obs = self._get_obs(pipeline_state, jnp.zeros(self.nu), t = 0)
         reward, done, zero = jnp.zeros(3)
@@ -120,7 +130,7 @@ class UnitreeEnvMini(PipelineEnv):
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
 
-        reward, done = self.rewards(state, data1)
+        reward, done = self.rewards(state, data1, action)
 
         facing_vec = self.pelvisAngle(data1)
         pos_xy = data1.subtree_com[1][0:2]
@@ -138,45 +148,66 @@ class UnitreeEnvMini(PipelineEnv):
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
 
-    def rewards(self, state: State, data):
+    def rewards(self, state: State, data, action):
 
         data0 = state.pipeline_state
 
-        period_reward, l_grf, r_grf = self.periodic_reward(state.info, data, data0)
+        reward_dict = {}
+
+        period_reward = self.periodicReward(state.info, data, data0)
         period_reward = period_reward[0] * 0.3
+        reward_dict["periodic_reward"] = period_reward
 
         upright_reward = self.upright_reward(data) * 5.0
+        reward_dict["upright_reward"] = upright_reward
 
         jl_reward = self.joint_limit_reward(data) * 5.0
+        reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
         flatfoot_reward = flatfoot_reward * 3.0
+        reward_dict["flatfoot_reward"] = flatfoot_reward
 
-        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 2
+        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 10.0
+        reward_dict["foot_orien_reward"] = footstep_reward
+
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
+        reward_dict["stride_reward"] = stride_length_reward
 
         facing_vec = self.pelvisAngle(data)
 
         pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 6.0
+        reward_dict["pelvis_orien_reward"] = pelvis_a_reward
 
         velocity_reward = self.velocity_reward(state.info, data) * 10
+        reward_dict["velocity_reward"] = velocity_reward
 
-        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 30
+        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 50
+        reward_dict["swing_height_reward"] = swing_height_reward
 
         center_reward = self.centerReward(data) * 4
+        reward_dict["center_reward"] = center_reward
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 5.0 * is_healthy
+        reward_dict["healthy_reward"] = healthy_reward
+
+        ctrl_reward = -0.05 * jnp.sum(jnp.square(action))
+        reward_dict["ctrl_reward"] = ctrl_reward
+
+        reward = 0.0
+        for key in reward_dict.keys():
+            reward += reward_dict[key]
+
+        metric_dict = reward_dict.copy()
+        metric_dict["reward"] = reward
 
 
-        reward = period_reward + healthy_reward + footstep_reward + upright_reward + jl_reward + flatfoot_reward + velocity_reward + pelvis_a_reward + stride_length_reward + swing_height_reward + center_reward
         done = 1.0 - is_healthy
-        com_after = data.subtree_com[1]
         state.metrics.update(
-            reward=reward,
-            distance=jnp.linalg.norm(com_after),
+            **metric_dict
         )
 
         return reward, done
@@ -189,7 +220,6 @@ class UnitreeEnvMini(PipelineEnv):
         vel = ( com[0:2] - p0 ) / t
         vel_err = (vel - vel_target) ** 2
         return jnp.exp(jnp.sum(vel_err) * -10)
-
 
     def pelvisAngle(self, data):
         pelvis_c = data.site_xpos[self.pelvis_b_id][0:2]
@@ -247,8 +277,7 @@ class UnitreeEnvMini(PipelineEnv):
         rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
         return rew
 
-
-    def periodic_reward(self, info, data1, data0):
+    def periodicReward(self, info, data1, data0):
         t = info["time"]
 
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
@@ -256,7 +285,7 @@ class UnitreeEnvMini(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        gnd_vel_coeff = -3
+        gnd_vel_coeff = -5
         swing_vel_coeff = 0
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
@@ -292,7 +321,7 @@ class UnitreeEnvMini(PipelineEnv):
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 2 + grf_reward * 0.05, l_grf, r_grf
+        return vel_reward * 2 + grf_reward * 0.05
 
     def flatfootReward(self, data):
         vec_tar = jnp.array([0.0, 0.0, 1.0])
@@ -322,7 +351,7 @@ class UnitreeEnvMini(PipelineEnv):
         #only check distance when both are ds
         ds_state = l_coeff * r_coeff
         vel_mag = jnp.linalg.norm(info["centroid_velocity"])
-        stride_target = vel_mag * (DS_TIME + SS_TIME) * 1.5
+        stride_target = vel_mag * (DS_TIME + SS_TIME) * 1.2
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
         lp = (lp1 + lp2) / 2
@@ -336,7 +365,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         reward = stride_target - stride_length
         reward = jnp.where(reward > 0, 0, reward)
-        reward = reward * ds_state + close_reward * 0.5
+        reward = reward * ds_state + close_reward * 0.1
         return reward
 
     def determineGRF(self, data):
