@@ -168,7 +168,7 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward = flatfoot_reward * 3.0
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
-        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 2.0
+        footstep_reward = self.footstepOrienReward(state.info, data) * 2.0
         reward_dict["foot_orien_reward"] = footstep_reward
 
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
@@ -397,7 +397,7 @@ class UnitreeEnvMini(PipelineEnv):
         l_rew = pos2Rew(lf1, lf2, info["facing_vec"])
         r_rew = pos2Rew(rf1, rf2, info["facing_vec"])
 
-        rew = l_rew + r_rew
+        rew = l_rew * l_coeff + r_rew * r_coeff
 
         return rew
 
