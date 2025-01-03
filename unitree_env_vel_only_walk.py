@@ -67,6 +67,9 @@ class UnitreeEnvMini(PipelineEnv):
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
         position = data.qpos
+        global_pos = data.x.pos[self.pelvis_id + 1:, :]
+        global_pos = global_pos - data.x.pos[self.pelvis_id, :][None, :]
+        global_pos = global_pos.flatten()
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
         # external_contact_forces are excluded
@@ -75,7 +78,7 @@ class UnitreeEnvMini(PipelineEnv):
             data.qvel,
             data.cinert[1:].ravel(),
             data.cvel[1:].ravel(),
-            data.qfrc_actuator,
+            global_pos,
             prev_action, l_coeff, r_coeff, centroid_vel, face_vec
         ])
 
