@@ -161,7 +161,7 @@ class UnitreeEnvMini(PipelineEnv):
         upright_reward = self.upright_reward(data) * 5.0
         reward_dict["upright_reward"] = upright_reward
 
-        jl_reward = self.joint_limit_reward(data) * 5.0
+        jl_reward = self.joint_limit_reward(data) * 10.0
         reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
@@ -361,11 +361,11 @@ class UnitreeEnvMini(PipelineEnv):
         rp = (rp1 + rp2) / 2
 
         stride_length = jnp.linalg.norm(lp[0:2] - rp[0:2])
-        close_reward = jnp.clip(stride_length, min=0, max=0.1)
+        close_reward = jnp.clip(stride_length, min=0, max=0.1) - 0.1
 
         reward = stride_target - stride_length
         reward = jnp.where(reward > 0, 0, reward)
-        reward = reward * ds_state + close_reward * 0.1
+        reward = reward * ds_state + close_reward
         return reward
 
     def determineGRF(self, data):
@@ -381,7 +381,7 @@ class UnitreeEnvMini(PipelineEnv):
         def pos2Rew(p1, p2, target_orien):
             foot_orien = (p1 - p2)
             foot_orien = foot_orien / jnp.linalg.norm(foot_orien)
-            orien_rew = jnp.sum(foot_orien * target_orien)
+            orien_rew = jnp.abs(jnp.sum(foot_orien * target_orien))
             return orien_rew
 
         lf1 = data.site_xpos[self.left_foot_s1][0:2]
