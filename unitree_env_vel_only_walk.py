@@ -245,14 +245,18 @@ class UnitreeEnvMini(PipelineEnv):
 
     def joint_limit_reward(self, data1):
         #within soft limit
-        limit = self.joint_limit * 0.80
+        center = jnp.mean(self.joint_limit[1:, :], axis = 1)
+        d_top = self.joint_limit[1:, 1] - center
+        d_bottom = self.joint_limit[1:, 0] - center
+        top = center + d_top * 0.8
+        bottom = center + d_bottom * 0.8
 
         # calculate the joint angles has larger or smaller than the limit
-        out_of_limit = -jnp.clip(data1.q[7:] - limit[1:, 0], max=0., min=None)
-        out_of_limit += jnp.clip(data1.q[7:] - limit[1:, 1], max=None, min=0.)
+        top_rew = jnp.clip(data1.q[7:] - top, min = 0, max = None)
+        bottom_rew = jnp.clip(bottom - data1.q[7:], min = 0, max = None)
 
         # calculate the reward
-        reward = jnp.sum(out_of_limit)
+        reward = jnp.sum(top_rew + bottom_rew)
         return reward * -1
 
     def swingHeightReward(self, info, data):
@@ -380,21 +384,20 @@ class UnitreeEnvMini(PipelineEnv):
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
         def pos2Rew(p1, p2, target_orien):
             foot_orien = (p1 - p2)
-            foot_orien = foot_orien / jnp.linalg.norm(foot_orien)
-            orien_rew = jnp.abs(jnp.sum(foot_orien * target_orien))
+            foot_xy = foot_orien[0:2] / jnp.linalg.norm(foot_orien[0:2])
+            orien_rew = jnp.abs(jnp.sum(foot_xy * target_orien))
             return orien_rew
 
-        lf1 = data.site_xpos[self.left_foot_s1][0:2]
-        lf2 = data.site_xpos[self.left_foot_s2][0:2]
+        lf1 = data.site_xpos[self.left_foot_s1].flatten()
+        lf2 = data.site_xpos[self.left_foot_s2].flatten()
 
-        rf1 = data.site_xpos[self.right_foot_s1][0:2]
-        rf2 = data.site_xpos[self.right_foot_s2][0:2]
-
+        rf1 = data.site_xpos[self.right_foot_s1].flatten()
+        rf2 = data.site_xpos[self.right_foot_s2].flatten()
 
         l_rew = pos2Rew(lf1, lf2, info["facing_vec"])
         r_rew = pos2Rew(rf1, rf2, info["facing_vec"])
 
-        rew = l_rew * l_coeff + r_rew * r_coeff
+        rew = l_rew + r_rew
 
         return rew
 
