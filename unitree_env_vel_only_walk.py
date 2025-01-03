@@ -155,7 +155,7 @@ class UnitreeEnvMini(PipelineEnv):
         reward_dict = {}
 
         period_reward = self.periodicReward(state.info, data, data0)
-        period_reward = period_reward[0] * 2.0
+        period_reward = period_reward[0] * 0.6
         reward_dict["periodic_reward"] = period_reward
 
         upright_reward = self.upright_reward(data) * 5.0
@@ -165,10 +165,10 @@ class UnitreeEnvMini(PipelineEnv):
         reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 2.0
+        flatfoot_reward = flatfoot_reward * 3.0
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
-        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 1.0
+        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 2.0
         reward_dict["foot_orien_reward"] = footstep_reward
 
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
@@ -194,7 +194,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        ctrl_reward = -0.15 * jnp.sum(jnp.square(action))
+        ctrl_reward = -0.05 * jnp.sum(jnp.square(action))
         reward_dict["ctrl_reward"] = ctrl_reward
 
         reward = 0.0
@@ -241,7 +241,7 @@ class UnitreeEnvMini(PipelineEnv):
         pelvis_xy = body_pos.pos[self.pelvis_id][0:2]
         head_xy = data1.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
-        return jnp.exp(xy_err * -1/0.05)
+        return jnp.exp(xy_err * -30)
 
     def joint_limit_reward(self, data1):
         #within soft limit
