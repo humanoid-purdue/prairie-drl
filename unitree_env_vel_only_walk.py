@@ -161,7 +161,7 @@ class UnitreeEnvMini(PipelineEnv):
         upright_reward = self.upright_reward(data) * 5.0
         reward_dict["upright_reward"] = upright_reward
 
-        jl_reward = self.joint_limit_reward(data) * 10.0
+        jl_reward = self.joint_limit_reward(data) * 5.0
         reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
@@ -176,13 +176,13 @@ class UnitreeEnvMini(PipelineEnv):
 
         facing_vec = self.pelvisAngle(data)
 
-        pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 3.0
+        pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 6.0
         reward_dict["pelvis_orien_reward"] = pelvis_a_reward
 
-        velocity_reward = self.velocity_reward(state.info, data) * 4
+        velocity_reward = self.velocity_reward(state.info, data) * 10
         reward_dict["velocity_reward"] = velocity_reward
 
-        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 100
+        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 50
         reward_dict["swing_height_reward"] = swing_height_reward
 
         center_reward = self.centerReward(data) * 4
@@ -194,7 +194,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        ctrl_reward = -0.50 * jnp.sum(jnp.square(action))
+        ctrl_reward = -0.15 * jnp.sum(jnp.square(action))
         reward_dict["ctrl_reward"] = ctrl_reward
 
         reward = 0.0
