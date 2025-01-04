@@ -121,7 +121,7 @@ class UnitreeEnvMini(PipelineEnv):
         unit = jnp.array([1, r[1] - 0.5])
         unit = unit / jnp.linalg.norm(unit)
         vel = unit * mag
-        angular_velocity = 0.5 #z Rads / s
+        angular_velocity = 0.2 #z Rads / s
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
