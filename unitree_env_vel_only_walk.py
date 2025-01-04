@@ -171,7 +171,7 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward = flatfoot_reward * 3.0
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
-        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 2.0
+        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 1.0
         reward_dict["foot_orien_reward"] = footstep_reward
 
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
@@ -218,11 +218,10 @@ class UnitreeEnvMini(PipelineEnv):
     def velocity_reward(self, info, data):
         com = data.subtree_com[1]
         vel_target = info["centroid_velocity"]
-        p0 = jnp.where(info["time"] < 1, jnp.array([0, 0]), info["pos_xy"][-1, :])
-        t = jnp.where(info["time"] < 1, info["time"], 1)
-        vel = ( com[0:2] - p0 ) / t
+        tm = jnp.where(info["time"] < 1, 0, 1)
+        vel = ( com[0:2] - info["pos_xy"][-1, :] )
         vel_err = (vel - vel_target) ** 2
-        return jnp.exp(jnp.sum(vel_err) * -10)
+        return jnp.exp(jnp.sum(vel_err) * -10) * tm
 
     def pelvisAngle(self, data):
         pelvis_c = data.site_xpos[self.pelvis_b_id][0:2]
@@ -358,7 +357,7 @@ class UnitreeEnvMini(PipelineEnv):
         #only check distance when both are ds
         ds_state = l_coeff * r_coeff
         vel_mag = jnp.linalg.norm(info["centroid_velocity"])
-        stride_target = vel_mag * (DS_TIME + SS_TIME) * 1.2
+        stride_target = vel_mag * (DS_TIME + SS_TIME) * 1.0
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
         lp = (lp1 + lp2) / 2
@@ -400,8 +399,12 @@ class UnitreeEnvMini(PipelineEnv):
         l_rew = pos2Rew(lf1, lf2, info["facing_vec"])
         r_rew = pos2Rew(rf1, rf2, info["facing_vec"])
 
-        rew = l_rew * l_coeff + r_rew * r_coeff
+        t_c = 1
+        b_c = 0.3
+        l_coeff = l_coeff * (t_c - b_c) + b_c
+        r_coeff = r_coeff * (t_c - b_c) + b_c
 
+        rew = l_rew * l_coeff + r_rew * r_coeff
         return rew
 
     def centerReward(self, data):
