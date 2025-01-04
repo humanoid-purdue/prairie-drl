@@ -16,10 +16,10 @@ SS_TIME = 0.5
 BU_TIME = 0.05
 STEP_HEIGHT = 0.1
 
-def rotateVec(vec3, angle):
+def rotateVec2(vec2, angle):
     rot_mat = jnp.array([[jnp.cos(angle), -1 * jnp.sin(angle)],[jnp.sin(angle), jnp.cos(angle)]])
-    new_xy = jnp.matmul(vec3[0:2], vec3[0:2])
-    new_vec3 = jnp.concatenate([new_xy, vec3[2:3]])
+    new_xy = jnp.matmul(rot_mat, vec2)
+    return new_xy
 
 class UnitreeEnvMini(PipelineEnv):
     def __init__(self):
@@ -152,6 +152,12 @@ class UnitreeEnvMini(PipelineEnv):
 
         state.info["time"] += self.dt
         state.info["count"] += 1
+
+        angular_displacement = state.info["angular_velocity"] * self.dt
+        new_vel_vec = rotateVec2(state.info["centroid_velocity"], angular_displacement)
+        new_unit_vec = new_vel_vec / jnp.linalg.norm(new_vel_vec)
+        state.info["centroid_velocity"] = new_vel_vec
+        state.info["facing_vec"] = new_unit_vec
 
         obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
         return state.replace(
@@ -304,6 +310,9 @@ class UnitreeEnvMini(PipelineEnv):
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
 
+        l_shuffle_coeff = l_coeff * -10
+        r_shuffle_coeff = r_coeff * -10
+
         l_grf, r_grf = self.determineGRF(data1)
         l_nf = jnp.linalg.norm(l_grf[0:3])
         r_nf = jnp.linalg.norm(r_grf[0:3])
@@ -317,25 +326,25 @@ class UnitreeEnvMini(PipelineEnv):
             bp2 = d2.site_xpos
             return (bp2[id] - bp1[id]) / self.dt
 
-        l1_spd = jnp.linalg.norm(getVel(data0, data1, self.left_foot_s1))
-        l2_spd = jnp.linalg.norm(getVel(data0, data1, self.left_foot_s2))
+        l1_vel = getVel(data0, data1, self.left_foot_s1)
+        l2_vel = getVel(data0, data1, self.left_foot_s2)
 
-        r1_spd = jnp.linalg.norm(getVel(data0, data1, self.right_foot_s1))
-        r2_spd = jnp.linalg.norm(getVel(data0, data1, self.right_foot_s2))
+        r1_vel = getVel(data0, data1, self.right_foot_s1)
+        r2_vel = getVel(data0, data1, self.right_foot_s2)
 
-        l_spd = ( l1_spd + l2_spd ) / 2
-        r_spd = ( r1_spd + r2_spd ) / 2
+        l_spd = ( jnp.linalg.norm(l1_vel) + jnp.linalg.norm(l2_vel) ) / 2
+        r_spd = ( jnp.linalg.norm(r1_vel) + jnp.linalg.norm(r2_vel) ) / 2
 
-        #l_vel = jnp.clip(l_spd, 0, 0.2)
-        #r_vel = jnp.clip(r_spd, 0, 0.2)
-        l_vel = l_spd
-        r_vel = r_spd
+        l_shuffle = jnp.exp(jnp.linalg.norm(l1_vel - l2_vel) * -1 / 0.01)
+        r_shuffle = jnp.exp(jnp.linalg.norm(r1_vel - r2_vel) * -1 / 0.01)
 
-        vel_reward = l_vel_coeff * l_vel + r_vel_coeff * r_vel
+
+        vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
+        shuffle_reward = l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 2 + grf_reward * 0.05
+        return vel_reward * 2 + grf_reward * 0.05 + shuffle_reward
 
     def flatfootReward(self, data):
         vec_tar = jnp.array([0.0, 0.0, 1.0])
