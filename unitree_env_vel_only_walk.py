@@ -68,7 +68,7 @@ class UnitreeEnvMini(PipelineEnv):
 
 
     def _get_obs(
-            self, data: mjx.Data, prev_action: jnp.ndarray, t = 0, centroid_vel = jnp.array([0.4, 0.0]), face_vec = jnp.array([1.0, 0.0])
+            self, data: mjx.Data, prev_action: jnp.ndarray, t = 0, centroid_vel = jnp.array([0.4, 0.0]), face_vec = jnp.array([1.0, 0.0]), ang_vel = 0.0
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
         position = data.qpos
@@ -88,6 +88,10 @@ class UnitreeEnvMini(PipelineEnv):
 
         head = data.site_xpos[self.head_id] - center
         pel_front = data.site_xpos[self.pelvis_f_id] - center
+        pel_back = data.site_xpos[self.pelvis_b_id] - center
+
+        facing_vec = pel_front - pel_back
+        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
 
         local_sites = jnp.concatenate([lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front], axis = 0)
 
@@ -103,6 +107,9 @@ class UnitreeEnvMini(PipelineEnv):
             data.cvel[1:].ravel(),
             local_pos,
             l_grf, r_grf,
+            ang_vel,
+            local_sites,
+            facing_vec,
             prev_action, l_coeff, r_coeff, centroid_vel, face_vec
         ])
 
@@ -178,7 +185,7 @@ class UnitreeEnvMini(PipelineEnv):
         state.info["centroid_velocity"] = new_vel_vec
         state.info["facing_vec"] = new_unit_vec
 
-        obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
+        obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"], state.info["angular_velocity"])
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
