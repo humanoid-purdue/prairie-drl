@@ -222,7 +222,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         return reward, done
 
-    def velocity_reward(self, info, data):
+    def velocityReward(self, info, data):
         com = data.subtree_com[1]
         vel_target = info["centroid_velocity"]
         p0 = jnp.where(info["time"] < 1, jnp.array([0, 0]), info["pos_xy"][-1, :])
