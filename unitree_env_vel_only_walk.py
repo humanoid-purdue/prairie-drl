@@ -73,8 +73,8 @@ class UnitreeEnvMini(PipelineEnv):
         """Observes humanoid body position, velocities, and angles."""
         position = data.qpos
         global_pos = data.x.pos[self.pelvis_id + 1:, :]
-        center = data.x.pos[self.pelvis_id, :][None, :]
-        local_pos = global_pos - center
+        center = data.x.pos[self.pelvis_id, :]
+        local_pos = global_pos - center[None, :]
         local_pos = local_pos.flatten()
         #sites
 
@@ -92,6 +92,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         facing_vec = pel_front - pel_back
         facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+        facing_vec = facing_vec.flatten()
 
         local_sites = jnp.concatenate([lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front], axis = 0)
 
@@ -107,7 +108,7 @@ class UnitreeEnvMini(PipelineEnv):
             data.cvel[1:].ravel(),
             local_pos,
             l_grf, r_grf,
-            ang_vel,
+            jnp.array([ang_vel]),
             local_sites,
             facing_vec,
             prev_action, l_coeff, r_coeff, centroid_vel, face_vec
