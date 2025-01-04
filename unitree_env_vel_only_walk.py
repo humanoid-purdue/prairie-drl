@@ -128,7 +128,7 @@ class UnitreeEnvMini(PipelineEnv):
             "time": jnp.zeros(1),
             "count": jnp.zeros(1),
             "pos_xy": jnp.zeros([100, 2]),
-            "pelvis_angle": jnp.zeros([100, 2]),
+            "pelvis_angle": jnp.zeros([200, 2]),
             "centroid_velocity": vel,
             "angular_velocity": angular_velocity,
             "facing_vec": unit,
@@ -201,14 +201,14 @@ class UnitreeEnvMini(PipelineEnv):
         period_reward = period_reward[0] * 0.6
         reward_dict["periodic_reward"] = period_reward
 
-        upright_reward = self.upright_reward(data) * 5.0
+        upright_reward = self.upright_reward(data) * 15.0
         reward_dict["upright_reward"] = upright_reward
 
         jl_reward = self.joint_limit_reward(data) * 10.0
         reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 3.0
+        flatfoot_reward = flatfoot_reward * 1.0
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
         footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.0
@@ -337,8 +337,8 @@ class UnitreeEnvMini(PipelineEnv):
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
 
-        l_shuffle_coeff = l_coeff * -10
-        r_shuffle_coeff = r_coeff * -10
+        l_shuffle_coeff = l_coeff * -1
+        r_shuffle_coeff = r_coeff * -1
 
         l_grf, r_grf = self.determineGRF(data1)
         l_nf = jnp.linalg.norm(l_grf[0:3])
@@ -362,8 +362,8 @@ class UnitreeEnvMini(PipelineEnv):
         l_spd = ( jnp.linalg.norm(l1_vel) + jnp.linalg.norm(l2_vel) ) / 2
         r_spd = ( jnp.linalg.norm(r1_vel) + jnp.linalg.norm(r2_vel) ) / 2
 
-        l_shuffle = jnp.exp(jnp.linalg.norm(l1_vel - l2_vel) * -1 / 0.01)
-        r_shuffle = jnp.exp(jnp.linalg.norm(r1_vel - r2_vel) * -1 / 0.01)
+        l_shuffle = jnp.exp(jnp.linalg.norm(l1_vel - l2_vel) * -1 / 0.05)
+        r_shuffle = jnp.exp(jnp.linalg.norm(r1_vel - r2_vel) * -1 / 0.05)
 
 
         vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
@@ -371,7 +371,7 @@ class UnitreeEnvMini(PipelineEnv):
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 2 + grf_reward * 0.05 + shuffle_reward
+        return vel_reward * 2 + grf_reward * 0.05 + shuffle_reward * 20
 
     def flatfootReward(self, data):
         vec_tar = jnp.array([0.0, 0.0, 1.0])

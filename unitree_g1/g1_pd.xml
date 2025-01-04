@@ -18,7 +18,7 @@
         <numeric data="1" name="spring_inertia_scale"/>
         <numeric data="20" name="matrix_inv_iterations"/>
         <numeric data="15" name="solver_maxls"/>
-    </custom>
+  </custom>
 
   <visual>
     <global ellipsoidinertia="true"/>
@@ -34,11 +34,11 @@
       <default class="visual">
         <geom group="2" type="mesh" contype="0" conaffinity="0" density="0" material="metallic"/>
       </default>
-      <default class="collision">
-        <geom contype="1" group="3" type="sphere"/>
-        <default class="foot">
-          <geom type="sphere" size="0.01"/>
+      <default class="foot">
+          <geom group="2" type="sphere" contype="0" conaffinity="0" density="0" size="0.01"/>
         </default>
+      <default class="collision">
+        <geom contype="1" group="3" type="sphere" rgba="0 0 0 0"/>
       </default>
     </default>
   </default>
@@ -46,6 +46,7 @@
   <asset>
     <material name="metallic" rgba="0.7 0.7 0.7 1"/>
     <material name="black" rgba="0.2 0.2 0.2 1"/>
+    <material name="transparent" rgba="0 0 0 0"/>
 
     <mesh file="pelvis.STL"/>
     <mesh file="pelvis_contour_link.STL"/>
@@ -70,6 +71,8 @@
   <worldbody>
     <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30"/>
     <body name="pelvis" pos="0 0 0.755" childclass="g1">
+      <site name="pelvis_back" pos="-0.05 0.0 0.0"/>
+      <site name="pelvis_front" pos="0.05 0.0 0.0"/>
       <inertial pos="0 0 -0.07605" quat="1 0 -0.000405289 0" mass="2.86" diaginertia="0.0079143 0.0069837 0.0059404"/>
       <freejoint name="floating_base_joint"/>
       <light name="tracking" mode="trackcom" pos="0 0 2"/>
@@ -101,13 +104,14 @@
                 <joint name="left_ankle_pitch_joint" axis="0 1 0" range="-0.68 0.73"/>
                 <geom type="mesh" class="visual" mesh="left_ankle_pitch_link"/>
                 <body name="left_ankle_roll_link" pos="0 0 -0.017558">
-                  <site name="left_foot_p1" pos="0.05 0.03 0"/>
-                  <site name="left_foot_p2" pos="-0.05 -0.03 0"/>
+                  <site name="left_foot_p1" pos="0.05 0.0 -0.034"/>
+                  <site name="left_foot_p2" pos="-0.05 0.0 -0.034"/>
+                  <site name="left_foot_p3" pos="0.0 0.05 -0.034"/>
                   <inertial pos="0.024762 2e-05 -0.012526" quat="0.000771333 0.734476 0.000921291 0.678634" mass="0.391"
                     diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="left_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="left_ankle_roll_link"/>
-                  <geom type="mesh" mesh="left_foot_simple" class="collision" name="left_foot"/>
+                  <geom type="mesh" mesh="left_foot_simple" class="collision" name="left_foot" rgba="1 1 1 0"/>
                   <geom pos="-0.06 0.02 -0.03" class="foot"/>
                   <geom pos="-0.06 -0.02 -0.03" class="foot"/>
                   <geom pos="0.13 0.02 -0.03" class="foot"/>
@@ -144,13 +148,14 @@
                 <joint name="right_ankle_pitch_joint" axis="0 1 0" range="-0.68 0.73"/>
                 <geom type="mesh" class="visual" mesh="right_ankle_pitch_link"/>
                 <body name="right_ankle_roll_link" pos="0 0 -0.017558">
-                  <site name="right_foot_p1" pos="0.05 -0.03 0"/>
-                  <site name="right_foot_p2" pos="-0.05 0.03 0"/>
+                  <site name="right_foot_p1" pos="0.05 0.0 -0.034"/>
+                  <site name="right_foot_p2" pos="-0.05 0.0 -0.034"/>
+                  <site name="right_foot_p3" pos="0.0 -0.05 -0.034"/>
                   <inertial pos="0.024762 -2e-05 -0.012526" quat="-0.000771333 0.734476 -0.000921291 0.678634"
                     mass="0.391" diaginertia="0.00110394 0.0010657 0.000149255"/>
                   <joint name="right_ankle_roll_joint" axis="1 0 0" range="-0.2618 0.2618"/>
                   <geom type="mesh" class="visual" material="black" mesh="right_ankle_roll_link"/>
-                  <geom type="mesh" mesh="right_foot_simple" class="collision" name="right_foot"/>
+                  <geom type="mesh" mesh="right_foot_simple" class="collision" name="right_foot" rgba="0 0 0 0"/>
                   <geom pos="-0.06 0.02 -0.03" class="foot"/>
                   <geom pos="-0.06 -0.02 -0.03" class="foot"/>
                   <geom pos="0.13 0.02 -0.03" class="foot"/>
@@ -174,21 +179,21 @@
   </worldbody>
 
   <actuator>
-    <intvelocity class="g1" name="left_hip_pitch_joint" joint="left_hip_pitch_joint" ctrlrange="-88 88" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="left_hip_roll_joint" joint="left_hip_roll_joint" ctrlrange="-88 88" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="left_hip_yaw_joint" joint="left_hip_yaw_joint" ctrlrange="-88 88" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="left_knee_joint" joint="left_knee_joint" ctrlrange="-139 139" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="left_ankle_pitch_joint" joint="left_ankle_pitch_joint" ctrlrange="-40 40" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="left_ankle_roll_joint" joint="left_ankle_roll_joint" ctrlrange="-40 40" kp="500" kv="30" actrange="-3 3"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="left_hip_pitch_joint" joint="left_hip_pitch_joint" ctrlrange="-88 88"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="left_hip_roll_joint" joint="left_hip_roll_joint" ctrlrange="-88 88"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="left_hip_yaw_joint" joint="left_hip_yaw_joint" ctrlrange="-88 88"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="left_knee_joint" joint="left_knee_joint" ctrlrange="-139 139"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="left_ankle_pitch_joint" joint="left_ankle_pitch_joint" ctrlrange="-40 40"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="left_ankle_roll_joint" joint="left_ankle_roll_joint" ctrlrange="-40 40"/>
 
-    <intvelocity class="g1" name="right_hip_pitch_joint" joint="right_hip_pitch_joint" ctrlrange="-88 88" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="right_hip_roll_joint" joint="right_hip_roll_joint" ctrlrange="-88 88" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="right_hip_yaw_joint" joint="right_hip_yaw_joint" ctrlrange="-88 88" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="right_knee_joint" joint="right_knee_joint" ctrlrange="-139 139" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="right_ankle_pitch_joint" joint="right_ankle_pitch_joint" ctrlrange="-40 40" kp="500" kv="30" actrange="-3 3"/>
-    <intvelocity class="g1" name="right_ankle_roll_joint" joint="right_ankle_roll_joint" ctrlrange="-40 40" kp="500" kv="30" actrange="-3 3"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="right_hip_pitch_joint" joint="right_hip_pitch_joint" ctrlrange="-88 88"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="right_hip_roll_joint" joint="right_hip_roll_joint" ctrlrange="-88 88"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="right_hip_yaw_joint" joint="right_hip_yaw_joint" ctrlrange="-88 88"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="right_knee_joint" joint="right_knee_joint" ctrlrange="-139 139"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="right_ankle_pitch_joint" joint="right_ankle_pitch_joint" ctrlrange="-40 40"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="right_ankle_roll_joint" joint="right_ankle_roll_joint" ctrlrange="-40 40"/>
 
-    <intvelocity class="g1" name="torso_joint" joint="torso_joint" ctrlrange="-88 88" kp="500" kv="30" actrange="-3 3"/>
+    <intvelocity inheritrange="1" kp="400.0" kv="40.0" class="g1" name="torso_joint" joint="torso_joint" ctrlrange="-88 88"/>
   </actuator>
 
   <sensor>
