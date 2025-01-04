@@ -73,8 +73,26 @@ class UnitreeEnvMini(PipelineEnv):
         """Observes humanoid body position, velocities, and angles."""
         position = data.qpos
         global_pos = data.x.pos[self.pelvis_id + 1:, :]
-        global_pos = global_pos - data.x.pos[self.pelvis_id, :][None, :]
-        global_pos = global_pos.flatten()
+        center = data.x.pos[self.pelvis_id, :][None, :]
+        local_pos = global_pos - center
+        local_pos = local_pos.flatten()
+        #sites
+
+        lp1 = data.site_xpos[self.left_foot_s1] - center
+        lp2 = data.site_xpos[self.left_foot_s2] - center
+        lp3 = data.site_xpos[self.left_foot_s3] - center
+
+        rp1 = data.site_xpos[self.right_foot_s1] - center
+        rp2 = data.site_xpos[self.right_foot_s2] - center
+        rp3 = data.site_xpos[self.right_foot_s3] - center
+
+        head = data.site_xpos[self.head_id] - center
+        pel_front = data.site_xpos[self.pelvis_f_id] - center
+
+        local_sites = jnp.concatenate([lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front], axis = 0)
+
+        l_grf, r_grf = self.determineGRF(data)
+
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
         # external_contact_forces are excluded
@@ -83,7 +101,8 @@ class UnitreeEnvMini(PipelineEnv):
             data.qvel,
             data.cinert[1:].ravel(),
             data.cvel[1:].ravel(),
-            global_pos,
+            local_pos,
+            l_grf, r_grf,
             prev_action, l_coeff, r_coeff, centroid_vel, face_vec
         ])
 
