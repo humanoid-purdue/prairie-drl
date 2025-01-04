@@ -16,6 +16,11 @@ SS_TIME = 0.5
 BU_TIME = 0.05
 STEP_HEIGHT = 0.1
 
+def rotateVec(vec3, angle):
+    rot_mat = jnp.array([[jnp.cos(angle), -1 * jnp.sin(angle)],[jnp.sin(angle), jnp.cos(angle)]])
+    new_xy = jnp.matmul(vec3[0:2], vec3[0:2])
+    new_vec3 = jnp.concatenate([new_xy, vec3[2:3]])
+
 class UnitreeEnvMini(PipelineEnv):
     def __init__(self):
         model = mujoco.MjModel.from_xml_path("unitree_g1/scene.xml")
@@ -90,6 +95,7 @@ class UnitreeEnvMini(PipelineEnv):
         unit = jnp.array([1, r[1] - 0.5])
         unit = unit / jnp.linalg.norm(unit)
         vel = unit * mag
+        angular_velocity = 0.5 #z Rads / s
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
@@ -97,6 +103,7 @@ class UnitreeEnvMini(PipelineEnv):
             "pos_xy": jnp.zeros([100, 2]),
             "pelvis_angle": jnp.zeros([100, 2]),
             "centroid_velocity": vel,
+            "angular_velocity": angular_velocity,
             "facing_vec": unit,
         }
         metrics = {
@@ -171,7 +178,7 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward = flatfoot_reward * 3.0
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
-        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 1.0
+        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.0
         reward_dict["foot_orien_reward"] = footstep_reward
 
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
@@ -215,13 +222,14 @@ class UnitreeEnvMini(PipelineEnv):
 
         return reward, done
 
-    def velocityReward(self, info, data):
+    def velocity_reward(self, info, data):
         com = data.subtree_com[1]
         vel_target = info["centroid_velocity"]
-        tm = jnp.where(info["time"] < 1, 0, 1)
-        vel = ( com[0:2] - info["pos_xy"][-1, :] )
+        p0 = jnp.where(info["time"] < 1, jnp.array([0, 0]), info["pos_xy"][-1, :])
+        t = jnp.where(info["time"] < 1, info["time"], 1)
+        vel = ( com[0:2] - p0 ) / t
         vel_err = (vel - vel_target) ** 2
-        return jnp.exp(jnp.sum(vel_err) * -10) * tm
+        return jnp.exp(jnp.sum(vel_err) * -10)
 
     def pelvisAngle(self, data):
         pelvis_c = data.site_xpos[self.pelvis_b_id][0:2]
