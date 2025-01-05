@@ -421,7 +421,7 @@ class UnitreeEnvMini(PipelineEnv):
         rp = (rp1 + rp2) / 2
 
         stride_length = jnp.linalg.norm(lp[0:2] - rp[0:2])
-        close_reward = jnp.clip(stride_length, min=0, max=0.1) - 0.1
+        close_reward = jnp.clip(stride_length, min=0, max=0.2) - 0.2
 
         reward = stride_target - stride_length
         reward = jnp.where(reward > 0, 0, reward)
