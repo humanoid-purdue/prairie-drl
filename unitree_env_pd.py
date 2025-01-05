@@ -131,7 +131,7 @@ class UnitreeEnvMini(PipelineEnv):
             "pelvis_angle": jnp.zeros([200, 2]),
             "centroid_velocity": vel,
             "angular_velocity": angular_velocity,
-            "facing_vec": unit,
+            "facing_vec": jnp.array([1., 0.]),
         }
         metrics = {
                    'reward': 0.0,
@@ -194,7 +194,7 @@ class UnitreeEnvMini(PipelineEnv):
         new_vel_vec = rotateVec2(state.info["centroid_velocity"], angular_displacement)
         new_unit_vec = new_vel_vec / jnp.linalg.norm(new_vel_vec)
         state.info["centroid_velocity"] = new_vel_vec
-        state.info["facing_vec"] = new_unit_vec
+        #state.info["facing_vec"] = new_unit_vec
 
         obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"], state.info["angular_velocity"])
         return state.replace(
@@ -372,8 +372,8 @@ class UnitreeEnvMini(PipelineEnv):
         l_spd = ( jnp.linalg.norm(l1_vel) + jnp.linalg.norm(l2_vel) ) / 2
         r_spd = ( jnp.linalg.norm(r1_vel) + jnp.linalg.norm(r2_vel) ) / 2
 
-        l_shuffle = jnp.exp(jnp.linalg.norm(l1_vel - l2_vel) * -1 / 0.05)
-        r_shuffle = jnp.exp(jnp.linalg.norm(r1_vel - r2_vel) * -1 / 0.05)
+        l_shuffle = jnp.exp(jnp.linalg.norm(l1_vel - l2_vel) * -1 / 0.01)
+        r_shuffle = jnp.exp(jnp.linalg.norm(r1_vel - r2_vel) * -1 / 0.01)
 
 
         vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
