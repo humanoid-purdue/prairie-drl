@@ -295,13 +295,13 @@ class UnitreeEnvMini(PipelineEnv):
         pelvis_f = data.site_xpos[self.pelvis_f_id][0:2]
         pelvis_vec = pelvis_f - pelvis_c
 
-        lf1 = data.site_xpos[self.left_foot_s1].flatten()
-        lf2 = data.site_xpos[self.left_foot_s2].flatten()
+        lf1 = data.site_xpos[self.left_foot_s1].flatten()[0:2]
+        lf2 = data.site_xpos[self.left_foot_s2].flatten()[0:2]
 
         l_vec = lf1 - lf2
 
-        rf1 = data.site_xpos[self.right_foot_s1].flatten()
-        rf2 = data.site_xpos[self.right_foot_s2].flatten()
+        rf1 = data.site_xpos[self.right_foot_s1].flatten()[0:2]
+        rf2 = data.site_xpos[self.right_foot_s2].flatten()[0:2]
 
         r_vec = rf1 - rf2
 
