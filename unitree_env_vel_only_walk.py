@@ -121,8 +121,8 @@ class UnitreeEnvMini(PipelineEnv):
         mag = ( r[0] + 1 ) * 0.3
         unit = jnp.array([1, r[1] - 0.5])
         unit = unit / jnp.linalg.norm(unit)
-        vel = unit * mag
-        angular_velocity = 0.0 #z Rads / s
+        vel = jnp.array([1, 0.])
+        angular_velocity = 0.2 #z Rads / s
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
@@ -182,7 +182,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         angular_displacement = state.info["angular_velocity"] * self.dt
         new_vel_vec = rotateVec2(state.info["centroid_velocity"], angular_displacement)
-        new_unit_vec = new_vel_vec / jnp.linalg.norm(new_vel_vec)
+        new_unit_vec = rotateVec2(state.info["facing_vec"], angular_displacement)
         state.info["centroid_velocity"] = new_vel_vec
         state.info["facing_vec"] = new_unit_vec
 
@@ -272,15 +272,15 @@ class UnitreeEnvMini(PipelineEnv):
         return facing_vec
 
     def pelvisAngleReward(self, data, facing_vec, state, target):
-        #ave_angle = jnp.sum(state.info["pelvis_angle"], axis = 0)
-        #ave_angle = ave_angle / jnp.linalg.norm(ave_angle)
-        #ave_angle = self.pelvisAngle(data)
-        #vec = jnp.where(state.info["time"] < 1.0, facing_vec, ave_angle)
-        #vec = jnp.reshape(vec, [2])
-        #rew = jnp.sum(target * vec)
-        dp = jnp.sum(facing_vec * target)
-        angle = jnp.arccos(dp)
-        rew = jnp.exp(-1 * angle / 0.5)
+        ave_angle = jnp.sum(state.info["pelvis_angle"], axis = 0)
+        ave_angle = ave_angle / jnp.linalg.norm(ave_angle)
+        ave_angle = self.pelvisAngle(data)
+        vec = jnp.where(state.info["time"] < 1.0, facing_vec, ave_angle)
+        vec = jnp.reshape(vec, [2])
+        rew = jnp.sum(target * vec)
+        #dp = jnp.sum(facing_vec * target)
+        #angle = jnp.arccos(dp)
+        #rew = jnp.exp(-1 * angle / 0.5)
         return rew
 
     def upright_reward(self, data1):
