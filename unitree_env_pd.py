@@ -306,7 +306,7 @@ class UnitreeEnvMini(PipelineEnv):
         r_vec = rf1 - rf2
 
         ave_vec = l_vec + r_vec + pelvis_vec * 0.7
-        ave_vec = ave_vec / np.linalg.norm(ave_vec)
+        ave_vec = ave_vec / jnp.linalg.norm(ave_vec)
 
         rew = jnp.sum(target * ave_vec)
 
