@@ -230,7 +230,7 @@ class UnitreeEnvMini(PipelineEnv):
         facing_vec = self.pelvisAngle(data)
 
         #pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 6.0
-        facing_reward = self.facingReward(data)
+        facing_reward = self.facingReward(data, state.info["facing_vec"])
         reward_dict["pelvis_orien_reward"] = facing_reward
 
         velocity_reward = self.velocityReward(state.info, data) * 10
