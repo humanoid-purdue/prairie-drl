@@ -229,8 +229,9 @@ class UnitreeEnvMini(PipelineEnv):
 
         facing_vec = self.pelvisAngle(data)
 
-        pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 6.0
-        reward_dict["pelvis_orien_reward"] = pelvis_a_reward
+        #pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 6.0
+        facing_reward = self.facingReward(data)
+        reward_dict["pelvis_orien_reward"] = facing_reward
 
         velocity_reward = self.velocityReward(state.info, data) * 10
         reward_dict["velocity_reward"] = velocity_reward
@@ -287,6 +288,29 @@ class UnitreeEnvMini(PipelineEnv):
         vec = jnp.where(state.info["time"] < 1.0, facing_vec, ave_angle)
         vec = jnp.reshape(vec, [2])
         rew = jnp.sum(target * vec)
+        return rew
+
+    def facingReward(self, data, target):
+        pelvis_c = data.site_xpos[self.pelvis_b_id][0:2]
+        pelvis_f = data.site_xpos[self.pelvis_f_id][0:2]
+        pelvis_vec = pelvis_f - pelvis_c
+
+        lf1 = data.site_xpos[self.left_foot_s1].flatten()
+        lf2 = data.site_xpos[self.left_foot_s2].flatten()
+
+        l_vec = lf1 - lf2
+
+        rf1 = data.site_xpos[self.right_foot_s1].flatten()
+        rf2 = data.site_xpos[self.right_foot_s2].flatten()
+
+        r_vec = rf1 - rf2
+
+        ave_vec = l_vec + r_vec + pelvis_vec * 0.7
+        ave_vec = ave_vec / np.linalg.norm(ave_vec)
+
+        rew = jnp.sum(target * ave_vec)
+
+        #Facing vector is the sum of each foots xy vector along with pelvis
         return rew
 
     def upright_reward(self, data1):
