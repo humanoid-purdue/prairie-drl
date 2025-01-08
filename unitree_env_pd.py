@@ -122,7 +122,7 @@ class UnitreeEnvMini(PipelineEnv):
         unit = jnp.array([1, r[1] - 0.5])
         unit = unit / jnp.linalg.norm(unit)
         vel = unit * mag
-        angular_velocity = 0.0 #z Rads / s
+        angular_velocity = 0.5 #z Rads / s
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
@@ -192,9 +192,9 @@ class UnitreeEnvMini(PipelineEnv):
 
         angular_displacement = state.info["angular_velocity"] * self.dt
         new_vel_vec = rotateVec2(state.info["centroid_velocity"], angular_displacement)
-        new_unit_vec = new_vel_vec / jnp.linalg.norm(new_vel_vec)
+        new_unit_vec = rotateVec2(state.info["facing_vec"], angular_displacement)
         state.info["centroid_velocity"] = new_vel_vec
-        #state.info["facing_vec"] = new_unit_vec
+        state.info["facing_vec"] = new_unit_vec
 
         obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"], state.info["angular_velocity"])
         return state.replace(
