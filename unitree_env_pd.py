@@ -122,7 +122,7 @@ class UnitreeEnvMini(PipelineEnv):
         unit = jnp.array([1, r[1] - 0.5])
         unit = unit / jnp.linalg.norm(unit)
         vel = unit * mag
-        angular_velocity = 0.3 #z Rads / s
+        angular_velocity = 0.2 #z Rads / s
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
@@ -308,11 +308,13 @@ class UnitreeEnvMini(PipelineEnv):
         ave_vec = l_vec + r_vec + pelvis_vec * 0.7
         ave_vec = ave_vec / jnp.linalg.norm(ave_vec)
 
-        rew = jnp.sum(target * ave_vec)
+        #rew = jnp.sum(target * ave_vec)
+        #rew = jnp.clip(rew, min = -1, max = 0.995)
 
-        rew = jnp.clip(rew, min = -1, max = 0.995)
+        angle = jnp.arccos(jnp.sum(target * ave_vec))
+        rew = jnp.exp(-1 * angle / 0.5)
+        rew = jnp.clip(rew, min = 0, max = 0.85)
 
-        #Facing vector is the sum of each foots xy vector along with pelvis
         return rew
 
     def upright_reward(self, data1):
