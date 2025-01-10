@@ -218,7 +218,7 @@ class UnitreeEnvMini(PipelineEnv):
         reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 1.5
+        flatfoot_reward = flatfoot_reward * 1.2
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
         footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.0
@@ -305,11 +305,22 @@ class UnitreeEnvMini(PipelineEnv):
 
         r_vec = rf1 - rf2
 
-        ave_vec = l_vec + r_vec + pelvis_vec * 3
+        l_vec = l_vec / jnp.linalg.norm(l_vec)
+        r_vec = r_vec / jnp.linalg.norm(r_vec)
+        pelvis_vec = pelvis_vec / jnp.linalg.norm(pelvis_vec)
+
+        ave_vec = l_vec + r_vec + pelvis_vec * 2
         ave_vec = ave_vec / jnp.linalg.norm(ave_vec)
 
         rew = jnp.sum(target * ave_vec)
         rew = jnp.clip(rew, min = -1, max = 0.995)
+
+        lr_delta =  jnp.sum(l_vec * r_vec)
+        tol = 0.64
+        cost = lr_delta - tol
+        cost = jnp.clip(cost, min = -1, max = 0)
+
+        rew = rew + cost
 
         #angle = jnp.arccos(jnp.sum(target * ave_vec))
         #rew = jnp.exp(-1 * angle / 0.5)
