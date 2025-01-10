@@ -226,7 +226,7 @@ class UnitreeEnvMini(PipelineEnv):
         reward_dict["foot_orien_reward"] = footstep_reward
 
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
-        reward_dict["stride_reward"] = stride_length_reward
+        #reward_dict["stride_reward"] = stride_length_reward
 
         facing_vec = self.pelvisAngle(data)
 
