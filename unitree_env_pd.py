@@ -218,7 +218,7 @@ class UnitreeEnvMini(PipelineEnv):
         reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 1.0
+        flatfoot_reward = flatfoot_reward * 1.5
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
         footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.0
