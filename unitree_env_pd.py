@@ -232,7 +232,7 @@ class UnitreeEnvMini(PipelineEnv):
         facing_vec = self.pelvisAngle(data)
 
         #pelvis_a_reward = self.pelvisAngleReward(facing_vec, state, state.info["facing_vec"]) * 6.0
-        facing_reward = self.facingReward(data, state.info["facing_vec"]) * 8.0
+        facing_reward = self.facingReward(data, state.info["facing_vec"]) * 9.0
         reward_dict["pelvis_orien_reward"] = facing_reward
 
         velocity_reward = self.velocityReward(state.info, data) * 10
@@ -318,7 +318,7 @@ class UnitreeEnvMini(PipelineEnv):
         rew = jnp.clip(rew, min = -1, max = 0.995)
 
         lr_delta =  jnp.sum(l_vec * r_vec)
-        tol = 0.64
+        tol = 0.44
         cost = lr_delta - tol
         cost = jnp.clip(cost, min = -1, max = 0)
 
