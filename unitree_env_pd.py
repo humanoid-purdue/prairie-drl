@@ -191,7 +191,7 @@ class UnitreeEnvMini(PipelineEnv):
         new_vel_vec = rotateVec2(state.info["centroid_velocity"], 0.0)
         #new_unit_vec = rotateVec2(state.info["current_face"], angular_displacement)
         t_u = jnp.floor(state.info["time"] / (2 * jnp.pi / 3)) * (2 * jnp.pi / 3)
-        new_unit_vec = jnp.array([jnp.cos(t_u), jnp.sin(t_u)])
+        new_unit_vec = jnp.array([jnp.cos(t_u[0]), jnp.sin(t_u[0])])
         state.info["centroid_velocity"] = new_vel_vec
         state.info["facing_vec"] = new_unit_vec
 
