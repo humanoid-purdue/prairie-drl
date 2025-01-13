@@ -68,7 +68,7 @@ class UnitreeEnvMini(PipelineEnv):
 
 
     def _get_obs(
-            self, data: mjx.Data, prev_action: jnp.ndarray, t = 0, centroid_vel = jnp.array([0.4, 0.0]), face_vec = jnp.array([1.0, 0.0]), ang_vel = 0.0
+            self, data: mjx.Data, prev_action: jnp.ndarray, t = 0, centroid_vel = jnp.array([0.4, 0.0]), face_vec = jnp.array([1.0, 0.0])
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
         position = data.qpos
@@ -108,7 +108,6 @@ class UnitreeEnvMini(PipelineEnv):
             data.cvel[1:].ravel(),
             local_pos,
             l_grf, r_grf,
-            jnp.array([ang_vel]),
             local_sites,
             facing_vec,
             prev_action, l_coeff, r_coeff, centroid_vel, face_vec
@@ -123,14 +122,12 @@ class UnitreeEnvMini(PipelineEnv):
         unit = unit / jnp.linalg.norm(unit)
         #vel = unit * mag
         vel = jnp.array([0., 0.])
-        angular_velocity = 0.5 #z Rads / s
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
             "count": jnp.zeros(1),
             "pos_xy": jnp.zeros([100, 2]),
             "centroid_velocity": vel,
-            "angular_velocity": angular_velocity,
             "facing_vec": jnp.array([1., 0.]),
             "current_face": jnp.array([1., 0.])
         }
@@ -190,13 +187,15 @@ class UnitreeEnvMini(PipelineEnv):
         state.info["time"] += self.dt
         state.info["count"] += 1
 
-        angular_displacement = state.info["angular_velocity"] * self.dt
-        new_vel_vec = rotateVec2(state.info["centroid_velocity"], angular_displacement)
-        new_unit_vec = rotateVec2(state.info["current_face"], angular_displacement)
+        #angular_displacement = state.info["angular_velocity"] * self.dt
+        new_vel_vec = rotateVec2(state.info["centroid_velocity"], 0.0)
+        #new_unit_vec = rotateVec2(state.info["current_face"], angular_displacement)
+        t_u = jnp.floor(state.info["time"] / (2 * jnp.pi / 3)) * (2 * jnp.pi / 3)
+        new_unit_vec = jnp.array([jnp.cos(t_u), jnp.sin(t_u)])
         state.info["centroid_velocity"] = new_vel_vec
         state.info["facing_vec"] = new_unit_vec
 
-        obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"], state.info["angular_velocity"])
+        obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
@@ -302,7 +301,7 @@ class UnitreeEnvMini(PipelineEnv):
         ave_vec = self.pelvisAngle(data)
 
         rew = jnp.sum(target * ave_vec)
-        #rew = jnp.clip(rew, min = -1, max = 0.995)
+        rew = jnp.clip(rew, min = -1, max = 0.995)
 
         lf1 = data.site_xpos[self.left_foot_s1].flatten()[0:2]
         lf2 = data.site_xpos[self.left_foot_s2].flatten()[0:2]
@@ -318,7 +317,7 @@ class UnitreeEnvMini(PipelineEnv):
         r_vec = r_vec / jnp.linalg.norm(r_vec)
 
         lr_delta =  jnp.sum(l_vec * r_vec)
-        tol = 0.44
+        tol = 0.54
         cost = lr_delta - tol
         cost = jnp.clip(cost, min = -1, max = 0)
 
