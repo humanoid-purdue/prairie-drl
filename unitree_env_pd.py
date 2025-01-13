@@ -296,7 +296,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         ave_vec = self.pelvisAngle(data)
 
-        angle = (jnp.sum(target * ave_vec))
+        angle = jnp.arccos(jnp.clip(jnp.sum(target * ave_vec), min = -1, max = 1))
         rew = angle #jnp.exp(-1 * angle / 0.5)
         #rew = jnp.clip(rew, min = -1, max = 0.995)
 
