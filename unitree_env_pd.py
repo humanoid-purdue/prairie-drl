@@ -21,6 +21,19 @@ def rotateVec2(vec2, angle):
     new_xy = jnp.matmul(rot_mat, vec2)
     return new_xy
 
+metrics_dict = {
+                   'reward': 0.0,
+                   'flatfoot_reward': 0.0,
+                   'periodic_reward': 0.0,
+                    'upright_reward': 0.0,
+                    'limit_reward': 0.0,
+                    'stride_reward': 0.0,
+                    'orien_reward': 0.0,
+                    'velocity_reward': 0.0,
+                    'swing_height_reward': 0.0,
+                    'center_reward': 0.0,
+                    'healthy_reward': 0.0}
+
 class UnitreeEnvMini(PipelineEnv):
     def __init__(self):
         model = mujoco.MjModel.from_xml_path("unitree_g1/scene_pd.xml")
@@ -131,20 +144,7 @@ class UnitreeEnvMini(PipelineEnv):
             "facing_vec": jnp.array([1., 0.]),
             "current_face": jnp.array([1., 0.])
         }
-        metrics = {
-                   'reward': 0.0,
-                   'flatfoot_reward': 0.0,
-                   'periodic_reward': 0.0,
-                    'upright_reward': 0.0,
-                    'limit_reward': 0.0,
-                    'foot_orien_reward': 0.0,
-                    'stride_reward': 0.0,
-                    'pelvis_orien_reward': 0.0,
-                    'velocity_reward': 0.0,
-                    'swing_height_reward': 0.0,
-                    'center_reward': 0.0,
-                    'healthy_reward': 0.0,
-                    'ctrl_reward': 0.0}
+        metrics = metrics_dict.copy()
 
         obs = self._get_obs(pipeline_state, jnp.zeros(self.nu), t = 0)
         reward, done, zero = jnp.zeros(3)
@@ -191,7 +191,8 @@ class UnitreeEnvMini(PipelineEnv):
         new_vel_vec = rotateVec2(state.info["centroid_velocity"], 0.0)
         #new_unit_vec = rotateVec2(state.info["current_face"], angular_displacement)
         t_u = jnp.floor(state.info["time"] / (2 * jnp.pi / 3)) * (2 * jnp.pi / 3)
-        new_unit_vec = jnp.array([jnp.cos(t_u[0]), jnp.sin(t_u[0])])
+        #new_unit_vec = jnp.array([jnp.cos(t_u[0]), jnp.sin(t_u[0])])
+        new_unit_vec = jnp.array([-1., 0.])
         state.info["centroid_velocity"] = new_vel_vec
         state.info["facing_vec"] = new_unit_vec
 
@@ -220,15 +221,11 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward = flatfoot_reward * 1.2
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
-        footstep_reward = self.footstepOrienReward(state.info, data)[0] * 0.0
-        reward_dict["foot_orien_reward"] = footstep_reward
-
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
         reward_dict["stride_reward"] = stride_length_reward
-        #reward_dict["stride_reward"] = 0.
 
         facing_reward = self.facingReward(data, state.info["facing_vec"]) * 9.0
-        reward_dict["pelvis_orien_reward"] = facing_reward
+        reward_dict["orien_reward"] = facing_reward
 
         velocity_reward = self.velocityReward(state.info, data) * 10
         reward_dict["velocity_reward"] = velocity_reward
@@ -244,9 +241,6 @@ class UnitreeEnvMini(PipelineEnv):
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
-
-        ctrl_reward = -0.00 * jnp.sum(jnp.square(action))
-        reward_dict["ctrl_reward"] = ctrl_reward
 
         reward = 0.0
         for key in reward_dict.keys():
@@ -475,32 +469,6 @@ class UnitreeEnvMini(PipelineEnv):
         lfoot_grf, rfoot_grf = rewards.get_feet_forces(self.model, data, forces)
 
         return lfoot_grf, rfoot_grf
-
-    def footstepOrienReward(self, info, data):
-        t = info["time"]
-        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
-        def pos2Rew(p1, p2, target_orien):
-            foot_orien = (p1 - p2)
-            foot_xy = foot_orien[0:2] / jnp.linalg.norm(foot_orien[0:2])
-            orien_rew = jnp.abs(jnp.sum(foot_xy * target_orien))
-            return orien_rew
-
-        lf1 = data.site_xpos[self.left_foot_s1].flatten()
-        lf2 = data.site_xpos[self.left_foot_s2].flatten()
-
-        rf1 = data.site_xpos[self.right_foot_s1].flatten()
-        rf2 = data.site_xpos[self.right_foot_s2].flatten()
-
-        l_rew = pos2Rew(lf1, lf2, info["facing_vec"])
-        r_rew = pos2Rew(rf1, rf2, info["facing_vec"])
-
-        t_c = 1
-        b_c = 0.3
-        l_coeff = l_coeff * (t_c - b_c) + b_c
-        r_coeff = r_coeff * (t_c - b_c) + b_c
-
-        rew = l_rew * l_coeff + r_rew * r_coeff
-        return rew
 
     def centerReward(self, data):
         lp1 = data.site_xpos[self.left_foot_s1]
