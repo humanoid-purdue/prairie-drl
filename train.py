@@ -42,7 +42,7 @@ def progress(num_steps, metrics):
     plt.xlim([0, train_fn.keywords['num_timesteps']])
     plt.xlabel('# environment steps')
     plt.ylabel('reward per episode')
-    plt.title('{}'.format(y_data['eval/episode_orien_reward']))
+    plt.title('{}'.format(metrics['eval/episode_orien_reward']))
     for key in y_data.keys():
         plt.plot(x_data, y_data[key], label = key)
     plt.legend()
