@@ -21,7 +21,7 @@ pre_model_path = 'walk_policy'
 pre_model = model.load_params(pre_model_path)
 
 train_fn = functools.partial(
-      ppo.train, num_timesteps=300000000, num_evals=40, episode_length = 2000,
+      ppo.train, num_timesteps=250000000, num_evals=40, episode_length = 2000,
        normalize_observations=True, unroll_length=20, num_minibatches=64,
       num_updates_per_batch=4, discounting=0.98, learning_rate=2.0e-4,
       entropy_cost=1e-3, num_envs=2048, batch_size=1024,

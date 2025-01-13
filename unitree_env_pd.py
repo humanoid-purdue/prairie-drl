@@ -6,8 +6,6 @@ import mujoco
 from mujoco import mjx
 
 import rewards
-import numpy as np
-from brax import math
 from jax import random
 
 
@@ -101,11 +99,10 @@ class UnitreeEnvMini(PipelineEnv):
 
         head = data.site_xpos[self.head_id] - center
         pel_front = data.site_xpos[self.pelvis_f_id] - center
-        pel_back = data.site_xpos[self.pelvis_b_id] - center
 
-        facing_vec = pel_front - pel_back
-        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
-        facing_vec = facing_vec.flatten()
+        com_offset = (data.subtree_com[1] - center).flatten()
+
+        facing_vec = self.pelvisAngle(data).flatten()
 
         local_sites = jnp.concatenate([lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front], axis = 0)
 
@@ -114,15 +111,17 @@ class UnitreeEnvMini(PipelineEnv):
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
         # external_contact_forces are excluded
+
+        cinert = data.cinert[1:].ravel()
+        cvel = data.cvel[1:].ravel()
         return jnp.concatenate([
             position,
             data.qvel,
-            data.cinert[1:].ravel(),
-            data.cvel[1:].ravel(),
             local_pos,
             l_grf, r_grf,
             local_sites,
             facing_vec,
+            com_offset,
             prev_action, l_coeff, r_coeff, centroid_vel, face_vec
         ])
 
@@ -218,7 +217,7 @@ class UnitreeEnvMini(PipelineEnv):
         reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 1.2
+        flatfoot_reward = flatfoot_reward * 1.5
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
@@ -227,7 +226,7 @@ class UnitreeEnvMini(PipelineEnv):
         facing_reward = self.facingReward(data, state.info["facing_vec"]) * 9.0
         reward_dict["orien_reward"] = facing_reward
 
-        velocity_reward = self.velocityReward(state.info, data) * 10
+        velocity_reward = self.velocityReward(state.info, data) * 8
         reward_dict["velocity_reward"] = velocity_reward
 
         swing_height_reward = self.swingHeightReward(state.info, data)[0] * 70
@@ -294,8 +293,9 @@ class UnitreeEnvMini(PipelineEnv):
 
         ave_vec = self.pelvisAngle(data)
 
-        rew = jnp.sum(target * ave_vec)
-        rew = jnp.clip(rew, min = -1, max = 0.995)
+        angle = jnp.arccos(jnp.sum(target * ave_vec))
+        rew = jnp.exp(-1 * angle / 0.5)
+        #rew = jnp.clip(rew, min = -1, max = 0.995)
 
         lf1 = data.site_xpos[self.left_foot_s1].flatten()[0:2]
         lf2 = data.site_xpos[self.left_foot_s2].flatten()[0:2]
