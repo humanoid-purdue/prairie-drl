@@ -226,7 +226,7 @@ class UnitreeEnvMini(PipelineEnv):
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
         reward_dict["stride_reward"] = stride_length_reward
 
-        facing_reward = self.facingReward(data, state.info["facing_vec"]) * 9.0
+        facing_reward = self.facingReward(data, state.info["facing_vec"]) * 20.0
         reward_dict["orien_reward"] = facing_reward
 
         velocity_reward = self.velocityReward(state.info, data) * 8
@@ -296,9 +296,10 @@ class UnitreeEnvMini(PipelineEnv):
 
         ave_vec = self.pelvisAngle(data)
 
-        angle = jnp.arccos(jnp.clip(jnp.sum(target * ave_vec), min = -1, max = 1))
-        rew = jnp.exp(-1 * angle / 1)
-        #rew = jnp.clip(rew, min = -1, max = 0.995)
+        #angle = jnp.arccos(jnp.clip(jnp.sum(target * ave_vec), min = -1, max = 1))
+        #rew = jnp.exp(-1 * angle / 1)
+        rew = jnp.sum(target * ave_vec)
+        rew = jnp.clip(rew, min = -1, max = 0.995)
 
         lf1 = data.site_xpos[self.left_foot_s1].flatten()[0:2]
         lf2 = data.site_xpos[self.left_foot_s2].flatten()[0:2]
