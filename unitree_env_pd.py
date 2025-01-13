@@ -302,7 +302,7 @@ class UnitreeEnvMini(PipelineEnv):
         ave_vec = self.pelvisAngle(data)
 
         rew = jnp.sum(target * ave_vec)
-        rew = jnp.clip(rew, min = -1, max = 0.995)
+        #rew = jnp.clip(rew, min = -1, max = 0.995)
 
         lf1 = data.site_xpos[self.left_foot_s1].flatten()[0:2]
         lf2 = data.site_xpos[self.left_foot_s2].flatten()[0:2]
