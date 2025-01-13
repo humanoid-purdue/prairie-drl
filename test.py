@@ -42,6 +42,7 @@ def makeIFN():
 make_inference_fn = makeIFN()
 
 inference_fn = make_inference_fn(saved_params)
+inference_fn = make_inference_fn()
 jit_inference_fn = jax.jit(inference_fn)
 
 # grab a trajectory
@@ -56,7 +57,7 @@ for i in range(n_steps):
     state = jit_step(state, ctrl)
     ss.append(state)
     rollout.append(state.pipeline_state)
-    print(state.info["facing_vec"], state.info["current_face"])
+    print(state.info["current_face"])
 
 
 

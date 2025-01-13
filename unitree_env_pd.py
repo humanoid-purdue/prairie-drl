@@ -141,7 +141,7 @@ class UnitreeEnvMini(PipelineEnv):
             "pos_xy": jnp.zeros([100, 2]),
             "centroid_velocity": vel,
             "facing_vec": jnp.array([1., 0.]),
-            "current_face": jnp.array([1., 0.])
+            "current_face": 0.0
         }
         metrics = metrics_dict.copy()
 
@@ -181,7 +181,10 @@ class UnitreeEnvMini(PipelineEnv):
         new_pxy = jnp.concatenate([pos_xy[None, :], state.info["pos_xy"][:-1, :]])
         state.info["pos_xy"] = new_pxy
 
-        state.info["current_face"] = facing_vec
+        angle = jnp.arccos(jnp.sum(state.info["facing_vec"] * facing_vec))
+        rew = jnp.exp(-1 * angle / 0.5)
+
+        state.info["current_face"] = rew
 
         state.info["time"] += self.dt
         state.info["count"] += 1
@@ -293,7 +296,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         ave_vec = self.pelvisAngle(data)
 
-        angle = jnp.arccos(jnp.sum(target * ave_vec))
+        angle = jnp.real(jnp.arccos(jnp.sum(target * ave_vec)))
         rew = jnp.exp(-1 * angle / 0.5)
         #rew = jnp.clip(rew, min = -1, max = 0.995)
 
