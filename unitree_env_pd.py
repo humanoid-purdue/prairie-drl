@@ -455,7 +455,7 @@ class UnitreeEnvMini(PipelineEnv):
         ds_state = l_coeff * r_coeff
         vel_mag = jnp.linalg.norm(info["centroid_velocity"])
         stride_target = vel_mag * (DS_TIME + SS_TIME) * 1.0
-        stride_target = jnp.clip(stride_target, min = 0.2, max = None)
+        stride_target = jnp.clip(stride_target, min = 1.0, max = None)
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
         lp = (lp1 + lp2) / 2
