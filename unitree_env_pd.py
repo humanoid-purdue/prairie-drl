@@ -529,3 +529,7 @@ class UnitreeEnvMini(PipelineEnv):
         cw = jnp.where(angle < 0, 1, 0)
         reward = dirac_delta * (reward_ccw * ccw + reward_cw * cw)
         return reward
+
+    def homingReward(self, data):
+        #reward for homing pelvis meaning that there is a reward for getting
+        #vector between foot and pelvis to more than 20 degrees from the pelvis vector
