@@ -240,7 +240,7 @@ class UnitreeEnvMini(PipelineEnv):
         center_reward = self.centerReward(data) * 4
         reward_dict["center_reward"] = center_reward
 
-        angvel_reward = self.angvelReward(data, state) * 40
+        angvel_reward = self.angvelReward(data, state) * 8
         reward_dict["angvel_reward"] = angvel_reward
 
         min_z, max_z = (0.4, 0.8)
