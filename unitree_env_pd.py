@@ -119,6 +119,7 @@ class UnitreeEnvMini(PipelineEnv):
             data.qvel,
             local_pos,
             l_grf, r_grf,
+            cvel,
             local_sites,
             facing_vec,
             com_offset,
@@ -296,10 +297,10 @@ class UnitreeEnvMini(PipelineEnv):
 
         ave_vec = self.pelvisAngle(data)
 
-        angle = jnp.arccos(jnp.clip(jnp.sum(target * ave_vec), min = -1, max = 1))
-        rew = jnp.exp(-1 * angle / 1.5)
-        #rew = jnp.sum(target * ave_vec)
-        #rew = jnp.clip(rew, min = -1, max = 0.995)
+        #angle = jnp.arccos(jnp.clip(jnp.sum(target * ave_vec), min = -1, max = 1))
+        #rew = jnp.exp(-1 * angle / 1.5)
+        rew = jnp.sum(target * ave_vec)
+        rew = jnp.clip(rew, min = -1, max = 0.995)
 
         lf1 = data.site_xpos[self.left_foot_s1].flatten()[0:2]
         lf2 = data.site_xpos[self.left_foot_s2].flatten()[0:2]
