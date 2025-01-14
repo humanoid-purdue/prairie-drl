@@ -228,7 +228,7 @@ class UnitreeEnvMini(PipelineEnv):
         stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
         reward_dict["stride_reward"] = stride_length_reward
 
-        facing_reward = self.facingReward(data, state.info["facing_vec"]) * 10.0
+        facing_reward = self.facingReward(data, state.info["facing_vec"]) * 6.0
         reward_dict["orien_reward"] = facing_reward
 
         velocity_reward = self.velocityReward(state.info, data) * 8
@@ -319,12 +319,24 @@ class UnitreeEnvMini(PipelineEnv):
         l_vec = l_vec / jnp.linalg.norm(l_vec)
         r_vec = r_vec / jnp.linalg.norm(r_vec)
 
+        pelvis_c = data.site_xpos[self.pelvis_b_id][0:2]
+        pelvis_f = data.site_xpos[self.pelvis_f_id][0:2]
+        pelvis_vec = pelvis_f - pelvis_c
+
+        pelvis_vec = pelvis_vec / jnp.linalg.norm(pelvis_vec)
+
         lr_delta =  jnp.sum(l_vec * r_vec)
         tol = 0.54
         cost = lr_delta - tol
         cost = jnp.clip(cost, min = -1, max = 0)
 
-        rew = rew + cost
+        l_dot = jnp.sum(pelvis_vec * l_vec)
+        r_dot = jnp.sum(pelvis_vec * r_vec)
+        # cost for being more than 60 degrees from any leg
+        l_cost = jnp.clip(l_dot - 0.54, min = -1, max = 0)
+        r_cost = jnp.clip(r_dot - 0.54, min = -1, max = 0)
+
+        rew = rew + cost + l_cost + r_cost
 
         #angle = jnp.arccos(jnp.sum(target * ave_vec))
         #rew = jnp.exp(-1 * angle / 0.5)
@@ -455,7 +467,7 @@ class UnitreeEnvMini(PipelineEnv):
         ds_state = l_coeff * r_coeff
         vel_mag = jnp.linalg.norm(info["centroid_velocity"])
         stride_target = vel_mag * (DS_TIME + SS_TIME) * 1.0
-        stride_target = jnp.clip(stride_target, min = 1.0, max = None)
+        stride_target = jnp.clip(stride_target, min = 0.5, max = None)
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
         lp = (lp1 + lp2) / 2
