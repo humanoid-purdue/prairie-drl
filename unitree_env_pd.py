@@ -240,7 +240,7 @@ class UnitreeEnvMini(PipelineEnv):
         center_reward = self.centerReward(data) * 4
         reward_dict["center_reward"] = center_reward
 
-        angvel_reward = self.angvelReward(data, state) * 8
+        angvel_reward = self.angvelReward(data, state) * 5
         reward_dict["angvel_reward"] = angvel_reward
 
         min_z, max_z = (0.4, 0.8)
@@ -504,8 +504,16 @@ class UnitreeEnvMini(PipelineEnv):
         pelvis_angvel = data.xd.ang[self.pelvis_id, :]
         z_angvel = pelvis_angvel[2]
         facing_vec = self.pelvisAngle(data)
-        delta = jnp.sum(state.info["facing_vec"] * facing_vec)
-        reward = jnp.clip(jnp.abs(z_angvel), min = 0, max = 0.3)
-        dirac_delta = jnp.where(delta < 0.93, 1, 0)
-        reward = dirac_delta * reward
+        target_vec = state.info["facing_vec"]
+        #delta = jnp.sum(state.info["facing_vec"] * facing_vec)
+        angle = jnp.arctan2(facing_vec[0] * target_vec[1] - facing_vec[1] * target_vec[0],
+                            facing_vec[0] * target_vec[0] + facing_vec[1] * target_vec[1])
+        #Positive for ccw
+
+        reward_ccw = jnp.clip(z_angvel, min = 0, max = 0.3)
+        reward_cw = jnp.clip(z_angvel, min = -0.3, max = 0)
+        dirac_delta = jnp.where(jnp.abs(angle) > 0.4, 1, 0)
+        ccw = jnp.where(angle > 0, 1, 0)
+        cw = jnp.where(angle < 0, 1, 0)
+        reward = dirac_delta * (reward_ccw * ccw + reward_cw * cw)
         return reward

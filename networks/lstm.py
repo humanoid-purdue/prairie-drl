@@ -32,6 +32,7 @@ def make_inference_fn(networks: LSTMPPONetworks):
     ):
         policy_network = networks.policy_network
         def policy(observations, key_sample):
+            param_subset = (params[0], params[1])
             logits = policy_network.apply(observations)
 
 
