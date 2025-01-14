@@ -30,7 +30,8 @@ metrics_dict = {
                     'velocity_reward': 0.0,
                     'swing_height_reward': 0.0,
                     'center_reward': 0.0,
-                    'healthy_reward': 0.0}
+                    'healthy_reward': 0.0,
+                    'angvel_reward': 0.0}
 
 class UnitreeEnvMini(PipelineEnv):
     def __init__(self):
@@ -238,6 +239,9 @@ class UnitreeEnvMini(PipelineEnv):
 
         center_reward = self.centerReward(data) * 4
         reward_dict["center_reward"] = center_reward
+
+        angvel_reward = self.angvelReward(data, state) * 40
+        reward_dict["angvel_reward"] = angvel_reward
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
@@ -494,3 +498,14 @@ class UnitreeEnvMini(PipelineEnv):
 
         rew = jnp.exp(-1 * jnp.abs(l_norm - r_norm) / 0.1)
         return rew
+
+    def angvelReward(self, data, state):
+        #if the facing angle and target vector is more than 40 degrees, give capped reward for angvel
+        pelvis_angvel = data.xd.ang[self.pelvis_id, :]
+        z_angvel = pelvis_angvel[2]
+        facing_vec = self.pelvisAngle(data)
+        delta = jnp.sum(state.info["facing_vec"] * facing_vec)
+        reward = jnp.clip(jnp.abs(z_angvel), min = 0, max = 0.3)
+        dirac_delta = jnp.where(delta < 0.93, 1, 0)
+        reward = dirac_delta * reward
+        return reward
