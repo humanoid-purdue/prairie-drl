@@ -57,14 +57,28 @@ class LSTMPPONetworks:
 
 def make_inference_fn(networks: LSTMPPONetworks):
     def make_policy(
-            params: types.Params, deterministics: bool = False
+            params: types.Params, deterministic: bool = False
     ):
         policy_network = networks.policy_network
+        parametric_action_distribution = networks.parametric_action_distribution
         def policy(observations, key_sample):
             param_subset = (params[0], params[1])
-            logits = policy_network.apply(observations)
-
-
+            logits = policy_network.apply( *param_subset, observations)
+            if deterministic:
+                return parametric_action_distribution.mode(logits), {}
+            raw_actions = parametric_action_distribution.sample_no_postprocessing(
+                logits, key_sample
+            )
+            log_prob = parametric_action_distribution.log_prob(logits, raw_actions)
+            postprocessed_actions = parametric_action_distribution.postprocess(
+                raw_actions
+            )
+            return postprocessed_actions, {
+                'log_prob': log_prob,
+                'raw_action': raw_actions,
+            }
+        return policy
+    return make_policy
 
 
 def make_ppo_networks(

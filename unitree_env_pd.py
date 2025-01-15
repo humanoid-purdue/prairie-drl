@@ -12,7 +12,7 @@ from jax import random
 DS_TIME = 0.2
 SS_TIME = 0.5
 BU_TIME = 0.05
-STEP_HEIGHT = 0.1
+STEP_HEIGHT = 0.05
 
 def rotateVec2(vec2, angle):
     rot_mat = jnp.array([[jnp.cos(angle), -1 * jnp.sin(angle)],[jnp.sin(angle), jnp.cos(angle)]])
@@ -228,7 +228,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        footplan_reward = self.footplanReward(data, state) * 1000
+        footplan_reward = self.footplanReward(data, state) * 2000
         reward_dict["footplan_reward"] = footplan_reward
 
         reward = 0.0
@@ -527,13 +527,13 @@ class UnitreeEnvMini(PipelineEnv):
 
         min_dist = jnp.minimum(jnp.linalg.norm(target - lp), jnp.linalg.norm(target - rp))
         p_dist = jnp.linalg.norm(target - pp)
-        hit = jnp.where( min_dist < 0.2, 1, 0)
+        hit = jnp.where( min_dist < 0.1, 1, 0)
         state.info["hit_time"] = ( state.info["hit_time"] + self.dt ) * hit
 
         khit = 0.8
         rews = khit * jnp.exp(-1 * min_dist / 0.25) + (1 - khit) * jnp.exp(-1 * p_dist / 2)
 
-        progress = jnp.where(state.info["hit_time"] > SS_TIME - 0.01, 1, 0)
+        progress = jnp.where(state.info["hit_time"] > DS_TIME - 0.02, 1, 0)
         rews = rews * progress
 
         state.info["hit_time"] = state.info["hit_time"] * (1 - progress)

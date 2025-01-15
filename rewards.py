@@ -229,3 +229,4 @@ if __name__ == "__main__":
     steps, pointer = sequentialFootstepPlan()
     print(steps.shape, pointer)
     print(jnp.roll(pointer, 1))
+    print(steps)
