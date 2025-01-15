@@ -228,7 +228,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        footplan_reward = self.footplanReward(data, state) * 3000
+        footplan_reward = self.footplanReward(data, state) * 10000
         reward_dict["footplan_reward"] = footplan_reward
 
         reward = 0.0
