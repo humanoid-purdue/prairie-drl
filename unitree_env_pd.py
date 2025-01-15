@@ -536,7 +536,7 @@ class UnitreeEnvMini(PipelineEnv):
         progress = jnp.where(state.info["hit_time"] > 0.03, 1, 0)
         rews = rews * progress
 
-        state.info["hit_time"] = state.info["hit_time"] * progress
+        state.info["hit_time"] = state.info["hit_time"] * (1 - progress)
         state.info["pointer"] = (jnp.roll(state.info["pointer"], 1) * progress +
                                  state.info["pointer"] * (1 - progress))
 
