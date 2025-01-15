@@ -208,20 +208,24 @@ def naiveFootstepPlan(ds_time, ss_time):
     ave_vel = (l_steps[-1, :] + r_steps[-1, :]) / ((c - 1) * (2 * ds_time + ss_time))
     return l_steps, r_steps, ave_vel
 
+#swing left leg first
+def sequentialFootstepPlan():
+    l_y = 0.10
+    r_y = -0.10
+    step_size = 0.30
+    steps = jnp.array([[step_size * 0.5, l_y]])
+    pointer = jnp.zeros([80])
+    pointer = jnp.concatenate([jnp.array([1]), pointer])
+    for i in range(40):
+        l_next = jnp.array([[step_size * i + step_size * 1.5, l_y]])
+        r_next = jnp.array([[step_size * i + step_size, r_y]])
+
+        steps = jnp.concatenate([steps, r_next, l_next], axis = 0)
+
+    return steps, pointer
+
 
 if __name__ == "__main__":
-    ds_time = 0.15
-    ss_time = 0.40
-    buffer_time = 0.05
-    l_plan, r_plan, vel = naiveFootstepPlan(ds_time, ss_time)
-    fsp = FootstepPlan(ds_time, ss_time, buffer_time)
-    v1 = []
-    v2 = []
-    for c in range(200):
-        l_xy, r_xy = fsp.getStepInfo(l_plan, r_plan, c / 100)
-        v1 += [l_xy[0]]
-        v2 += [r_xy[0]]
-    import matplotlib.pyplot as plt
-    plt.plot(v1)
-    plt.plot(v2)
-    plt.show()
+    steps, pointer = sequentialFootstepPlan()
+    print(steps.shape, pointer)
+    print(jnp.roll(pointer, 1))

@@ -25,13 +25,9 @@ metrics_dict = {
                    'periodic_reward': 0.0,
                     'upright_reward': 0.0,
                     'limit_reward': 0.0,
-                    'stride_reward': 0.0,
-                    'orien_reward': 0.0,
-                    'velocity_reward': 0.0,
                     'swing_height_reward': 0.0,
-                    'center_reward': 0.0,
                     'healthy_reward': 0.0,
-                    'angvel_reward': 0.0}
+                    'footplan_reward': 0.0}
 
 class UnitreeEnvMini(PipelineEnv):
     def __init__(self):
@@ -80,7 +76,7 @@ class UnitreeEnvMini(PipelineEnv):
 
 
     def _get_obs(
-            self, data: mjx.Data, prev_action: jnp.ndarray, t = 0, centroid_vel = jnp.array([0.4, 0.0]), face_vec = jnp.array([1.0, 0.0])
+            self, data: mjx.Data, prev_action: jnp.ndarray, state = None
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
         position = data.qpos
@@ -109,6 +105,22 @@ class UnitreeEnvMini(PipelineEnv):
 
         l_grf, r_grf = self.determineGRF(data)
 
+        if state is not None:
+            t = state.info["time"]
+            fstep_plan = state.info["footstep_plan"]
+            pointer = state.info["pointer"]
+            step0 = jnp.sum(pointer[:, None] * fstep_plan, axis = 0)
+            step1 = jnp.sum(jnp.roll(pointer, 1)[:, None] * fstep_plan, axis = 0)
+            step2 = jnp.sum(jnp.roll(pointer, 2)[:, None] * fstep_plan, axis = 0)
+
+            step0 = step0 - center[0:2]
+            step1 = step1 - center[0:2]
+            step2 = step2 - center[0:2]
+            steps = jnp.concatenate([step0, step1, step2], axis = 0)
+        else:
+            t = 0
+            steps = jnp.zeros([6])
+
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
         # external_contact_forces are excluded
@@ -124,30 +136,26 @@ class UnitreeEnvMini(PipelineEnv):
             local_sites,
             facing_vec,
             com_offset,
-            prev_action, l_coeff, r_coeff, centroid_vel, face_vec
+            prev_action, l_coeff, r_coeff, steps
         ])
 
     def reset(self, rng: jax.Array) -> State:
         rng, key = jax.random.split(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
-        r = random.uniform(key, [2])
-        mag = ( r[0] + 1 ) * 0.3
-        unit = jnp.array([1, r[1] - 0.5])
-        unit = unit / jnp.linalg.norm(unit)
-        #vel = unit * mag
-        vel = jnp.array([0., 0.])
+        footstep_plan, pointer = rewards.sequentialFootstepPlan()
+
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
             "count": jnp.zeros(1),
             "pos_xy": jnp.zeros([100, 2]),
-            "centroid_velocity": vel,
-            "facing_vec": jnp.array([1., 0.]),
-            "current_face": 0.0
+            "footstep_plan": footstep_plan,
+            "pointer": pointer,
+            "hit_time": 0.0
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs(pipeline_state, jnp.zeros(self.nu), t = 0)
+        obs = self._get_obs(pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -183,24 +191,10 @@ class UnitreeEnvMini(PipelineEnv):
         new_pxy = jnp.concatenate([pos_xy[None, :], state.info["pos_xy"][:-1, :]])
         state.info["pos_xy"] = new_pxy
 
-        angle = jnp.arccos(jnp.sum(state.info["facing_vec"] * facing_vec))
-        rew = jnp.exp(-1 * angle / 0.5)
-
-        state.info["current_face"] = rew
-
         state.info["time"] += self.dt
         state.info["count"] += 1
 
-        #angular_displacement = state.info["angular_velocity"] * self.dt
-        new_vel_vec = rotateVec2(state.info["centroid_velocity"], 0.0)
-        #new_unit_vec = rotateVec2(state.info["current_face"], angular_displacement)
-        t_u = jnp.floor(state.info["time"] / (2 * jnp.pi / 3)) * (2 * jnp.pi / 3)
-        #new_unit_vec = jnp.array([jnp.cos(t_u[0]), jnp.sin(t_u[0])])
-        new_unit_vec = jnp.array([-1., 0.])
-        state.info["centroid_velocity"] = new_vel_vec
-        state.info["facing_vec"] = new_unit_vec
-
-        obs = self._get_obs(data1, action, state.info["time"], state.info["centroid_velocity"], state.info["facing_vec"])
+        obs = self._get_obs(data1, action, state = state)
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
@@ -225,29 +219,17 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward = flatfoot_reward * 1.5
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
-        stride_length_reward = self.strideLengthReward(state.info, data)[0] * 200
-        reward_dict["stride_reward"] = stride_length_reward
-
-        facing_reward = self.facingReward(data, state.info["facing_vec"]) * 6.0
-        reward_dict["orien_reward"] = facing_reward
-
-        velocity_reward = self.velocityReward(state.info, data) * 8
-        reward_dict["velocity_reward"] = velocity_reward
-
         swing_height_reward = self.swingHeightReward(state.info, data)[0] * 70
         reward_dict["swing_height_reward"] = swing_height_reward
-
-        center_reward = self.centerReward(data) * 4
-        reward_dict["center_reward"] = center_reward
-
-        angvel_reward = self.angvelReward(data, state) * 5
-        reward_dict["angvel_reward"] = angvel_reward
 
         min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
+
+        footplan_reward = self.footplanReward(data, state) * 1000
+        reward_dict["footplan_reward"] = footplan_reward
 
         reward = 0.0
         for key in reward_dict.keys():
@@ -530,7 +512,32 @@ class UnitreeEnvMini(PipelineEnv):
         reward = dirac_delta * (reward_ccw * ccw + reward_cw * cw)
         return reward
 
-    def homingReward(self, data):
-        #reward for homing pelvis meaning that there is a reward for getting
-        #vector between foot and pelvis to more than 20 degrees from the pelvis vector
-        pass
+    def footplanReward(self, data, state):
+        lp1 = data.site_xpos[self.left_foot_s1][0:2]
+        lp2 = data.site_xpos[self.left_foot_s2][0:2]
+        lp = (lp1 + lp2) / 2
+
+        rp1 = data.site_xpos[self.right_foot_s1][0:2]
+        rp2 = data.site_xpos[self.right_foot_s2][0:2]
+        rp = (rp1 + rp2) / 2
+
+        pp = data.x.pos[self.pelvis_id][0:2]
+
+        target = jnp.sum(state.info["pointer"][:, None] * state.info["footstep_plan"], axis = 0)
+
+        min_dist = jnp.minimum(jnp.linalg.norm(target - lp), jnp.linalg.norm(target - rp))
+        p_dist = jnp.linalg.norm(target - pp)
+        hit = jnp.where( min_dist < 0.2, 1, 0)
+        state.info["hit_time"] = ( state.info["hit_time"] + self.dt ) * hit
+
+        khit = 0.8
+        rews = khit * jnp.exp(-1 * min_dist / 0.25) + (1 - khit) * jnp.exp(-1 * p_dist / 2)
+
+        progress = jnp.where(state.info["hit_time"] > SS_TIME, 1, 0)
+        rews = rews * progress
+
+        state.info["hit_time"] = state.info["hit_time"] * progress
+        state.info["pointer"] = (jnp.roll(state.info["pointer"], 1) * progress +
+                                 state.info["pointer"] * (1 - progress))
+
+        return rews
