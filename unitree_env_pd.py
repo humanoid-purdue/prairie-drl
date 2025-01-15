@@ -228,7 +228,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        footplan_reward = self.footplanReward(data, state) * 2000
+        footplan_reward = self.footplanReward(data, state) * 1000
         reward_dict["footplan_reward"] = footplan_reward
 
         reward = 0.0
@@ -533,7 +533,7 @@ class UnitreeEnvMini(PipelineEnv):
         khit = 0.8
         rews = khit * jnp.exp(-1 * min_dist / 0.25) + (1 - khit) * jnp.exp(-1 * p_dist / 2)
 
-        progress = jnp.where(state.info["hit_time"] > DS_TIME - 0.01, 1, 0)
+        progress = jnp.where(state.info["hit_time"] > SS_TIME - 0.01, 1, 0)
         rews = rews * progress
 
         state.info["hit_time"] = state.info["hit_time"] * (1 - progress)

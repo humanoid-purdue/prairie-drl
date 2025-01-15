@@ -10,15 +10,44 @@
 #returns a PPONetworks with a policy, value and parametric action distribution
 
 
-from typing import Sequence, Tuple
+from typing import Sequence, Callable, Any
 
 from brax.training import distribution
 from brax.training import networks
 from brax.training import types
 import flax
+import dataclasses
 from flax import linen
+import jax.numpy as jnp
+import jax
 
+ActivationFn = Callable[[jnp.ndarray], jnp.ndarray]
+Initializer = Callable[..., Any]
+
+@dataclasses.dataclass
 class LSTMNetwork:
+    init: Callable[..., Any]
+    apply: Callable[..., Any]
+
+
+def make_policy_network(
+        param_size: int,
+        obs_size: types.ObservationSize,
+        preprocess_observations_fn: types.PreprocessObservationFn = types.identity_observation_preprocessor,
+        activation: ActivationFn = linen.relu,
+        kernel_init: Initializer = jax.nn.initializers.lecun_uniform(),
+        layer_norm: bool = False,
+        obs_key: str = 'state',
+):
+    policy_module = LSTM()
+
+    def apply(processor_params, policy_params, obs):
+        obs = preprocess_observations_fn(obs, processor_params)
+        return policy_module.apply(policy_params, obs)
+
+    obs_size = networks._get_obs_state_size(obs_size, obs_key)
+    dummy_obs = jnp.zeros((1, obs_size))
+    return LSTMNetwork(init = lambda key: policy_module.init(key, dummy_obs), apply = apply)
 
 
 @flax.struct.dataclass
@@ -49,6 +78,13 @@ def make_ppo_networks(
 ) -> LSTMPPONetworks:
     parametric_action_distribution = distribution.NormalTanhDistribution(
         event_size=action_size
+    )
+    policy_network = make_policy_network(
+      parametric_action_distribution.param_size,
+      observation_size,
+      preprocess_observations_fn=preprocess_observations_fn,
+      activation=activation,
+      obs_key=policy_obs_key,
     )
     value_network = networks.make_value_network(
         observation_size,
