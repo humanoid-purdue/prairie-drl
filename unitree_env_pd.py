@@ -209,7 +209,7 @@ class UnitreeEnvMini(PipelineEnv):
         period_reward = period_reward[0] * 0.6
         reward_dict["periodic_reward"] = period_reward
 
-        upright_reward = self.upright_reward(data) * 8.0
+        upright_reward = self.upright_reward(data) * 5.0
         reward_dict["upright_reward"] = upright_reward
 
         jl_reward = self.joint_limit_reward(data) * 10.0
@@ -228,7 +228,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        footplan_reward = self.footplanReward(data, state) * 10
+        footplan_reward = self.footplanReward(data, state) * 30
         reward_dict["footplan_reward"] = footplan_reward
 
         reward = 0.0
