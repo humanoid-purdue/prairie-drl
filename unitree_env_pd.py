@@ -531,9 +531,9 @@ class UnitreeEnvMini(PipelineEnv):
         state.info["hit_time"] = ( state.info["hit_time"] + self.dt ) * hit
 
         khit = 0.8
-        rews = khit * jnp.exp(-1 * min_dist / 0.15) + (1 - khit) * jnp.exp(-1 * p_dist / 1)
+        rews = khit * jnp.exp(-1 * min_dist / 0.20) + (1 - khit) * jnp.exp(-1 * p_dist / 1.5)
 
-        progress = jnp.where(state.info["hit_time"] > SS_TIME - 0.02, 1, 0)
+        progress = jnp.where(state.info["hit_time"] > DS_TIME - 0.02, 1, 0)
 
         state.info["hit_time"] = state.info["hit_time"] * (1 - progress)
         state.info["pointer"] = (jnp.roll(state.info["pointer"], 1) * progress +
