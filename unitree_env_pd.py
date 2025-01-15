@@ -533,7 +533,7 @@ class UnitreeEnvMini(PipelineEnv):
         khit = 0.8
         rews = khit * jnp.exp(-1 * min_dist / 0.25) + (1 - khit) * jnp.exp(-1 * p_dist / 2)
 
-        progress = jnp.where(state.info["hit_time"] > SS_TIME, 1, 0)
+        progress = jnp.where(state.info["hit_time"] > 0.03, 1, 0)
         rews = rews * progress
 
         state.info["hit_time"] = state.info["hit_time"] * progress
