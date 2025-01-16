@@ -27,7 +27,8 @@ metrics_dict = {
                     'limit_reward': 0.0,
                     'swing_height_reward': 0.0,
                     'healthy_reward': 0.0,
-                    'footplan_reward': 0.0}
+                    'footplan_reward': 0.0,
+                    'facing_reward': 0.0}
 
 class UnitreeEnvMini(PipelineEnv):
     def __init__(self):
@@ -238,6 +239,9 @@ class UnitreeEnvMini(PipelineEnv):
 
         footplan_reward = self.footplanReward(data, state) * 15
         reward_dict["footplan_reward"] = footplan_reward
+
+        facing_reward = self.facingReward(data, jnp.array([1., 0.])) * 7.0
+        reward_dict["facing_reward"] = facing_reward
 
         reward = 0.0
         for key in reward_dict.keys():
