@@ -216,17 +216,20 @@ def sequentialFootstepPlan():
     steps = jnp.array([[step_size * 0.5, l_y]])
     pointer = jnp.zeros([80])
     pointer = jnp.concatenate([jnp.array([1]), pointer])
+
+    weights = jnp.ones([79])
+    weights = jnp.concatenate([jnp.array([0.15, 0.5]), weights])
     for i in range(40):
         l_next = jnp.array([[step_size * i + step_size * 1.5, l_y]])
         r_next = jnp.array([[step_size * i + step_size, r_y]])
 
         steps = jnp.concatenate([steps, r_next, l_next], axis = 0)
 
-    return steps, pointer
+    return steps, pointer, weights
 
 
 if __name__ == "__main__":
-    steps, pointer = sequentialFootstepPlan()
+    steps, pointer, weights = sequentialFootstepPlan()
     print(steps.shape, pointer)
     print(jnp.roll(pointer, 1))
-    print(steps)
+    print(steps, weights)

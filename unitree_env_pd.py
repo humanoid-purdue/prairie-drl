@@ -147,7 +147,7 @@ class UnitreeEnvMini(PipelineEnv):
     def reset(self, rng: jax.Array) -> State:
         rng, key = jax.random.split(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
-        footstep_plan, pointer = rewards.sequentialFootstepPlan()
+        footstep_plan, pointer, weight = rewards.sequentialFootstepPlan()
 
         state_info = {
             "rng": rng,
@@ -156,7 +156,10 @@ class UnitreeEnvMini(PipelineEnv):
             "pos_xy": jnp.zeros([100, 2]),
             "footstep_plan": footstep_plan,
             "pointer": pointer,
-            "hit_time": 0.0
+            "prev_lin_mom": jnp.zeros(3),
+            "prev_ang_mom": jnp.zeros(3),
+            "hit_time": 0.0,
+            "step_weight": weight
         }
         metrics = metrics_dict.copy()
 
@@ -224,7 +227,7 @@ class UnitreeEnvMini(PipelineEnv):
         flatfoot_reward = flatfoot_reward * 1.5
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
-        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 70
+        swing_height_reward = self.swingHeightReward(state.info, data)[0] * 300
         reward_dict["swing_height_reward"] = swing_height_reward
 
         min_z, max_z = (0.4, 0.8)
@@ -537,6 +540,8 @@ class UnitreeEnvMini(PipelineEnv):
 
         khit = 0.8
         rews = khit * jnp.exp(-1 * min_dist / 0.20) * hit + (1 - khit) * jnp.exp(-1 * p_dist / 1.5)
+        weight = jnp.sum(state.info["pointer"] * state.info["step_weight"])
+        rew = rews * weight
 
         progress = jnp.where(state.info["hit_time"] > SS_TIME - 0.02, 1, 0)
 
