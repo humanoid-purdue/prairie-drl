@@ -12,7 +12,7 @@ from jax import random
 DS_TIME = 0.2
 SS_TIME = 0.5
 BU_TIME = 0.05
-STEP_HEIGHT = 0.05
+STEP_HEIGHT = 0.10
 
 def rotateVec2(vec2, angle):
     rot_mat = jnp.array([[jnp.cos(angle), -1 * jnp.sin(angle)],[jnp.sin(angle), jnp.cos(angle)]])
@@ -76,34 +76,39 @@ class UnitreeEnvMini(PipelineEnv):
 
 
     def _get_obs(
-            self, data: mjx.Data, prev_action: jnp.ndarray, state = None
+            self, data0, data1, prev_action: jnp.ndarray, state = None
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
-        position = data.qpos
-        global_pos = data.x.pos[self.pelvis_id + 1:, :]
-        center = data.x.pos[self.pelvis_id, :]
-        local_pos = global_pos - center[None, :]
-        local_pos = local_pos.flatten()
-        #sites
+        def getCoords(data_):
 
-        lp1 = data.site_xpos[self.left_foot_s1] - center
-        lp2 = data.site_xpos[self.left_foot_s2] - center
-        lp3 = data.site_xpos[self.left_foot_s3] - center
+            global_pos = data_.x.pos[self.pelvis_id + 1:, :]
+            center = data_.x.pos[self.pelvis_id, :]
+            local_pos = global_pos - center[None, :]
+            local_pos = local_pos.flatten()
+            #sites
 
-        rp1 = data.site_xpos[self.right_foot_s1] - center
-        rp2 = data.site_xpos[self.right_foot_s2] - center
-        rp3 = data.site_xpos[self.right_foot_s3] - center
+            lp1 = data_.site_xpos[self.left_foot_s1] - center
+            lp2 = data_.site_xpos[self.left_foot_s2] - center
+            lp3 = data_.site_xpos[self.left_foot_s3] - center
 
-        head = data.site_xpos[self.head_id] - center
-        pel_front = data.site_xpos[self.pelvis_f_id] - center
+            rp1 = data_.site_xpos[self.right_foot_s1] - center
+            rp2 = data_.site_xpos[self.right_foot_s2] - center
+            rp3 = data_.site_xpos[self.right_foot_s3] - center
 
-        com_offset = (data.subtree_com[1] - center).flatten()
+            head = data_.site_xpos[self.head_id] - center
+            pel_front = data_.site_xpos[self.pelvis_f_id] - center
 
-        facing_vec = self.pelvisAngle(data).flatten()
+            com_offset = (data_.subtree_com[1] - center).flatten()
 
-        local_sites = jnp.concatenate([lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front], axis = 0)
+            local_sites = jnp.concatenate([local_pos, lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front, com_offset], axis = 0)
+            return local_sites
 
-        l_grf, r_grf = self.determineGRF(data)
+        position = data1.qpos
+        prev_sites = getCoords(data0)
+        current_sites = getCoords(data1)
+        center = data1.x.pos[self.pelvis_id, :]
+
+        #l_grf, r_grf = self.determineGRF(data1)
 
         if state is not None:
             t = state.info["time"]
@@ -124,18 +129,18 @@ class UnitreeEnvMini(PipelineEnv):
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
         # external_contact_forces are excluded
+        angvel = data1.xd.ang[self.pelvis_id, :]
 
-        cinert = data.cinert[1:].ravel()
-        cvel = data.cvel[1:].ravel()
+        com0 = data1.subtree_com[0]
+        com1 = data1.subtree_com[1]
+        vel = (com1 - com0) / self.dt
+
         return jnp.concatenate([
             position,
-            data.qvel,
-            local_pos,
-            l_grf, r_grf,
-            cvel,
-            local_sites,
-            facing_vec,
-            com_offset,
+            data1.qvel,
+            angvel,
+            vel,
+            prev_sites, current_sites,
             prev_action, l_coeff, r_coeff, steps
         ])
 
@@ -155,7 +160,7 @@ class UnitreeEnvMini(PipelineEnv):
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs(pipeline_state, jnp.zeros(self.nu))
+        obs = self._get_obs(pipeline_state, pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -194,7 +199,7 @@ class UnitreeEnvMini(PipelineEnv):
         state.info["time"] += self.dt
         state.info["count"] += 1
 
-        obs = self._get_obs(data1, action, state = state)
+        obs = self._get_obs(data0, data1, action, state = state)
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
@@ -209,7 +214,7 @@ class UnitreeEnvMini(PipelineEnv):
         period_reward = period_reward[0] * 0.6
         reward_dict["periodic_reward"] = period_reward
 
-        upright_reward = self.upright_reward(data) * 5.0
+        upright_reward = self.upright_reward(data) * 8.0
         reward_dict["upright_reward"] = upright_reward
 
         jl_reward = self.joint_limit_reward(data) * 10.0

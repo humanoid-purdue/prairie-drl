@@ -210,8 +210,8 @@ def naiveFootstepPlan(ds_time, ss_time):
 
 #swing left leg first
 def sequentialFootstepPlan():
-    l_y = 0.10
-    r_y = -0.10
+    l_y = 0.15
+    r_y = -0.15
     step_size = 0.20
     steps = jnp.array([[step_size * 0.5, l_y]])
     pointer = jnp.zeros([80])
