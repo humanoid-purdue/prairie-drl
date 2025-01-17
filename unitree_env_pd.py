@@ -542,7 +542,7 @@ class UnitreeEnvMini(PipelineEnv):
         hit = jnp.where( min_dist < 0.10, 1, 0)
         state.info["hit_time"] = ( state.info["hit_time"] + self.dt ) * hit
 
-        khit = 0.8
+        khit = 0.9
         weight = jnp.sum(state.info["pointer"] * state.info["step_weight"])
         rews = khit * jnp.exp(-1 * min_dist / 0.20) * hit * weight + (1 - khit) * jnp.exp(-1 * p_dist / 1.5)
 
