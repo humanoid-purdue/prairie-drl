@@ -212,13 +212,13 @@ def naiveFootstepPlan(ds_time, ss_time):
 def sequentialFootstepPlan():
     l_y = 0.15
     r_y = -0.15
-    step_size = 0.20
+    step_size = 0.25
     steps = jnp.array([[step_size * 0.5, l_y]])
     pointer = jnp.zeros([80])
     pointer = jnp.concatenate([jnp.array([1]), pointer])
 
-    weights = jnp.ones([77])
-    weights = jnp.concatenate([jnp.array([0.08, 0.16, 0.32, 0.64]), weights])
+    weights = jnp.ones([88])
+    weights = jnp.concatenate([jnp.array([0.08, 0.32, 0.64]), weights])
     for i in range(40):
         l_next = jnp.array([[step_size * i + step_size * 1.5, l_y]])
         r_next = jnp.array([[step_size * i + step_size, r_y]])
@@ -233,3 +233,4 @@ if __name__ == "__main__":
     print(steps.shape, pointer)
     print(jnp.roll(pointer, 1))
     print(steps, jnp.sum(weights * pointer))
+    print(jnp.sum(steps * pointer[:, None], axis = 0))
