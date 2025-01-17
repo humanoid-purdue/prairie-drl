@@ -217,8 +217,8 @@ def sequentialFootstepPlan():
     pointer = jnp.zeros([80])
     pointer = jnp.concatenate([jnp.array([1]), pointer])
 
-    weights = jnp.ones([78])
-    weights = jnp.concatenate([jnp.array([0.02, 0.1, 0.3]), weights])
+    weights = jnp.ones([75])
+    weights = jnp.concatenate([jnp.array([0.02, 0.04, 0.08, 0.16, 0.32, 0.64]), weights])
     for i in range(40):
         l_next = jnp.array([[step_size * i + step_size * 1.5, l_y]])
         r_next = jnp.array([[step_size * i + step_size, r_y]])
