@@ -237,7 +237,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        footplan_reward = self.footplanReward(data, state) * 35
+        footplan_reward = self.footplanReward(data, state) * 30
         reward_dict["footplan_reward"] = footplan_reward
 
         facing_reward = self.facingReward(data, jnp.array([1., 0.])) * 5.0
