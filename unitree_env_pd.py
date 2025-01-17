@@ -160,7 +160,9 @@ class UnitreeEnvMini(PipelineEnv):
             "prev_lin_mom": jnp.zeros(3),
             "prev_ang_mom": jnp.zeros(3),
             "hit_time": 0.0,
-            "step_weight": weight
+            "step_weight": weight,
+            "l_xy": jnp.zeros(2),
+            "r_xy": jnp.zeros(2)
         }
         metrics = metrics_dict.copy()
 
@@ -497,7 +499,7 @@ class UnitreeEnvMini(PipelineEnv):
         l_h = ( lp1[2] + lp2[2] + lp3[2] ) / 3
         r_h = ( rp1[2] + rp2[2] + rp3[2]) / 3
 
-        pelvis_loc = data.x.pos[self.pelvis_id]
+        pelvis_loc = data.x.pos[self.pelvis_id-1]
 
         l_norm = jnp.linalg.norm(pelvis_loc - l_h)
         r_norm = jnp.linalg.norm(pelvis_loc - r_h)
@@ -533,7 +535,10 @@ class UnitreeEnvMini(PipelineEnv):
         rp2 = data.site_xpos[self.right_foot_s2][0:2]
         rp = (rp1 + rp2) / 2
 
-        pp = data.x.pos[self.pelvis_id][0:2]
+        state.info["l_xy"] = data.x.pos[self.left_foot_id-1][0:2]
+        state.info["r_xy"] = data.x.pos[self.right_foot_id-1][0:2]
+
+        pp = data.x.pos[self.pelvis_id - 1][0:2]
 
         target = jnp.sum(state.info["pointer"][:, None] * state.info["footstep_plan"], axis = 0)
 

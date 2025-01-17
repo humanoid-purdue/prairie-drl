@@ -57,7 +57,7 @@ for i in range(n_steps):
     state = jit_step(state, ctrl)
     ss.append(state)
     rollout.append(state.pipeline_state)
-    print(state.info["pointer"], state.info["hit_time"])
+    print(state.info["pointer"], state.info["hit_time"], state.info["l_xy"], state.info["r_xy"])
 
 
 
