@@ -31,7 +31,8 @@ def makeIFN():
     network_factory = functools.partial(
         ppo_networks.make_ppo_networks,
             policy_hidden_layer_sizes=(128, 128, 128, 128))
-    normalize = running_statistics.normalize
+    #normalize = running_statistics.normalize
+    normalize = lambda x, y: x
     obs_size = env.observation_size
     ppo_network = network_factory(
           obs_size, env.action_size, preprocess_observations_fn=normalize
@@ -58,6 +59,7 @@ for i in range(n_steps):
     ss.append(state)
     rollout.append(state.pipeline_state)
     print(state.info["pointer"], state.info["hit_time"], state.info["l_xy"], state.info["r_xy"])
+    print(state.info["fplan_reward"])
 
 
 

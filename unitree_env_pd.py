@@ -162,7 +162,8 @@ class UnitreeEnvMini(PipelineEnv):
             "hit_time": 0.0,
             "step_weight": weight,
             "l_xy": jnp.zeros(2),
-            "r_xy": jnp.zeros(2)
+            "r_xy": jnp.zeros(2),
+            "fplan_reward": 0.0
         }
         metrics = metrics_dict.copy()
 
@@ -535,8 +536,7 @@ class UnitreeEnvMini(PipelineEnv):
         rp2 = data.site_xpos[self.right_foot_s2][0:2]
         rp = (rp1 + rp2) / 2
 
-        state.info["l_xy"] = data.x.pos[self.left_foot_id-1][0:2]
-        state.info["r_xy"] = data.x.pos[self.right_foot_id-1][0:2]
+
 
         pp = data.x.pos[self.pelvis_id - 1][0:2]
 
@@ -549,7 +549,12 @@ class UnitreeEnvMini(PipelineEnv):
 
         khit = 0.9
         weight = jnp.sum(state.info["pointer"] * state.info["step_weight"])
-        rews = khit * jnp.exp(-1 * min_dist / 0.20) * hit * weight + (1 - khit) * jnp.exp(-1 * p_dist / 1.5)
+        foot_rew = khit * jnp.exp(-1 * min_dist / 0.20) * weight
+        pelvis_rew = (1 - khit) * jnp.exp(-1 * p_dist / 0.5)
+        rews =  foot_rew + pelvis_rew
+
+        state.info["l_xy"] = pp
+        state.info["r_xy"] = target
 
 
         progress = jnp.where(state.info["hit_time"] > DS_TIME, 1, 0)
@@ -558,4 +563,5 @@ class UnitreeEnvMini(PipelineEnv):
         state.info["pointer"] = (jnp.roll(state.info["pointer"], 1) * progress +
                                  state.info["pointer"] * (1 - progress))
 
+        state.info["fplan_reward"] += rews * 30
         return rews

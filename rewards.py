@@ -212,7 +212,7 @@ def naiveFootstepPlan(ds_time, ss_time):
 def sequentialFootstepPlan():
     l_y = 0.15
     r_y = -0.15
-    step_size = 0.25
+    step_size = 0.35
     steps = jnp.array([[step_size * 0.5, l_y]])
     pointer = jnp.zeros([80])
     pointer = jnp.concatenate([jnp.array([1]), pointer])
