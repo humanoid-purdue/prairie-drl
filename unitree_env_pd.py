@@ -240,7 +240,7 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        footplan_reward = self.footplanReward(data, state) * 30
+        footplan_reward = self.footplanReward(data, state) * 15
         reward_dict["footplan_reward"] = footplan_reward
 
         facing_reward = self.facingReward(data, jnp.array([1., 0.])) * 5.0
@@ -546,17 +546,17 @@ class UnitreeEnvMini(PipelineEnv):
         r_dist = jnp.linalg.norm(target - rp[0:2]) + jnp.where(rp[2] < 0.03, 0, 10)
         min_dist = jnp.minimum(l_dist, r_dist)
         p_dist = jnp.linalg.norm(target - pp)
-        hit = jnp.where( min_dist < 0.20, 1, 0)
+        hit = jnp.where( min_dist < 0.15, 1, 0)
         state.info["hit_time"] = ( state.info["hit_time"] + self.dt ) * hit
 
-        khit = 0.9
+        khit = 0.8
         weight = jnp.sum(state.info["pointer"] * state.info["step_weight"])
         foot_rew = khit * jnp.exp(-1 * min_dist / 0.20) * weight
         pelvis_rew = (1 - khit) * jnp.exp(-1 * p_dist / 0.5)
         rews =  foot_rew + pelvis_rew
 
-        state.info["l_xy"] = pp
-        state.info["r_xy"] = target
+        state.info["l_xy"] = lp[0:2]
+        state.info["r_xy"] = rp[0:2]
 
 
         progress = jnp.where(state.info["hit_time"] > DS_TIME, 1, 0)
