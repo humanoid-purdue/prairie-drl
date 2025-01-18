@@ -219,18 +219,21 @@ def sequentialFootstepPlan():
 
     weights = jnp.ones([78])
     weights = jnp.concatenate([jnp.array([1., 1., 1.]), weights])
+    leg = jnp.array([1]) # 1 for left 0 for right
     for i in range(40):
         l_next = jnp.array([[step_size * i + step_size * 1.5, l_y]])
         r_next = jnp.array([[step_size * i + step_size, r_y]])
 
         steps = jnp.concatenate([steps, r_next, l_next], axis = 0)
+        leg = jnp.concatenate([leg, jnp.array([0]), jnp.array([1])], axis = 0)
 
-    return steps, pointer, weights
+    return steps, pointer, weights, leg
 
 
 if __name__ == "__main__":
-    steps, pointer, weights = sequentialFootstepPlan()
+    steps, pointer, weights, leg = sequentialFootstepPlan()
     print(steps.shape, pointer)
     print(jnp.roll(pointer, 1))
     print(steps, jnp.sum(weights * pointer))
     print(jnp.sum(steps * pointer[:, None], axis = 0))
+    print(leg)

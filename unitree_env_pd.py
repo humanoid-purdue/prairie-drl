@@ -148,7 +148,7 @@ class UnitreeEnvMini(PipelineEnv):
     def reset(self, rng: jax.Array) -> State:
         rng, key = jax.random.split(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
-        footstep_plan, pointer, weight = rewards.sequentialFootstepPlan()
+        footstep_plan, pointer, weight, leg = rewards.sequentialFootstepPlan()
 
         state_info = {
             "rng": rng,
@@ -163,7 +163,8 @@ class UnitreeEnvMini(PipelineEnv):
             "step_weight": weight,
             "l_xy": jnp.zeros(2),
             "r_xy": jnp.zeros(2),
-            "fplan_reward": 0.0
+            "fplan_reward": 0.0,
+            "leg": leg
         }
         metrics = metrics_dict.copy()
 
@@ -240,10 +241,10 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        footplan_reward = self.footplanReward(data, state) * 15
+        footplan_reward = self.footplanReward(data, state) * 30
         reward_dict["footplan_reward"] = footplan_reward
 
-        facing_reward = self.facingReward(data, jnp.array([1., 0.])) * 5.0
+        facing_reward = self.facingReward(data, jnp.array([1., 0.])) * 4.0
         reward_dict["facing_reward"] = facing_reward
 
         reward = 0.0
@@ -544,12 +545,15 @@ class UnitreeEnvMini(PipelineEnv):
 
         l_dist = jnp.linalg.norm(target - lp[0:2]) + jnp.where(lp[2] < 0.03, 0, 10)
         r_dist = jnp.linalg.norm(target - rp[0:2]) + jnp.where(rp[2] < 0.03, 0, 10)
-        min_dist = jnp.minimum(l_dist, r_dist)
+
+        leg = jnp.sum(state.info["leg"] * state.info["pointer"])
+
+        min_dist = l_dist * leg + (1 - leg) * r_dist
         p_dist = jnp.linalg.norm(target - pp)
         hit = jnp.where( min_dist < 0.15, 1, 0)
         state.info["hit_time"] = ( state.info["hit_time"] + self.dt ) * hit
 
-        khit = 0.8
+        khit = 0.9
         weight = jnp.sum(state.info["pointer"] * state.info["step_weight"])
         foot_rew = khit * jnp.exp(-1 * min_dist / 0.20) * weight
         pelvis_rew = (1 - khit) * jnp.exp(-1 * p_dist / 0.5)
