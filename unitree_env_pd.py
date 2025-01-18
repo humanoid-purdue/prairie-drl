@@ -543,8 +543,8 @@ class UnitreeEnvMini(PipelineEnv):
 
         target = jnp.sum(state.info["pointer"][:, None] * state.info["footstep_plan"], axis = 0)
 
-        l_dist = jnp.linalg.norm(target - lp[0:2]) + jnp.where(lp[2] < 0.03, 0, 10)
-        r_dist = jnp.linalg.norm(target - rp[0:2]) + jnp.where(rp[2] < 0.03, 0, 10)
+        l_dist = jnp.linalg.norm(target - lp[0:2])
+        r_dist = jnp.linalg.norm(target - rp[0:2])
 
         leg = jnp.sum(state.info["leg"] * state.info["pointer"])
 
@@ -554,8 +554,7 @@ class UnitreeEnvMini(PipelineEnv):
         state.info["hit_time"] = ( state.info["hit_time"] + self.dt ) * hit
 
         khit = 0.9
-        weight = jnp.sum(state.info["pointer"] * state.info["step_weight"])
-        foot_rew = khit * jnp.exp(-1 * min_dist / 0.20) * weight
+        foot_rew = khit * jnp.exp(-1 * min_dist / 0.20)
         pelvis_rew = (1 - khit) * jnp.exp(-1 * p_dist / 0.5)
         rews =  foot_rew + pelvis_rew
 
