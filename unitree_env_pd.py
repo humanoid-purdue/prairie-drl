@@ -528,12 +528,12 @@ class UnitreeEnvMini(PipelineEnv):
         return reward
 
     def footplanReward(self, data, state):
-        lp1 = data.site_xpos[self.left_foot_s1][0:2]
-        lp2 = data.site_xpos[self.left_foot_s2][0:2]
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
         lp = (lp1 + lp2) / 2
 
-        rp1 = data.site_xpos[self.right_foot_s1][0:2]
-        rp2 = data.site_xpos[self.right_foot_s2][0:2]
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
         rp = (rp1 + rp2) / 2
 
 
@@ -542,9 +542,11 @@ class UnitreeEnvMini(PipelineEnv):
 
         target = jnp.sum(state.info["pointer"][:, None] * state.info["footstep_plan"], axis = 0)
 
-        min_dist = jnp.minimum(jnp.linalg.norm(target - lp), jnp.linalg.norm(target - rp))
+        l_dist = jnp.linalg.norm(target - lp[0:2]) + jnp.where(lp[2] < 0.03, 0, 10)
+        r_dist = jnp.linalg.norm(target - rp[0:2]) + jnp.where(rp[2] < 0.03, 0, 10)
+        min_dist = jnp.minimum(l_dist, r_dist)
         p_dist = jnp.linalg.norm(target - pp)
-        hit = jnp.where( min_dist < 0.10, 1, 0)
+        hit = jnp.where( min_dist < 0.20, 1, 0)
         state.info["hit_time"] = ( state.info["hit_time"] + self.dt ) * hit
 
         khit = 0.9
