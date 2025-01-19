@@ -84,7 +84,7 @@
 
             <body name="l_hip_roll" pos="-0.05715 0.127 0" quat="1 0 0 0">
                 <inertial pos ="0.0493843080656282 0.0 -0.07684796909976649" quat="1 0 0 0" mass="3.91082805" diaginertia="0.0020885499345463655 0.0020885499345463655 0.0020885499345463655"/>
-                <joint name="l_hip_roll" axis="1 0 0" range="-0.279253 1.0472"/>
+                <joint name="l_hip_roll" axis="1 0 0" range="-0.279253 1.0"/>
                 <geom type="mesh" class="visual" mesh="l_hip_roll"/>
 
                 <body name="l_hip_yaw" pos="0.06254 0 -0.1905" quat="1 0 0 0">
@@ -127,7 +127,7 @@
 
             <body name="r_hip_roll" pos="-0.05715 -0.127 0" quat="1 0 0 0">
                 <inertial pos ="0.0493843080656282 0.0 -0.07684796909976649" quat="1 0 0 0" mass="3.91082805" diaginertia="0.0020885499345463655 0.0020885499345463655 0.0020885499345463655"/>
-                <joint name="r_hip_roll" axis="1 0 0" range="-0.279253 1.0472"/>
+                <joint name="r_hip_roll" axis="1 0 0" range="-1.0 0.279253"/>
                 <geom type="mesh" class="visual" mesh="r_hip_roll"/>
 
                 <body name="r_hip_yaw" pos="0.06254 0 -0.1905" quat="1 0 0 0">
