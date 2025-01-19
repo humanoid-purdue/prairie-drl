@@ -6,12 +6,11 @@ from brax.training.agents.ppo import networks as ppo_networks
 from brax.io import model
 from matplotlib import pyplot as plt
 import dill
-import unitree_env_pd
-from unitree_env_pd import UnitreeEnvMini
+import nemo_env_pd
 
-envs.register_environment('g1', UnitreeEnvMini)
-env = envs.get_environment('g1')
-eval_env = envs.get_environment('g1')
+envs.register_environment('nemo', nemo_env_pd.NemoEnv)
+env = envs.get_environment('nemo')
+eval_env = envs.get_environment('nemo')
 
 make_networks_factory = functools.partial(
     ppo_networks.make_ppo_networks,
@@ -29,7 +28,7 @@ train_fn = functools.partial(
 
 x_data = []
 y_data = {}
-for name in unitree_env_pd.metrics_dict.keys():
+for name in nemo_env_pd.metrics_dict.keys():
     y_data[name] = []
 prefix = "eval/episode_"
 times = [datetime.now()]
