@@ -27,7 +27,8 @@ metrics_dict = {
                     'limit_reward': 0.0,
                     'swing_height_reward': 0.0,
                     'healthy_reward': 0.0,
-                    'footplan_reward': 0.0,
+                    'stride_reward': 0.0,
+                    'velocity_reward': 0.0,
                     'facing_reward': 0.0}
 
 class UnitreeEnvMini(PipelineEnv):
@@ -164,7 +165,8 @@ class UnitreeEnvMini(PipelineEnv):
             "l_xy": jnp.zeros(2),
             "r_xy": jnp.zeros(2),
             "fplan_reward": 0.0,
-            "leg": leg
+            "leg": leg,
+            "centroid_velocity": jnp.array([0.4, 0])
         }
         metrics = metrics_dict.copy()
 
@@ -241,11 +243,17 @@ class UnitreeEnvMini(PipelineEnv):
         healthy_reward = 5.0 * is_healthy
         reward_dict["healthy_reward"] = healthy_reward
 
-        footplan_reward = self.footplanReward(data, state) * 30
-        reward_dict["footplan_reward"] = footplan_reward
+        #footplan_reward = self.footplanReward(data, state) * 30
+        #reward_dict["footplan_reward"] = footplan_reward
 
         facing_reward = self.facingReward(data, jnp.array([1., 0.])) * 4.0
         reward_dict["facing_reward"] = facing_reward
+
+        stride_reward = self.strideLengthReward(state.info, data)[0] * 200
+        reward_dict["stride_reward"] = stride_reward
+
+        vel_reward = self.velocityReward(state.info, data) * 10.0
+        reward_dict["velocity_reward"] = vel_reward
 
         reward = 0.0
         for key in reward_dict.keys():
@@ -465,7 +473,7 @@ class UnitreeEnvMini(PipelineEnv):
         ds_state = l_coeff * r_coeff
         vel_mag = jnp.linalg.norm(info["centroid_velocity"])
         stride_target = vel_mag * (DS_TIME + SS_TIME) * 1.0
-        stride_target = jnp.clip(stride_target, min = 0.5, max = None)
+        stride_target = jnp.clip(stride_target, min = 0.3, max = None)
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
         lp = (lp1 + lp2) / 2
@@ -479,7 +487,7 @@ class UnitreeEnvMini(PipelineEnv):
 
         reward = stride_target - stride_length
         reward = jnp.where(reward > 0, 0, reward)
-        reward = reward * ds_state + close_reward
+        reward = reward * 0.2 * ds_state + close_reward
         return reward
 
     def determineGRF(self, data):
