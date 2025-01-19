@@ -237,7 +237,7 @@ class NemoEnv(PipelineEnv):
         swing_height_reward = self.swingHeightReward(state.info, data)[0] * 300
         reward_dict["swing_height_reward"] = swing_height_reward
 
-        min_z, max_z = (0.4, 0.8)
+        min_z, max_z = (0.5, 1.1)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 5.0 * is_healthy
