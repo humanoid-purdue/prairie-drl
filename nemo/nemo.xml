@@ -184,19 +184,19 @@
   <position kp="400.0" class="nemo" name="r_foot_pitch" joint="r_foot_pitch" forcerange="-34 34" inheritrange="1"/>
   <position kp="400.0" class="nemo" name="r_foot_roll" joint="r_foot_roll" forcerange="-17 17" inheritrange="1"/>
 
-  <velocity kv="40.0" class="nemo" name="l_hip_pitch_v" joint="l_hip_pitch" forcerange="-12 12" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="l_hip_roll_v" joint="l_hip_roll" forcerange="-12 12" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="l_hip_yaw_v" joint="l_hip_yaw" forcerange="-6 6" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="l_knee_v" joint="l_knee" forcerange="-12 12" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="l_foot_pitch_v" joint="l_foot_pitch" forcerange="-12 12" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="l_foot_roll_v" joint="l_foot_roll" forcerange="-6 6" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="l_hip_pitch_v" joint="l_hip_pitch" forcerange="-24 24" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="l_hip_roll_v" joint="l_hip_roll" forcerange="-24 24" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="l_hip_yaw_v" joint="l_hip_yaw" forcerange="-12 12" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="l_knee_v" joint="l_knee" forcerange="-24 24" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="l_foot_pitch_v" joint="l_foot_pitch" forcerange="-24 24" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="l_foot_roll_v" joint="l_foot_roll" forcerange="-12 12" ctrlrange="-20 20"/>
 
-  <velocity kv="40.0" class="nemo" name="r_hip_pitch_v" joint="r_hip_pitch" forcerange="-12 12" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="r_hip_roll_v" joint="r_hip_roll" forcerange="-12 12" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="r_hip_yaw_v" joint="r_hip_yaw" forcerange="-6 6" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="r_knee_v" joint="r_knee" forcerange="-12 12" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="r_foot_pitch_v" joint="r_foot_pitch" forcerange="-12 12" ctrlrange="-20 20"/>
-  <velocity kv="40.0" class="nemo" name="r_foot_roll_v" joint="r_foot_roll" forcerange="-6 6" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="r_hip_pitch_v" joint="r_hip_pitch" forcerange="-24 24" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="r_hip_roll_v" joint="r_hip_roll" forcerange="-24 24" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="r_hip_yaw_v" joint="r_hip_yaw" forcerange="-12 12" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="r_knee_v" joint="r_knee" forcerange="-24 24" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="r_foot_pitch_v" joint="r_foot_pitch" forcerange="-24 24" ctrlrange="-20 20"/>
+  <velocity kv="40.0" class="nemo" name="r_foot_roll_v" joint="r_foot_roll" forcerange="-12 12" ctrlrange="-20 20"/>
 </actuator>
 
 <keyframe>
