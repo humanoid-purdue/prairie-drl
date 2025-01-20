@@ -166,7 +166,7 @@ class NemoEnv(PipelineEnv):
             "r_xy": jnp.zeros(2),
             "fplan_reward": 0.0,
             "leg": leg,
-            "centroid_velocity": jnp.array([0.4, 0])
+            "centroid_velocity": jnp.array([0.3, 0])
         }
         metrics = metrics_dict.copy()
 
