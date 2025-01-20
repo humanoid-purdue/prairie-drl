@@ -231,7 +231,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit_reward"] = jl_reward
 
         flatfoot_reward = self.flatfootReward(data)
-        flatfoot_reward = flatfoot_reward * 2.5
+        flatfoot_reward = flatfoot_reward * 5.0
         reward_dict["flatfoot_reward"] = flatfoot_reward
 
         swing_height_reward = self.swingHeightReward(state.info, data)[0] * 300
@@ -412,8 +412,8 @@ class NemoEnv(PipelineEnv):
         r_shuffle_coeff = r_coeff * -1
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_nf = jnp.linalg.norm(l_grf[0:3])
-        r_nf = jnp.linalg.norm(r_grf[0:3])
+        l_nf = jnp.linalg.norm(l_grf)
+        r_nf = jnp.linalg.norm(r_grf)
 
 
         l_nf = jnp.clip(l_nf, -400, 400)
