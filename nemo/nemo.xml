@@ -66,7 +66,7 @@
 
 <worldbody>
     <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30"/>
-    <body name="pelvis" pos="0 0 0.8300" childclass="nemo">
+    <body name="pelvis" pos="0 0 0.8319" childclass="nemo">
     <inertial pos ="0.0 0.0 0.24179953312523558" quat="1 0 0 0" mass="7.6770570000000005" diaginertia="0.028726694450146615 0.028726694450146615 0.028726694450146615"/>
     <freejoint name="floating_base"/>
     <light name="tracking" mode="trackcom" pos="0 0 2"/>
@@ -202,7 +202,7 @@
 <keyframe>
     <key name="stand"
       qpos="
-      0 0 0.83
+      0 0 0.8319
       1 0 0 0
       0 0 0 0 0 0
       0 0 0 0 0 0
