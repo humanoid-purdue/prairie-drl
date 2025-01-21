@@ -166,7 +166,7 @@ class NemoEnv(PipelineEnv):
             "r_xy": jnp.zeros(2),
             "fplan_reward": 0.0,
             "leg": leg,
-            "centroid_velocity": jnp.array([0.3, 0])
+            "centroid_velocity": jnp.array([0.5, 0])
         }
         metrics = metrics_dict.copy()
 
@@ -438,11 +438,11 @@ class NemoEnv(PipelineEnv):
 
 
         vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
-        shuffle_reward = (l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle) * 0.4
+        shuffle_reward = (l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle)
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 2 + grf_reward * 0.05 + shuffle_reward * 20
+        return vel_reward * 3 + grf_reward * 0.03 + shuffle_reward * 10
 
     def flatfootReward(self, data):
         vec_tar = jnp.array([0.0, 0.0, 1.0])
