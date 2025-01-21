@@ -408,8 +408,8 @@ class NemoEnv(PipelineEnv):
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
 
-        l_shuffle_coeff = l_coeff * -1
-        r_shuffle_coeff = r_coeff * -1
+        l_shuffle_coeff = l_coeff
+        r_shuffle_coeff = r_coeff
 
         l_grf, r_grf = self.determineGRF(data1)
         l_nf = jnp.linalg.norm(l_grf[0:3])
