@@ -442,7 +442,7 @@ class NemoEnv(PipelineEnv):
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
-        return vel_reward * 3 + grf_reward * 0.05 + shuffle_reward * 10
+        return vel_reward * 2 + grf_reward * 0.05 + shuffle_reward * 10
 
     def flatfootReward(self, data):
         vec_tar = jnp.array([0.0, 0.0, 1.0])
