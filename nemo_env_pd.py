@@ -403,7 +403,7 @@ class NemoEnv(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        gnd_vel_coeff = -20
+        gnd_vel_coeff = -10
         swing_vel_coeff = 0
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
@@ -438,7 +438,7 @@ class NemoEnv(PipelineEnv):
 
 
         vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
-        shuffle_reward = (l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle) * 0.7
+        shuffle_reward = (l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle) * 0.4
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
