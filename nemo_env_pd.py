@@ -403,7 +403,7 @@ class NemoEnv(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        gnd_vel_coeff = -5
+        gnd_vel_coeff = -20
         swing_vel_coeff = 0
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
@@ -416,8 +416,8 @@ class NemoEnv(PipelineEnv):
         r_nf = jnp.linalg.norm(r_grf[0:3])
 
 
-        #l_nf = jnp.clip(l_nf, -400, 400)
-        #r_nf = jnp.clip(r_nf, -400, 400)
+        l_nf = jnp.clip(l_nf, -400, 400)
+        r_nf = jnp.clip(r_nf, -400, 400)
 
         def getVel(d1, d2, id):
             bp1 = d1.site_xpos
@@ -438,7 +438,7 @@ class NemoEnv(PipelineEnv):
 
 
         vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
-        shuffle_reward = (l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle) * 0.4
+        shuffle_reward = (l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle) * 0.7
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
