@@ -433,12 +433,12 @@ class NemoEnv(PipelineEnv):
         l_spd = ( jnp.linalg.norm(l1_vel) + jnp.linalg.norm(l2_vel) ) / 2
         r_spd = ( jnp.linalg.norm(r1_vel) + jnp.linalg.norm(r2_vel) ) / 2
 
-        l_shuffle = jnp.exp(jnp.linalg.norm(l1_vel - l2_vel) * -1 / 0.01)
-        r_shuffle = jnp.exp(jnp.linalg.norm(r1_vel - r2_vel) * -1 / 0.01)
+        l_shuffle = (jnp.exp(jnp.linalg.norm(l1_vel - l2_vel) * -1 / 0.02) - 1)
+        r_shuffle = (jnp.exp(jnp.linalg.norm(r1_vel - r2_vel) * -1 / 0.02) - 1)
 
 
         vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
-        shuffle_reward = l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle
+        shuffle_reward = (l_shuffle_coeff * l_shuffle + r_shuffle_coeff * r_shuffle) * 10
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
 
