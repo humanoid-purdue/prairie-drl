@@ -277,7 +277,7 @@ class NemoEnv(PipelineEnv):
         t = jnp.where(info["time"] < 1, info["time"], 1)
         vel = ( com[0:2] - p0 ) / t
         vel_err = (vel - vel_target) ** 2
-        return jnp.exp(jnp.sum(vel_err) * -10)
+        return jnp.exp(jnp.sum(vel_err) * -1 / 0.2)
 
     def pelvisAngle(self, data):
         pelvis_c = data.site_xpos[self.pelvis_b_id][0:2]
@@ -416,8 +416,8 @@ class NemoEnv(PipelineEnv):
         r_nf = jnp.linalg.norm(r_grf[0:3])
 
 
-        l_nf = jnp.clip(l_nf, -400, 400)
-        r_nf = jnp.clip(r_nf, -400, 400)
+        #l_nf = jnp.clip(l_nf, -400, 400)
+        #r_nf = jnp.clip(r_nf, -400, 400)
 
         def getVel(d1, d2, id):
             bp1 = d1.site_xpos
