@@ -246,7 +246,7 @@ class NemoEnv(PipelineEnv):
         #footplan_reward = self.footplanReward(data, state) * 30
         #reward_dict["footplan_reward"] = footplan_reward
 
-        facing_reward = self.facingReward(data, jnp.array([1., 0.])) * 0.0
+        facing_reward = self.facingReward(data, jnp.array([1., 0.])) * 7.0
         reward_dict["facing_reward"] = facing_reward
 
         stride_reward = self.strideLengthReward(state.info, data)[0] * 200
@@ -416,8 +416,8 @@ class NemoEnv(PipelineEnv):
         r_nf = jnp.linalg.norm(r_grf[0:3])
 
 
-        #l_nf = jnp.clip(l_nf, -400, 400)
-        #r_nf = jnp.clip(r_nf, -400, 400)
+        l_nf = jnp.clip(l_nf, -400, 400)
+        r_nf = jnp.clip(r_nf, -400, 400)
 
         def getVel(d1, d2, id):
             bp1 = d1.site_xpos
