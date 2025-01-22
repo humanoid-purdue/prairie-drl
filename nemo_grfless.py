@@ -345,7 +345,7 @@ class NemoEnv(PipelineEnv):
         #airtime given when current contact state changes and airtime greater than zero
         first_contact = ( state.info["feet_airtime"] > 0.0 ) * contact_filt
         air_time = (state.info["feet_airtime"] - MIN_AT) * first_contact
-        air_time = jnp.clip(air_time, max = SS_TIME - MIN_AT, min = 0)
+        air_time = jnp.clip(air_time, max = SS_TIME - MIN_AT)
         rew = jnp.sum(air_time)
         return rew
 
