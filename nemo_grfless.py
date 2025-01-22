@@ -138,7 +138,7 @@ class NemoEnv(PipelineEnv):
             "rng": rng,
             "time": jnp.zeros(1),
             "feet_airtime": jnp.zeros(2),
-            "last_contact": jnp.zeros(2),
+            "last_contact": jnp.array([0, 0]),
             "prev_action": jnp.zeros(self.nu),
             "velocity": jnp.array([0.5, 0]),
             "angvel": 0.0
@@ -181,7 +181,8 @@ class NemoEnv(PipelineEnv):
         l_contact = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, 1, 0)
         r_contact = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, 1, 0)
 
-        contact = jnp.array([l_contact, r_contact], dtype = float)
+        contact = jnp.array([l_contact, r_contact])
+        contact_filt = contact | state.info["last_contact"]
 
         reward, done = self.reward(state, data1, action, contact)
 
@@ -230,7 +231,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_phase"] = phase_reward * 1.0
 
         air_time_reward = self.feetAirtime(state, contact)
-        reward_dict["feet_airtime"] = air_time_reward * 1000.0
+        reward_dict["feet_airtime"] = air_time_reward * 2.0
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
@@ -324,7 +325,7 @@ class NemoEnv(PipelineEnv):
         r_err = jnp.square(r_h - r_t)
 
         #rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
-        rew = jnp.exp(-1 * (l_err + r_err))
+        rew = jnp.exp(-1 * (l_err + r_err) / 0.03)
         return rew[0]
 
     def feetClearanceReward(self, data0, data1):
@@ -342,9 +343,9 @@ class NemoEnv(PipelineEnv):
 
         return l_rew + r_rew
 
-    def feetAirtime(self, state, contact):
+    def feetAirtime(self, state, contact_filt):
         #airtime given when current contact state changes and airtime greater than zero
-        first_contact = ( state.info["feet_airtime"] > 0.02 ) * contact
+        first_contact = ( state.info["feet_airtime"] > 0.0 ) * contact_filt
         air_time = (state.info["feet_airtime"] - MIN_AT) * first_contact
         air_time = jnp.clip(air_time, max = SS_TIME - MIN_AT)
         rew = jnp.sum(air_time)
