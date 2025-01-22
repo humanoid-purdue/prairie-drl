@@ -142,7 +142,7 @@ class NemoEnv(PipelineEnv):
             "rng": rng,
             "time": jnp.zeros(1),
             "feet_airtime": jnp.array([0., 0.]),
-            "last_contact": jnp.array([0, 0]),
+            "last_contact": jnp.zeros(2, dtype = bool),
             "prev_action": jnp.zeros(self.nu),
             "velocity": jnp.array([0.5, 0]),
             "angvel": 0.0
@@ -180,14 +180,13 @@ class NemoEnv(PipelineEnv):
 
         contact = rewards.feet_contact(data1, self.floor_id, self.left_geom_id, self.right_geom_id)
 
-        contact_filt = contact + state.info["last_contact"]
-        contact_filt = jnp.clip(contact_filt, min = 0, max = 1)
+        contact_filt = contact | state.info["last_contact"]
 
         reward, done = self.reward(state, data1, action, contact_filt)
 
         state.info["time"] += self.dt
         state.info["feet_airtime"] += self.dt
-        state.info["feet_airtime"] *= (1 - contact)
+        state.info["feet_airtime"] *= ~contact
         state.info["last_contact"] = contact
         state.info["prev_action"] = action
 
