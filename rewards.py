@@ -1,6 +1,11 @@
 import numpy as np
 import jax.numpy as jnp
 
+from typing import Any, Tuple
+
+import jax
+from mujoco import mjx
+
 def cycleContactCoeff(ds_time, ss_time, buffer_time, t):
     tmod = jnp.mod(t, ( ds_time + ss_time ) * 2)
     # if t is within ds
@@ -70,6 +75,28 @@ def get_feet_forces(m, dx, forces):
   total_left_forces = jnp.sum(forces * left_bm[:, None], axis=0)
 
   return total_left_forces, total_right_forces
+
+def get_collision_info(
+    contact: Any, geom1: int, geom2: int
+) -> Tuple[jax.Array, jax.Array]:
+  """Get the distance and normal of the collision between two geoms."""
+  mask = (jnp.array([geom1, geom2]) == contact.geom).all(axis=1)
+  mask |= (jnp.array([geom2, geom1]) == contact.geom).all(axis=1)
+  idx = jnp.where(mask, contact.dist, 1e4).argmin()
+  dist = contact.dist[idx] * mask[idx]
+  normal = (dist < 0) * contact.frame[idx, 0, :3]
+  return dist, normal
+
+
+def geoms_colliding(state: mjx.Data, geom1: int, geom2: int) -> jax.Array:
+  """Return True if the two geoms are colliding."""
+  return get_collision_info(state.contact, geom1, geom2)[0] < 0
+
+def feet_contact(state, floor_id, right_foot_id, left_foot_id):
+    l = geoms_colliding(state, left_foot_id, floor_id)
+    r = geoms_colliding(state, right_foot_id, floor_id)
+    contact = jnp.array([l, r])
+    return contact
 
 def linkPlan(ds_time, ss_time, t):
     step_height = 0.2

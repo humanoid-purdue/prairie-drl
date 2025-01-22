@@ -70,7 +70,9 @@ class NemoEnv(PipelineEnv):
         self.right_foot_s2 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p2")
         self.right_foot_s3 = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_SITE.value, "right_foot_p3")
 
-
+        self.floor_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+        self.right_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "right_foot")
+        self.left_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "left_foot")
 
     def _get_obs(
             self, data0, data1, prev_action: jnp.ndarray, state = None
@@ -176,14 +178,8 @@ class NemoEnv(PipelineEnv):
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
 
+        contact = rewards.feet_contact(state, self.floor_id, self.left_geom_id, self.right_geom_id)
 
-        forces = rewards.get_contact_forces(self.model, data1)
-        lfoot_grf, rfoot_grf = rewards.get_feet_forces(self.model, data1, forces)
-
-        l_contact = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, 1, 0)
-        r_contact = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, 1, 0)
-
-        contact = jnp.array([l_contact, r_contact])
         contact_filt = contact + state.info["last_contact"]
         contact_filt = jnp.clip(contact_filt, min = 0, max = 1)
 
@@ -234,7 +230,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_phase"] = phase_reward * 1.0
 
         air_time_reward = self.feetAirtime(state, contact)
-        reward_dict["feet_airtime"] = air_time_reward * 20000.0
+        reward_dict["feet_airtime"] = air_time_reward * 20.0
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
