@@ -127,7 +127,7 @@ class NemoEnv(PipelineEnv):
             angvel,
             vel,
             prev_sites, current_sites,
-            prev_action, l_coeff, r_coeff, jnp.array([l_t, r_t])
+            prev_action, l_coeff, r_coeff
         ])
 
     def reset(self, rng: jax.Array) -> State:
@@ -137,7 +137,7 @@ class NemoEnv(PipelineEnv):
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
-            "feet_air_time": jnp.zeros(2),
+            "feet_airtime": jnp.zeros(2),
             "last_contact": jnp.zeros(2),
             "prev_action": jnp.zeros(self.nu),
             "velocity": jnp.array([0.5, 0]),
@@ -145,7 +145,7 @@ class NemoEnv(PipelineEnv):
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs(pipeline_state, pipeline_state)
+        obs = self._get_obs(pipeline_state, pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -181,12 +181,11 @@ class NemoEnv(PipelineEnv):
         l_contact = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, 1, 0)
         r_contact = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, 1, 0)
 
-        contact = jnp.array([l_contact, r_contact])
+        contact = jnp.array([l_contact, r_contact], dtype = float)
 
-        reward, done = self.reward(state, data1, contact)
+        reward, done = self.reward(state, data1, action, contact)
 
         state.info["time"] += self.dt
-        state.info["count"] += 1
         state.info["feet_airtime"] += self.dt
         state.info["feet_airtime"] *= (1 - contact)
         state.info["last_contact"] = contact
@@ -326,7 +325,7 @@ class NemoEnv(PipelineEnv):
 
         #rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
         rew = jnp.exp(-1 * (l_err + r_err))
-        return rew
+        return rew[0]
 
     def feetClearanceReward(self, data0, data1):
         lp0, rp0 = self.footPos(data0)
@@ -345,8 +344,8 @@ class NemoEnv(PipelineEnv):
 
     def feetAirtime(self, state, contact):
         #airtime given when current contact state changes and airtime greater than zero
-        first_contact = ( state.info["air_time"] > 0.02 ) * contact
-        air_time = (state.info["air_time"] - MIN_AT) * first_contact
+        first_contact = ( state.info["feet_airtime"] > 0.02 ) * contact
+        air_time = (state.info["feet_airtime"] - MIN_AT) * first_contact
         air_time = jnp.clip(air_time, max = SS_TIME - MIN_AT)
         rew = jnp.sum(air_time)
         return rew
@@ -360,4 +359,4 @@ class NemoEnv(PipelineEnv):
 
         feet_v = jnp.array([jnp.sum(jnp.square(lv)), jnp.sum(jnp.square(rv))])
         rew = feet_v * contact
-        return rew
+        return jnp.sum(rew)
