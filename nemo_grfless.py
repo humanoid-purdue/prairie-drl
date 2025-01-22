@@ -8,8 +8,8 @@ from mujoco import mjx
 import rewards
 from jax import random
 
-DS_TIME = 0.1
-SS_TIME = 0.4
+DS_TIME = 0.15
+SS_TIME = 0.5
 BU_TIME = 0.05
 MIN_AT = 0.2
 STEP_HEIGHT = 0.10
@@ -224,13 +224,13 @@ class NemoEnv(PipelineEnv):
         reward_dict["action_rate"] = action_r_reward * -0.01
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * 1.0
+        reward_dict["upright"] = upright_reward * 2.0
 
         phase_reward = self.feetPhaseReward(state.info, data)
         reward_dict["feet_phase"] = phase_reward * 1.0
 
         air_time_reward = self.feetAirtime(state, contact)
-        reward_dict["feet_airtime"] = air_time_reward * 2.0
+        reward_dict["feet_airtime"] = air_time_reward * 1000.0
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
