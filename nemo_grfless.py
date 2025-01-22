@@ -108,8 +108,10 @@ class NemoEnv(PipelineEnv):
         #l_grf, r_grf = self.determineGRF(data1)
         if state is None:
             t = 0
+            cmd = jnp.array([0., 0., 0.])
         else:
             t = state.info["time"]
+            cmd = jnp.concatenate([state.info["velocity"], jnp.array([state.info["angvel"]])], axis = 0)
 
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
         l_t, r_t = rewards.heightLimit(DS_TIME, SS_TIME, BU_TIME, STEP_HEIGHT, t)
@@ -127,7 +129,7 @@ class NemoEnv(PipelineEnv):
             angvel,
             vel,
             prev_sites, current_sites,
-            prev_action, l_coeff, r_coeff
+            prev_action, l_coeff, r_coeff, cmd
         ])
 
     def reset(self, rng: jax.Array) -> State:
@@ -232,7 +234,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_phase"] = phase_reward * 1.0
 
         air_time_reward = self.feetAirtime(state, contact)
-        reward_dict["feet_airtime"] = air_time_reward * 200.0
+        reward_dict["feet_airtime"] = air_time_reward * 20000.0
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
