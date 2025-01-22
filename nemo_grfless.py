@@ -349,6 +349,7 @@ class NemoEnv(PipelineEnv):
         air_time = (state.info["feet_airtime"] - MIN_AT) * first_contact
         air_time = jnp.clip(air_time, max = SS_TIME - MIN_AT)
         rew = jnp.sum(air_time)
+        rew = jnp.sum(contact_filt) * 1.0
         return rew
 
     def feetSlipReward(self, data0, data1, contact):
