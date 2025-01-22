@@ -179,7 +179,7 @@ class NemoEnv(PipelineEnv):
         lfoot_grf, rfoot_grf = rewards.get_feet_forces(self.model, data1, forces)
 
         l_contact = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, 1, 0)
-        r_contact = jnp.where(jnp.linalg.norm(lfoot_grf) > 10, 1, 0)
+        r_contact = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, 1, 0)
 
         contact = jnp.array([l_contact, r_contact])
         contact_filt = contact | state.info["last_contact"]
@@ -188,7 +188,7 @@ class NemoEnv(PipelineEnv):
 
         state.info["time"] += self.dt
         state.info["feet_airtime"] += self.dt
-        state.info["feet_airtime"] *= (1 - contact)
+        state.info["feet_airtime"] *= ~contact
         state.info["last_contact"] = contact_filt
         state.info["prev_action"] = action
 
@@ -325,7 +325,7 @@ class NemoEnv(PipelineEnv):
         r_err = jnp.square(r_h - r_t)
 
         #rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
-        rew = jnp.exp(-1 * (l_err + r_err) / 0.0009)
+        rew = jnp.exp(-1 * (l_err + r_err) / 0.01)
         return rew[0]
 
     def feetClearanceReward(self, data0, data1):
