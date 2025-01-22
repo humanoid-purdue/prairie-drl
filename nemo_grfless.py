@@ -217,16 +217,16 @@ class NemoEnv(PipelineEnv):
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15
 
         vel_z_reward = self.velZReward(data0, data)
-        reward_dict["vel_z"] = vel_z_reward * -0.001
+        reward_dict["vel_z"] = vel_z_reward * -0.00
 
         energy_reward = self.energyReward(data)
-        reward_dict["energy"] = energy_reward * -0.001
+        reward_dict["energy"] = energy_reward * -0.00
 
         action_r_reward = self.actionRateReward(action, state)
         reward_dict["action_rate"] = action_r_reward * -0.01
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * 1.0
+        reward_dict["upright"] = upright_reward * 2.0
 
         phase_reward = self.feetPhaseReward(state.info, data)
         reward_dict["feet_phase"] = phase_reward * 1.0
@@ -238,7 +238,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_slip"] = slip_reward * -0.25
 
         clearance_reward = self.feetClearanceReward(data0, data)
-        reward_dict["feet_clearance"] = clearance_reward * 0.01
+        reward_dict["feet_clearance"] = clearance_reward * 0.0
 
 
         reward = 0.0
