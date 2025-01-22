@@ -137,7 +137,7 @@ class NemoEnv(PipelineEnv):
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
-            "feet_airtime": jnp.zeros(2),
+            "feet_airtime": jnp.array([0., 0.]),
             "last_contact": jnp.array([0, 0]),
             "prev_action": jnp.zeros(self.nu),
             "velocity": jnp.array([0.5, 0]),
@@ -182,13 +182,14 @@ class NemoEnv(PipelineEnv):
         r_contact = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, 1, 0)
 
         contact = jnp.array([l_contact, r_contact])
-        contact_filt = contact | state.info["last_contact"]
+        contact_filt = contact + state.info["last_contact"]
+        contact_filt = jnp.clip(contact_filt, min = 0, max = 1)
 
         reward, done = self.reward(state, data1, action, contact_filt)
 
         state.info["time"] += self.dt
         state.info["feet_airtime"] += self.dt
-        state.info["feet_airtime"] *= ~contact
+        state.info["feet_airtime"] *= (1 - contact)
         state.info["last_contact"] = contact
         state.info["prev_action"] = action
 
@@ -347,9 +348,8 @@ class NemoEnv(PipelineEnv):
         #airtime given when current contact state changes and airtime greater than zero
         first_contact = ( state.info["feet_airtime"] > 0.0 ) * contact_filt
         air_time = (state.info["feet_airtime"] - MIN_AT) * first_contact
-        air_time = jnp.clip(air_time, max = SS_TIME - MIN_AT)
+        air_time = jnp.clip(air_time, max = SS_TIME - MIN_AT, min = 0)
         rew = jnp.sum(air_time)
-        rew = jnp.sum(contact_filt) * 1.0
         return rew
 
     def feetSlipReward(self, data0, data1, contact):
