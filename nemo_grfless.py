@@ -189,7 +189,7 @@ class NemoEnv(PipelineEnv):
         state.info["time"] += self.dt
         state.info["feet_airtime"] += self.dt
         state.info["feet_airtime"] *= (1 - contact)
-        state.info["last_contact"] = contact
+        state.info["last_contact"] = contact_filt
         state.info["prev_action"] = action
 
         obs = self._get_obs(data0, data1, action, state = state)
@@ -325,7 +325,7 @@ class NemoEnv(PipelineEnv):
         r_err = jnp.square(r_h - r_t)
 
         #rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
-        rew = jnp.exp(-1 * (l_err + r_err) / 0.03)
+        rew = jnp.exp(-1 * (l_err + r_err) / 0.0009)
         return rew[0]
 
     def feetClearanceReward(self, data0, data1):
