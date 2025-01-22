@@ -182,14 +182,14 @@ class NemoEnv(PipelineEnv):
         r_contact = jnp.where(jnp.linalg.norm(rfoot_grf) > 10, 1, 0)
 
         contact = jnp.array([l_contact, r_contact])
-        contact_filt = contact # | state.info["last_contact"]
+        contact_filt = contact | state.info["last_contact"]
 
-        reward, done = self.reward(state, data1, action, contact)
+        reward, done = self.reward(state, data1, action, contact_filt)
 
         state.info["time"] += self.dt
         state.info["feet_airtime"] += self.dt
         state.info["feet_airtime"] *= ~contact
-        state.info["last_contact"] = contact_filt
+        state.info["last_contact"] = contact
         state.info["prev_action"] = action
 
         obs = self._get_obs(data0, data1, action, state = state)
