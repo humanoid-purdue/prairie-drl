@@ -6,9 +6,9 @@ from brax.training.agents.ppo import networks as ppo_networks
 from brax.io import model
 from matplotlib import pyplot as plt
 import dill
-import nemo_env_pd
+import nemo_grfless
 
-envs.register_environment('nemo', nemo_env_pd.NemoEnv)
+envs.register_environment('nemo', nemo_grfless.NemoEnv)
 env = envs.get_environment('nemo')
 eval_env = envs.get_environment('nemo')
 
@@ -28,7 +28,7 @@ train_fn = functools.partial(
 
 x_data = []
 y_data = {}
-for name in nemo_env_pd.metrics_dict.keys():
+for name in nemo_grfless.metrics_dict.keys():
     y_data[name] = []
 prefix = "eval/episode_"
 times = [datetime.now()]
