@@ -178,7 +178,7 @@ class NemoEnv(PipelineEnv):
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
 
-        contact = rewards.feet_contact(state, self.floor_id, self.left_geom_id, self.right_geom_id)
+        contact = rewards.feet_contact(data, self.floor_id, self.left_geom_id, self.right_geom_id)
 
         contact_filt = contact + state.info["last_contact"]
         contact_filt = jnp.clip(contact_filt, min = 0, max = 1)
