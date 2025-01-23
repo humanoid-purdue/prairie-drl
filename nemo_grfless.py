@@ -27,7 +27,8 @@ metrics_dict = {
                     'angvel_z': 0.0,
                     'angvel_xy': 0.0,
                     'vel_z': 0.0,
-                    'energy': 0.0}
+                    'energy': 0.0,
+                    'single_leg': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
@@ -238,6 +239,9 @@ class NemoEnv(PipelineEnv):
         clearance_reward = self.feetClearanceReward(data0, data)
         reward_dict["feet_clearance"] = clearance_reward * 0.0
 
+        single_rew = self.singleLegReward(contact)
+        reward_dict["single_leg"] = single_rew * 1.0
+
 
         reward = 0.0
         for key in reward_dict.keys():
@@ -360,3 +364,8 @@ class NemoEnv(PipelineEnv):
         feet_v = jnp.array([jnp.sum(jnp.square(lv)), jnp.sum(jnp.square(rv))])
         rew = feet_v * contact
         return jnp.sum(rew)
+
+    def singleLegReward(self, contact):
+        single_contact = jnp.sum(contact) == 1
+        reward = single_contact * 1.0
+        return reward
