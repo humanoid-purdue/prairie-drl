@@ -28,7 +28,8 @@ metrics_dict = {
                     'angvel_xy': 0.0,
                     'vel_z': 0.0,
                     'energy': 0.0,
-                    'single_leg': 0.0}
+                    'single_leg': 0.0,
+                    'periodic': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
@@ -242,6 +243,8 @@ class NemoEnv(PipelineEnv):
         single_rew = self.singleLegReward(contact)
         reward_dict["single_leg"] = single_rew * 1.0
 
+        period_rew = self.periodicReward(state.info, data0, data)
+        reward_dict["periodic"] = period_rew * 0.1
 
         reward = 0.0
         for key in reward_dict.keys():
@@ -369,3 +372,34 @@ class NemoEnv(PipelineEnv):
         single_contact = jnp.sum(contact) == 1
         reward = single_contact * 1.0
         return reward
+
+    def periodicReward(self, info, data1, data0):
+        t = info["time"]
+
+        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+
+        l_contact_coeff = 2 * l_coeff -1
+        r_contact_coeff = 2 * r_coeff - 1
+
+        gnd_vel_coeff = -7
+        swing_vel_coeff = 0
+        l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
+        r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
+
+        l_grf, r_grf = self.determineGRF(data1)
+        l_nf = jnp.linalg.norm(l_grf[0:3])
+        r_nf = jnp.linalg.norm(r_grf[0:3])
+
+        lp0, rp0 = self.footPos(data0)
+        lp1, rp1 = self.footPos(data1)
+
+        lv = (lp1 - lp0) / self.dt
+        rv = (rp1 - rp0) / self.dt
+
+        l_spd = jnp.linalg.norm(lv)
+        r_spd = jnp.linalg.norm(rv)
+
+        vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
+        grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
+
+        return vel_reward * 2 + grf_reward * 0.05
