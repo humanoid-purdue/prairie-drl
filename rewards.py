@@ -1,7 +1,7 @@
 import numpy as np
 import jax.numpy as jnp
 
-from typing import Any, Tuple
+from typing import Any, Tuple, Union
 
 import jax
 from mujoco import mjx
@@ -256,11 +256,18 @@ def sequentialFootstepPlan():
 
     return steps, pointer, weights, leg
 
+def get_rz(
+    phi: Union[jax.Array, float], swing_height: Union[jax.Array, float] = 0.08
+) -> jax.Array:
+  def cubic_bezier_interpolation(y_start, y_end, x):
+    y_diff = y_end - y_start
+    bezier = x**3 + 3 * (x**2 * (1 - x))
+    return y_start + y_diff * bezier
+
+  x = (phi + jnp.pi) / (2 * jnp.pi)
+  stance = cubic_bezier_interpolation(0, swing_height, 2 * x)
+  swing = cubic_bezier_interpolation(swing_height, 0, 2 * x - 1)
+  return jnp.where(x <= 0.5, stance, swing)
 
 if __name__ == "__main__":
-    steps, pointer, weights, leg = sequentialFootstepPlan()
-    print(steps.shape, pointer)
-    print(jnp.roll(pointer, 1))
-    print(steps, jnp.sum(weights * pointer))
-    print(jnp.sum(steps * pointer[:, None], axis = 0))
-    print(leg)
+    phase = jnp.array([0, jnp.pi])

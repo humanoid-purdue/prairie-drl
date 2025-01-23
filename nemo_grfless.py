@@ -76,6 +76,8 @@ class NemoEnv(PipelineEnv):
         self.right_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "right_foot")
         self.left_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "left_foot")
 
+        self.phase_dt = 2 * jnp.pi * self.dt
+
     def _get_obs(
             self, data0, data1, prev_action: jnp.ndarray, state = None
     ) -> jnp.ndarray:
@@ -113,12 +115,16 @@ class NemoEnv(PipelineEnv):
         if state is None:
             t = 0
             cmd = jnp.array([0., 0., 0.])
+            phase = jnp.array([1, -1, 0, 0])
         else:
             t = state.info["time"]
             cmd = jnp.concatenate([state.info["velocity"], jnp.array([state.info["angvel"]])], axis = 0)
+            cos = jnp.cos(state.info["phase"])
+            sin = jnp.sin(state.info["phase"])
+            phase = jnp.concatenate([cos, sin], axis = 0)
 
-        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
-        l_t, r_t = rewards.heightLimit(DS_TIME, SS_TIME, BU_TIME, STEP_HEIGHT, t)
+        #l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+        #l_t, r_t = rewards.heightLimit(DS_TIME, SS_TIME, BU_TIME, STEP_HEIGHT, t)
 
         # external_contact_forces are excluded
         angvel = data1.xd.ang[self.pelvis_id, :]
@@ -133,7 +139,7 @@ class NemoEnv(PipelineEnv):
             angvel,
             vel,
             prev_sites, current_sites,
-            prev_action, l_coeff, r_coeff, cmd
+            prev_action, cmd, phase
         ])
 
     def reset(self, rng: jax.Array) -> State:
@@ -147,7 +153,8 @@ class NemoEnv(PipelineEnv):
             "last_contact": jnp.zeros(2, dtype = bool),
             "prev_action": jnp.zeros(self.nu),
             "velocity": jnp.array([0.5, 0]),
-            "angvel": 0.0
+            "angvel": 0.0,
+            "phase": jnp.array([0, jnp.pi])
         }
         metrics = metrics_dict.copy()
 
@@ -192,6 +199,9 @@ class NemoEnv(PipelineEnv):
         state.info["feet_airtime"] *= ~contact
         state.info["last_contact"] = contact
         state.info["prev_action"] = action
+
+        phase_tp1 = state.info["phase"] + self.phase_dt
+        state.info["phase"] = jnp.fmod(phase_tp1 + jnp.pi, 2 * jnp.pi) - jnp.pi
 
         obs = self._get_obs(data0, data1, action, state = state)
         return state.replace(
@@ -238,13 +248,13 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_slip"] = slip_reward * -0.25
 
         clearance_reward = self.feetClearanceReward(data0, data)
-        reward_dict["feet_clearance"] = clearance_reward * 0.0
+        reward_dict["feet_clearance"] = clearance_reward * 1.0
 
         single_rew = self.singleLegReward(contact)
         reward_dict["single_leg"] = single_rew * 1.0
 
         period_rew = self.periodicReward(state.info, data0, data)
-        reward_dict["periodic"] = period_rew * 0.1
+        reward_dict["periodic"] = period_rew * 0.0
 
         reward = 0.0
         for key in reward_dict.keys():
@@ -317,22 +327,13 @@ class NemoEnv(PipelineEnv):
         return energy
 
     def feetPhaseReward(self, info, data):
-        t = info["time"]
-        l_t, r_t = rewards.heightLimit(DS_TIME, SS_TIME, BU_TIME, STEP_HEIGHT, t)
 
-        l_p, r_p = self.footPos(data)
-        l_h = l_p[2]
-        r_h = r_p[2]
-
-
-        #l_rew = jnp.clip(l_h - l_t, min = -10, max = 0)
-        #r_rew = jnp.clip(r_h - r_t, min = -10, max = 0)
-        l_err = jnp.square(l_h - l_t)
-        r_err = jnp.square(r_h - r_t)
-
-        #rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
-        rew = jnp.exp(-1 * (l_err + r_err) / 0.01)
-        return rew[0]
+        rz = rewards.get_rz(info["phase"], swing_height = STEP_HEIGHT)
+        l_step, r_step = self.footPos(data)
+        foot_z = jnp.array([l_step[-1], r_step[-1]], axis = 0)
+        error = jnp.sum(jnp.square(foot_z - rz))
+        reward = jnp.exp(-error / 0.01)
+        return reward
 
     def feetClearanceReward(self, data0, data1):
         lp0, rp0 = self.footPos(data0)
