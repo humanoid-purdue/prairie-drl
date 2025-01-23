@@ -402,7 +402,7 @@ class NemoEnv(PipelineEnv):
         vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
-        return vel_reward * 2 + grf_reward * 0.05
+        return (vel_reward * 2 + grf_reward * 0.05)[0]
 
     def determineGRF(self, data):
 
