@@ -330,7 +330,7 @@ class NemoEnv(PipelineEnv):
 
         rz = rewards.get_rz(info["phase"], swing_height = STEP_HEIGHT)
         l_step, r_step = self.footPos(data)
-        foot_z = jnp.array([l_step[-1], r_step[-1]], axis = 0)
+        foot_z = jnp.array([l_step[-1], r_step[-1]])
         error = jnp.sum(jnp.square(foot_z - rz))
         reward = jnp.exp(-error / 0.01)
         return reward
