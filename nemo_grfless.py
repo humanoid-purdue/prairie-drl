@@ -188,6 +188,11 @@ class NemoEnv(PipelineEnv):
         return act2
 
     def step(self, state: State, action: jnp.ndarray):
+
+        state.info["rng"], cmd_rng = jax.random.split(state.info["rng"])
+        action_noise = (2 * jax.random.uniform(cmd_rng, shape = self.nu) - 1) * 0.05
+        action = action + action_noise
+
         scaled_action = self.tanh2Action(action)
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
@@ -207,7 +212,7 @@ class NemoEnv(PipelineEnv):
 
         phase_tp1 = state.info["phase"] + self.phase_dt
         state.info["phase"] = jnp.fmod(phase_tp1 + jnp.pi, 2 * jnp.pi) - jnp.pi
-        state.info["rng"], cmd_rng = jax.random.split(state.info["rng"])
+
 
         obs = self._get_obs(data0, data1, action, state = state)
         return state.replace(
