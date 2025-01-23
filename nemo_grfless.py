@@ -183,6 +183,7 @@ class NemoEnv(PipelineEnv):
         contact_filt = contact | state.info["last_contact"]
 
         reward, done = self.reward(state, data1, action, contact_filt)
+        reward = reward * self.dt
 
         state.info["time"] += self.dt
         state.info["feet_airtime"] += self.dt
@@ -226,7 +227,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["upright"] = upright_reward * 2.0
 
         phase_reward = self.feetPhaseReward(state.info, data)
-        reward_dict["feet_phase"] = phase_reward * 1.0
+        reward_dict["feet_phase"] = phase_reward * 0.0
 
         air_time_reward = self.feetAirtime(state, contact)
         reward_dict["feet_airtime"] = air_time_reward * 20.0
