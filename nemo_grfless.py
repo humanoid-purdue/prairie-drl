@@ -239,7 +239,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["upright"] = upright_reward * 2.0
 
         phase_reward = self.feetPhaseReward(state.info, data)
-        reward_dict["feet_phase"] = phase_reward * 0.0
+        reward_dict["feet_phase"] = phase_reward * 1.0
 
         air_time_reward = self.feetAirtime(state, contact)
         reward_dict["feet_airtime"] = air_time_reward * 20.0
@@ -248,7 +248,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_slip"] = slip_reward * -0.25
 
         clearance_reward = self.feetClearanceReward(data0, data)
-        reward_dict["feet_clearance"] = clearance_reward * 1.0
+        reward_dict["feet_clearance"] = clearance_reward * 0.0
 
         single_rew = self.singleLegReward(contact)
         reward_dict["single_leg"] = single_rew * 1.0
