@@ -202,7 +202,6 @@ class NemoEnv(PipelineEnv):
         contact_filt = contact | state.info["last_contact"]
 
         reward, done = self.reward(state, data1, action, contact_filt)
-        reward = reward * self.dt
 
         state.info["time"] += self.dt
         state.info["feet_airtime"] += self.dt
@@ -266,6 +265,9 @@ class NemoEnv(PipelineEnv):
 
         period_rew = self.periodicReward(state.info, data0, data)
         reward_dict["periodic"] = period_rew * 0.0
+
+        for key in reward_dict.keys():
+            reward_dict[key] *= self.dt
 
         reward = 0.0
         for key in reward_dict.keys():
@@ -422,3 +424,25 @@ class NemoEnv(PipelineEnv):
         lfoot_grf, rfoot_grf = rewards.get_feet_forces(self.model, data, forces)
 
         return lfoot_grf, rfoot_grf
+
+    def flatfootReward(self, data, contact):
+        vec_tar = jnp.array([0.0, 0.0, 1.0])
+
+        def sites2Rew(p1, p2, p3):
+            v1 = p1 - p3
+            v2 = p2 - p3
+            dot = jnp.cross(v1, v2)
+            normal_vec = dot / jnp.linalg.norm(dot)
+            return jnp.abs(normal_vec[2])
+
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+        lp3 = data.site_xpos[self.left_foot_s3]
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+        rp3 = data.site_xpos[self.right_foot_s3]
+
+        rew = sites2Rew(lp1, lp2, lp3) + sites2Rew(rp1, rp2, rp3)
+
+        return rew
