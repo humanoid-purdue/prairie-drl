@@ -12,7 +12,7 @@ DS_TIME = 0.15
 SS_TIME = 0.5
 BU_TIME = 0.05
 MIN_AT = 0.2
-STEP_HEIGHT = 0.10
+STEP_HEIGHT = 0.15
 
 metrics_dict = {
                    'reward': 0.0,
@@ -133,7 +133,7 @@ class NemoEnv(PipelineEnv):
         com1 = data1.subtree_com[1]
         vel = (com1 - com0) / self.dt
 
-        return jnp.concatenate([
+        obs = jnp.concatenate([
             position,
             data1.qvel,
             angvel,
@@ -141,6 +141,11 @@ class NemoEnv(PipelineEnv):
             prev_sites, current_sites,
             prev_action, cmd, phase
         ])
+        if state is None:
+            return obs
+        noise = (jax.random.uniform(state.info["rng"], shape=obs.shape) * 2 - 1) * 0.05
+        obs = obs + noise
+        return obs
 
     def reset(self, rng: jax.Array) -> State:
         rng, key = jax.random.split(rng)
@@ -202,6 +207,7 @@ class NemoEnv(PipelineEnv):
 
         phase_tp1 = state.info["phase"] + self.phase_dt
         state.info["phase"] = jnp.fmod(phase_tp1 + jnp.pi, 2 * jnp.pi) - jnp.pi
+        state.info["rng"], cmd_rng = jax.random.split(state.info["rng"])
 
         obs = self._get_obs(data0, data1, action, state = state)
         return state.replace(
