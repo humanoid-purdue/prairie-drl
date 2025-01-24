@@ -56,7 +56,6 @@ class NemoEnv(PipelineEnv):
         self.control_range = system.actuator_ctrlrange
         self.joint_limit = jnp.array(model.jnt_range)
 
-        self.fsp = rewards.FootstepPlan(DS_TIME, SS_TIME, BU_TIME)
 
 
         self.pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
@@ -117,19 +116,8 @@ class NemoEnv(PipelineEnv):
 
         if state is not None:
             t = state.info["time"]
-            fstep_plan = state.info["footstep_plan"]
-            pointer = state.info["pointer"]
-            step0 = jnp.sum(pointer[:, None] * fstep_plan, axis = 0)
-            step1 = jnp.sum(jnp.roll(pointer, 1)[:, None] * fstep_plan, axis = 0)
-            step2 = jnp.sum(jnp.roll(pointer, 2)[:, None] * fstep_plan, axis = 0)
-
-            step0 = step0 - center[0:2]
-            step1 = step1 - center[0:2]
-            step2 = step2 - center[0:2]
-            steps = jnp.concatenate([step0, step1, step2], axis = 0)
         else:
             t = 0
-            steps = jnp.zeros([6])
 
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
@@ -146,7 +134,7 @@ class NemoEnv(PipelineEnv):
             angvel,
             vel,
             prev_sites, current_sites,
-            prev_action, l_coeff, r_coeff, steps
+            prev_action, l_coeff, r_coeff
         ])
 
     def reset(self, rng: jax.Array) -> State:
