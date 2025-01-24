@@ -24,12 +24,12 @@ metrics_dict = {
                     'swing_height': 0.0,
                     'healthy': 0.0,
                     'velocity': 0.0,
-                    'angvel': 0.0,
                     'energy': 0.0,
                     'angvel_xy': 0.0,
                     'action_rate': 0.0,
                     'vel_z': 0.0,
-                    'foot_slip': 0.0}
+                    'feet_slip': 0.0,
+                    'angvel_z': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
