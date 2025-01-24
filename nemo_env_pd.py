@@ -202,7 +202,7 @@ class NemoEnv(PipelineEnv):
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
 
-    def reward(self, state, data, action, contact):
+    def rewards(self, state, data, action, contact):
         reward_dict = {}
         data0 = state.pipeline_state
         min_z, max_z = (0.5, 1.1)
