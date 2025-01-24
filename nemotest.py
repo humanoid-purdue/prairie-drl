@@ -3,7 +3,7 @@ import dill
 import jax
 from brax import envs
 from brax.io import html, mjcf, model
-from nemo_grfless import NemoEnv
+from nemo_env_pd import NemoEnv
 
 def makeRollout():
     envs.register_environment('nemo', NemoEnv)
