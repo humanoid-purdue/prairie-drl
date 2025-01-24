@@ -138,13 +138,19 @@ class NemoEnv(PipelineEnv):
         ])
 
     def reset(self, rng: jax.Array) -> State:
-        rng, key = jax.random.split(rng)
+        rng, key1 = jax.random.split(rng)
+        rng, key2 = jax.random.split(rng)
+
+        vel = jax.random.uniform(key1, shape = 2)
+        # range for 0 from 0 to 0.4, and -0.3 to 0.3
+        vel = (vel + jnp.array([0, -0.5])) * jnp.array([0.4 ,0.6])
+
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
-            "velocity": jnp.array([0.5, 0]),
+            "velocity": vel,
             "angvel": 0.0,
             "prev_action": jnp.zeros(self.nu)
         }
@@ -230,7 +236,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 0.5
+        reward_dict["flatfoot"] = flatfoot_reward * 1.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
         reward_dict["swing_height"] = swing_height_reward * 100
@@ -375,7 +381,7 @@ class NemoEnv(PipelineEnv):
         rp2 = data.site_xpos[self.right_foot_s2]
         rp3 = data.site_xpos[self.right_foot_s3]
 
-        rew = sites2Rew(lp1, lp2, lp3) + sites2Rew(rp1, rp2, rp3)
+        rew = sites2Rew(lp1, lp2, lp3) * contact[0] + sites2Rew(rp1, rp2, rp3) * contact[1]
 
         return rew
 
