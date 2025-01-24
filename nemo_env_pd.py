@@ -212,19 +212,19 @@ class NemoEnv(PipelineEnv):
         reward_dict["vel_z"] = vel_z_reward * -0.01
 
         energy_reward = self.energyReward(data)
-        reward_dict["energy"] = energy_reward * -0.01
+        reward_dict["energy"] = energy_reward * -0.002
 
         action_r_reward = self.actionRateReward(action, state)
         reward_dict["action_rate"] = action_r_reward * -0.01
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * 1.5
+        reward_dict["upright"] = upright_reward * 2.0
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
 
         period_rew = self.periodicReward(state.info, data0, data)
-        reward_dict["periodic"] = period_rew * 0.2
+        reward_dict["periodic"] = period_rew * 0.05
 
         limit_reward = self.jointLimitReward(data)
         reward_dict["limit"] = limit_reward * 5.0
@@ -348,7 +348,7 @@ class NemoEnv(PipelineEnv):
         vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
         grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
 
-        return (vel_reward * 2 + grf_reward * 0.05)[0]
+        return (vel_reward + grf_reward * 0.03)[0]
 
     def determineGRF(self, data):
 
