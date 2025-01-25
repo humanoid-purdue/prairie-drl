@@ -264,7 +264,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 1.0
+        reward_dict["flatfoot"] = flatfoot_reward * 2.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
         reward_dict["swing_height"] = swing_height_reward * 100
@@ -399,8 +399,8 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            rew = jnp.exp(-1 * (ca -1) ** 2 / 0.02)
-            return rew
+            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.02)
+            return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
