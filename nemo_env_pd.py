@@ -237,7 +237,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["velocity"] = vel_reward * 2.0
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 0.5
+        reward_dict["angvel_z"] = angvel_z_reward * 1.0
 
         angvel_xy_reward = self.angvelXYReward(data)
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15
@@ -398,7 +398,9 @@ class NemoEnv(PipelineEnv):
             v2 = p2 - p3
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
-            return jnp.abs(normal_vec[2])
+            ca = jnp.abs(normal_vec[2])
+            rew = jnp.exp(-1 * (ca -1) ** 2 / 0.02)
+            return rew
 
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
