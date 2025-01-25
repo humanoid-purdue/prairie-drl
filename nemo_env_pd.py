@@ -330,8 +330,7 @@ class NemoEnv(PipelineEnv):
         return jnp.square(vel[2])
 
     def uprightReward(self, data):
-        body_pos = data.x
-        pelvis_xy = body_pos.pos[self.pelvis_id][0:2]
+        pelvis_xy = ((data.site_xpos[self.pelvis_f_id] + data.site_xpos[self.pelvis_b_id]) / 2)[0:2]
         head_xy = data.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
         return jnp.exp(xy_err * -1 / 0.1)

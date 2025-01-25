@@ -10,7 +10,7 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
   def rand_dynamics(rng):
     # Floor friction: =U(0.4, 1.0).
     rng, key = jax.random.split(rng)
-    floor_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+    floor_id = 0
     geom_friction = model.geom_friction.at[floor_id, 0].set(
         jax.random.uniform(key, minval=0.4, maxval=1.0)
     )
