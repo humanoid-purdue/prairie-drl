@@ -110,17 +110,10 @@ class NemoEnv(PipelineEnv):
         position = data1.qpos
         prev_sites = getCoords(data0)
         current_sites = getCoords(data1)
-        center = data1.x.pos[self.pelvis_id, :]
+
+        velocity = data1.qvel
 
         #l_grf, r_grf = self.determineGRF(data1)
-
-        if state is not None:
-            t = state.info["time"]
-        else:
-            t = 0
-
-        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
-
         # external_contact_forces are excluded
         angvel = data1.xd.ang[self.pelvis_id, :]
 
@@ -128,9 +121,44 @@ class NemoEnv(PipelineEnv):
         com1 = data1.subtree_com[1]
         vel = (com1 - com0) / self.dt
 
+        if state is not None:
+            t = state.info["time"]
+            rng = state.info["rng"]
+
+            rng, key = jax.random.split(rng)
+            sites_noise_0 = jax.random.uniform(key, shape = prev_sites.shape, minval = -0.02, maxval = 0.02)
+            prev_sites += sites_noise_0
+
+            rng, key = jax.random.split(rng)
+            sites_noise_1 = jax.random.uniform(key, shape = prev_sites.shape, minval=-0.02, maxval=0.02)
+            current_sites += sites_noise_1
+
+            rng, key = jax.random.split(rng)
+            position_noise = jax.random.uniform(key, shape = position.shape, minval = -0.1, maxval = 0.1)
+            position += position_noise
+
+            rng, key = jax.random.split(rng)
+            velocity_noise = jax.random.uniform(key, shape = velocity.shape, minval = -0.5, maxval = 0.5)
+            velocity += velocity_noise
+
+            rng, key = jax.random.split(rng)
+            angvel_noise = jax.random.uniform(key, shape = angvel.shape, minval = -0.4, maxvel = 0.4)
+            angvel += angvel_noise
+
+            rng, key = jax.random.split(rng)
+            vel_noise = jax.random.uniform(key, shape = vel.shape, minval = -0.1, maxvel = 0.1)
+            vel += vel_noise
+
+            state.info["rng"] = rng
+
+        else:
+            t = 0
+
+        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+
         return jnp.concatenate([
             position,
-            data1.qvel,
+            velocity,
             angvel,
             vel,
             prev_sites, current_sites,
@@ -141,7 +169,7 @@ class NemoEnv(PipelineEnv):
         rng, key1 = jax.random.split(rng)
         rng, key2 = jax.random.split(rng)
 
-        vel = jax.random.uniform(key1, shape = 2)
+        vel = jax.random.uniform(key1, shape = [2])
         # range for 0 from 0 to 0.4, and -0.3 to 0.3
         vel = (vel + jnp.array([0, -0.5])) * jnp.array([0.4 ,0.6])
 
