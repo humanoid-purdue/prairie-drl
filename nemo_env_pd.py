@@ -180,7 +180,7 @@ class NemoEnv(PipelineEnv):
         # range for 0 from 0 to 0.4, and -0.3 to 0.3
         vel = (vel + jnp.array([0, -0.5])) * jnp.array([0.4 ,0.6])
 
-        angvel = jax.random.uniform(key2, shape = [1], minval = -1.5, maxval = 1.5)
+        angvel = jax.random.uniform(key2, shape = [1], minval = -2.5, maxval = 2.5)
 
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
