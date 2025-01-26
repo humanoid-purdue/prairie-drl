@@ -178,7 +178,7 @@ class NemoEnv(PipelineEnv):
 
         vel = jax.random.uniform(key1, shape = [2])
         # range for 0 from 0 to 0.4, and -0.3 to 0.3
-        vel = (vel + jnp.array([0, -0.5])) * jnp.array([0.4 ,0.6])
+        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.4 ,0.4])
 
         angvel = jax.random.uniform(key2, shape = [1], minval = -2.5, maxval = 2.5)
 
