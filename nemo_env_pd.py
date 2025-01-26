@@ -180,13 +180,15 @@ class NemoEnv(PipelineEnv):
         # range for 0 from 0 to 0.4, and -0.3 to 0.3
         vel = (vel + jnp.array([0, -0.5])) * jnp.array([0.4 ,0.6])
 
+        angvel = jax.random.uniform(key2, shape = [1], minval = -1.5, maxval = 1.5)
+
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
             "velocity": vel,
-            "angvel": 0.0,
+            "angvel": angvel[0],
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12])
         }
