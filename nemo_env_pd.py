@@ -121,6 +121,8 @@ class NemoEnv(PipelineEnv):
         com1 = data1.subtree_com[1]
         vel = (com1 - com0) / self.dt
 
+        z = data1.x.pos[self.pelvis_id, 2:3]
+
         if state is not None:
             t = state.info["time"]
             rng = state.info["rng"]
@@ -162,7 +164,7 @@ class NemoEnv(PipelineEnv):
             angvel,
             vel,
             prev_sites, current_sites,
-            prev_action, l_coeff, r_coeff
+            prev_action, l_coeff, r_coeff, z
         ])
 
     def reset(self, rng: jax.Array) -> State:
@@ -210,6 +212,24 @@ class NemoEnv(PipelineEnv):
 
     def step(self, state: State, action: jnp.ndarray):
         scaled_action = self.tanh2Action(action)
+
+        #apply noise to scaled action
+        pos_action = scaled_action[:scaled_action.shape[0]//2]
+        vel_action = scaled_action[scaled_action.shape[0]//2:-1]
+
+        rng = state.info["rng"]
+        rng, key = jax.random.split(rng)
+        pos_noise = jax.random.uniform(key, shape = pos_action.shape, minval = -0.1, maxval = 0.1)
+        pos_action += pos_noise
+
+        rng, key = jax.random.split(rng)
+        vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
+        vel_action += vel_noise
+
+        state.info["rng"] = rng
+
+        scaled_action = jnp.concatenate([pos_action, vel_action])
+
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
 
