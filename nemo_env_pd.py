@@ -153,8 +153,13 @@ class NemoEnv(PipelineEnv):
 
             state.info["rng"] = rng
 
+            vel_target = state.info["velocity"]
+            angvel_target = state.info["angvel"]
+            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target])
+
         else:
             t = 0
+            cmd = jnp.array([0, 0, 0.])
 
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
@@ -164,7 +169,7 @@ class NemoEnv(PipelineEnv):
             angvel,
             vel,
             prev_sites, current_sites,
-            prev_action, l_coeff, r_coeff, z
+            prev_action, l_coeff, r_coeff, z, cmd
         ])
 
     def reset(self, rng: jax.Array) -> State:
@@ -182,7 +187,8 @@ class NemoEnv(PipelineEnv):
             "time": jnp.zeros(1),
             "velocity": vel,
             "angvel": 0.0,
-            "prev_action": jnp.zeros(self.nu)
+            "prev_action": jnp.zeros(self.nu),
+            "energy_hist": jnp.zeros([100, 12])
         }
         metrics = metrics_dict.copy()
 
@@ -471,3 +477,6 @@ class NemoEnv(PipelineEnv):
 
         rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
         return rew[0]
+
+    def energySymmetryReward(self, data):
+        return
