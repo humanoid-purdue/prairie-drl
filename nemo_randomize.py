@@ -1,6 +1,7 @@
 #returns a function handle for randomization_fn. copy domain_randomizer from playground
 
 import jax
+import jax.numpy as jnp
 import mujoco
 from mujoco import mjx
 
@@ -51,6 +52,12 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
         + jax.random.uniform(key, shape=(12,), minval=-0.05, maxval=0.05)
     )
 
+    #Random facing vector
+    rng, key = jax.random.split(rng)
+    z = jax.random.uniform(key, shape = [1], minval = -1, maxval = 1)[0]
+    w = ( 1 - z**2 ) ** 0.5
+    quat = jnp.array([w, 0., 0., z])
+    qpos0 = qpos0.at[3:7].set(quat)
     return (
         geom_friction,
         dof_frictionloss,
