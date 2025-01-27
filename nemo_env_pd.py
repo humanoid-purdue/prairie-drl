@@ -2,11 +2,10 @@ import jax
 from brax.envs import PipelineEnv, State
 from jax import numpy as jnp
 from brax.io import mjcf
+from brax import math
 import mujoco
-from mujoco import mjx
 
 import rewards
-from jax import random
 
 
 DS_TIME = 0.1
@@ -79,7 +78,7 @@ class NemoEnv(PipelineEnv):
         self.left_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "left_foot")
 
 
-    def _get_obs(
+    def _get_obs_fk(
             self, data0, data1, prev_action: jnp.ndarray, state = None
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
@@ -171,6 +170,43 @@ class NemoEnv(PipelineEnv):
             prev_sites, current_sites,
             prev_action, l_coeff, r_coeff, z, cmd
         ])
+
+    def _get_obs(self, data0, data1, prev_action: jnp.ndarray, state = None):
+        inv_pelvis_rot = math.quat_inv(data1.x.rot[self.pelvis_id - 1])
+        vel = data1.xd.vel[self.pelvis_id - 1] * 2.0
+        angvel = data1.xd.ang[self.pelvis_id - 1] * 0.25
+        grav_vec = math.rotate(jnp.array([0,0,-1]),inv_pelvis_rot)
+        position = data1.qpos
+        velocity = data1.qvel * 0.05
+        if state is not None:
+            t = state.info["time"]
+            rng = state.info["rng"]
+
+            rng, key = jax.random.split(rng)
+            position_noise = jax.random.uniform(key, shape = position.shape, minval = -0.1, maxval = 0.1)
+            position += position_noise
+
+            rng, key = jax.random.split(rng)
+            velocity_noise = jax.random.uniform(key, shape = velocity.shape, minval = -0.5, maxval = 0.5)
+            velocity += velocity_noise * 0.05
+
+            rng, key = jax.random.split(rng)
+            angvel_noise = jax.random.uniform(key, shape = angvel.shape, minval = -0.4, maxval = 0.4)
+            angvel += angvel_noise * 0.25
+
+            rng, key = jax.random.split(rng)
+            grav_vec_noise = jax.random.uniform(key, shape = grav_vec.shape, minval = -0.1, maxval = 0.1)
+            grav_vec += grav_vec_noise
+            state.info["rng"] = rng
+        else:
+            t = 0.
+        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+
+        obs = jnp.concatenate([
+            vel, angvel, grav_vec, position, velocity, prev_action, l_coeff, r_coeff
+        ])
+
+        return obs
 
     def reset(self, rng: jax.Array) -> State:
         rng, key1 = jax.random.split(rng)
