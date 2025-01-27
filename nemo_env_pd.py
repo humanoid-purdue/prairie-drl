@@ -178,7 +178,7 @@ class NemoEnv(PipelineEnv):
 
         vel = jax.random.uniform(key1, shape = [2])
         # range for 0 from 0 to 0.4, and -0.3 to 0.3
-        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.4 ,0.4])
+        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.8 ,0.8])
 
         angvel = jax.random.uniform(key2, shape = [1], minval = -2.5, maxval = 2.5)
 
@@ -265,7 +265,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["velocity"] = vel_reward * 2.0
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 1.0
+        reward_dict["angvel_z"] = angvel_z_reward * 2.0
 
         angvel_xy_reward = self.angvelXYReward(data)
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15
