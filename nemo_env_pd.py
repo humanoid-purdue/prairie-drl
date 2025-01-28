@@ -217,7 +217,7 @@ class NemoEnv(PipelineEnv):
         # range for 0 from 0 to 0.4, and -0.3 to 0.3
         vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.8 ,0.8])
 
-        angvel = jax.random.uniform(key2, shape = [1], minval = -2.5, maxval = 2.5)
+        angvel = jax.random.uniform(key2, shape = [1], minval = -1.5, maxval = 1.5)
 
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
@@ -329,7 +329,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 4.0
+        reward_dict["flatfoot"] = flatfoot_reward * 5.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
         reward_dict["swing_height"] = swing_height_reward * 100
