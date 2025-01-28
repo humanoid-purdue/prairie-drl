@@ -210,15 +210,7 @@ class NemoEnv(PipelineEnv):
         return obs
 
     def reset(self, rng: jax.Array) -> State:
-        rng, key1 = jax.random.split(rng)
-        rng, key2 = jax.random.split(rng)
-
-        vel = jax.random.uniform(key1, shape = [2])
-        # range for 0 from 0 to 0.4, and -0.3 to 0.3
-        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.8 ,0.8])
-
-        angvel = jax.random.uniform(key2, shape = [1], minval = -1.5, maxval = 1.5)
-
+        vel, angvel, rng = self.makeCmd(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
         state_info = {
@@ -242,6 +234,25 @@ class NemoEnv(PipelineEnv):
             info=state_info
         )
         return state
+
+    def makeCmd(self, rng):
+        rng, key1 = jax.random.split(rng)
+        rng, key2 = jax.random.split(rng)
+
+        vel = jax.random.uniform(key1, shape=[2])
+        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.8, 0.8])
+        angvel = jax.random.uniform(key2, shape=[1], minval=-1.5, maxval=1.5)
+        return vel, angvel, rng
+
+    def updateCmd(self, state):
+        rng = state.info["rng"]
+        vel, angvel, rng = self.makeCmd(rng)
+        state.info["rng"] = rng
+        tmod = jnp.mod(state.info["time"], 5.0)
+        reroll_cmd = jnp.where(tmod > 4.98, 1, 0)
+        state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
+        state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel[0] * reroll_cmd
+        return
 
     def tanh2Action(self, action: jnp.ndarray):
         pos_t = action[:self.nu//2]
@@ -283,6 +294,7 @@ class NemoEnv(PipelineEnv):
 
         state.info["time"] += self.dt
         state.info["prev_action"] = action
+        self.updateCmd(state)
 
         obs = self._get_obs_fk(data0, data1, action, state = state)
         return state.replace(
@@ -329,7 +341,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 5.0
+        reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
         reward_dict["swing_height"] = swing_height_reward * 100
@@ -464,7 +476,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.02)
+            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.015)
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]
