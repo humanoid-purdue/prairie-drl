@@ -155,7 +155,7 @@ class NemoEnv(PipelineEnv):
 
             vel_target = state.info["velocity"]
             angvel_target = state.info["angvel"]
-            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target])
+            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
 
         else:
             t = 0
@@ -217,7 +217,7 @@ class NemoEnv(PipelineEnv):
             "rng": rng,
             "time": jnp.zeros(1),
             "velocity": vel,
-            "angvel": angvel[0],
+            "angvel": angvel,
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12])
         }
@@ -251,7 +251,7 @@ class NemoEnv(PipelineEnv):
         tmod = jnp.mod(state.info["time"], 5.0)
         reroll_cmd = jnp.where(tmod > 4.98, 1, 0)
         state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
-        state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel[0] * reroll_cmd
+        state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel * reroll_cmd
         return
 
     def tanh2Action(self, action: jnp.ndarray):
