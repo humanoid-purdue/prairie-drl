@@ -476,7 +476,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.015)
+            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.010)
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]
