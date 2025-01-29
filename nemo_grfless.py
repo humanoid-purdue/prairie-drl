@@ -262,7 +262,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_phase"] = phase_reward * 1.0
 
         air_time_reward = self.feetAirtime(state, contact)
-        reward_dict["feet_airtime"] = air_time_reward * 2.0
+        reward_dict["feet_airtime"] = air_time_reward * 2.0 / self.dt
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
