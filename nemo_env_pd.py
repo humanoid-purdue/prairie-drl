@@ -21,7 +21,7 @@ metrics_dict = {
                     'upright': 0.0,
                     'limit': 0.0,
                     'swing_height': 0.0,
-                    'healthy': 0.0,
+                    'termination': 0.0,
                     'velocity': 0.0,
                     'energy': 0.0,
                     'angvel_xy': 0.0,
@@ -308,7 +308,8 @@ class NemoEnv(PipelineEnv):
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 1.2 * is_healthy
-        reward_dict["healthy"] = healthy_reward
+        #reward_dict["healthy"] = healthy_reward
+        reward_dict["termination"] = -100 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)
         reward_dict["velocity"] = vel_reward * 1.0
