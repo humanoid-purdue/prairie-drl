@@ -21,7 +21,7 @@ metrics_dict = {
                     'upright': 0.0,
                     'limit': 0.0,
                     'swing_height': 0.0,
-                    'termination': 0.0,
+                    'healthy': 0.0,
                     'velocity': 0.0,
                     'energy': 0.0,
                     'angvel_xy': 0.0,
@@ -308,14 +308,13 @@ class NemoEnv(PipelineEnv):
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 1.2 * is_healthy
-        #reward_dict["healthy"] = healthy_reward
-        reward_dict["termination"] = -100 * (1 - is_healthy)
+        reward_dict["healthy"] = healthy_reward
 
         vel_reward = self.velocityReward(state, data0, data)
-        reward_dict["velocity"] = vel_reward * 1.0
+        reward_dict["velocity"] = vel_reward * 2.0
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 0.75
+        reward_dict["angvel_z"] = angvel_z_reward * 2.0
 
         angvel_xy_reward = self.angvelXYReward(data)
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15
@@ -324,13 +323,13 @@ class NemoEnv(PipelineEnv):
         reward_dict["vel_z"] = vel_z_reward * -0.01
 
         energy_reward = self.energyReward(data)
-        reward_dict["energy"] = energy_reward * -0.0005
+        reward_dict["energy"] = energy_reward * -0.001
 
         action_r_reward = self.actionRateReward(action, state)
         reward_dict["action_rate"] = action_r_reward * -0.01
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * 0.75
+        reward_dict["upright"] = upright_reward * 1.5
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
@@ -342,10 +341,10 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 2.0
+        reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
-        reward_dict["swing_height"] = swing_height_reward * 50
+        reward_dict["swing_height"] = swing_height_reward * 100
 
         for key in reward_dict.keys():
             reward_dict[key] *= self.dt
@@ -477,7 +476,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001)
+            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.005)
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]

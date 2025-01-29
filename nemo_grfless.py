@@ -143,8 +143,6 @@ class NemoEnv(PipelineEnv):
         ])
         if state is None:
             return obs
-        noise = (jax.random.uniform(state.info["rng"], shape=obs.shape) * 2 - 1) * 0.05
-        obs = obs + noise
         return obs
 
     def reset(self, rng: jax.Array) -> State:
@@ -194,6 +192,18 @@ class NemoEnv(PipelineEnv):
         action = action + action_noise
 
         scaled_action = self.tanh2Action(action)
+        pos_action = scaled_action[:scaled_action.shape[0]//2]
+        vel_action = scaled_action[scaled_action.shape[0]//2:]
+
+        rng = state.info["rng"]
+        rng, key = jax.random.split(rng)
+        pos_noise = jax.random.uniform(key, shape = pos_action.shape, minval = -0.1, maxval = 0.1)
+        pos_action += pos_noise
+
+        rng, key = jax.random.split(rng)
+        vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
+        vel_action += vel_noise
+
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
 
