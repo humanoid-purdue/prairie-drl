@@ -21,7 +21,7 @@ metrics_dict = {
                     'upright': 0.0,
                     'limit': 0.0,
                     'swing_height': 0.0,
-                    'healthy': 0.0,
+                    'termination': 0.0,
                     'velocity': 0.0,
                     'energy': 0.0,
                     'angvel_xy': 0.0,
@@ -307,8 +307,9 @@ class NemoEnv(PipelineEnv):
         min_z, max_z = (0.5, 1.1)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
-        healthy_reward = 1.2 * is_healthy
-        reward_dict["healthy"] = healthy_reward
+        #healthy_reward = 1.2 * is_healthy
+        #reward_dict["healthy"] = healthy_reward
+        reward_dict["termination"] = -100 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)
         reward_dict["velocity"] = vel_reward * 2.0
@@ -335,7 +336,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_slip"] = slip_reward * -0.25
 
         period_rew = self.periodicReward(state.info, data0, data)
-        reward_dict["periodic"] = period_rew * 0.15
+        reward_dict["periodic"] = period_rew * 2.0
 
         limit_reward = self.jointLimitReward(data)
         reward_dict["limit"] = limit_reward * 5.0
@@ -437,14 +438,16 @@ class NemoEnv(PipelineEnv):
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
 
-        gnd_vel_coeff = -7
-        swing_vel_coeff = 0
+        gnd_vel_coeff = -1
+        swing_vel_coeff = 1
         l_vel_coeff = swing_vel_coeff - l_coeff * (swing_vel_coeff - gnd_vel_coeff)
         r_vel_coeff = swing_vel_coeff - r_coeff * (swing_vel_coeff - gnd_vel_coeff)
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_nf = jnp.linalg.norm(l_grf[0:3])
-        r_nf = jnp.linalg.norm(r_grf[0:3])
+        #l_nf = jnp.linalg.norm(l_grf[0:3])
+        #r_nf = jnp.linalg.norm(r_grf[0:3])
+        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / 100)
+        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / 100)
 
         lp0, rp0 = self.footPos(data0)
         lp1, rp1 = self.footPos(data1)
@@ -452,13 +455,13 @@ class NemoEnv(PipelineEnv):
         lv = (lp1 - lp0) / self.dt
         rv = (rp1 - rp0) / self.dt
 
-        l_spd = jnp.linalg.norm(lv)
-        r_spd = jnp.linalg.norm(rv)
+        l_spd_rew = 1 - jnp.exp(-2 * jnp.sum(lv**2))
+        r_spd_rew = 1 - jnp.exp(-2 * jnp.sum(rv**2))
 
-        vel_reward = l_vel_coeff * l_spd + r_vel_coeff * r_spd
-        grf_reward = l_contact_coeff * l_nf + r_contact_coeff * r_nf
+        vel_reward = l_vel_coeff * l_spd_rew + r_vel_coeff * r_spd_rew
+        grf_reward = l_contact_coeff * l_f_rew + r_contact_coeff * r_f_rew
 
-        return (vel_reward + grf_reward * 0.03)[0]
+        return (vel_reward + grf_reward)[0]
 
     def determineGRF(self, data):
 
