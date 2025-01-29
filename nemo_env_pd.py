@@ -2,11 +2,10 @@ import jax
 from brax.envs import PipelineEnv, State
 from jax import numpy as jnp
 from brax.io import mjcf
+from brax import math
 import mujoco
-from mujoco import mjx
 
 import rewards
-from jax import random
 
 
 DS_TIME = 0.1
@@ -79,7 +78,7 @@ class NemoEnv(PipelineEnv):
         self.left_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "left_foot")
 
 
-    def _get_obs(
+    def _get_obs_fk(
             self, data0, data1, prev_action: jnp.ndarray, state = None
     ) -> jnp.ndarray:
         """Observes humanoid body position, velocities, and angles."""
@@ -111,17 +110,16 @@ class NemoEnv(PipelineEnv):
         prev_sites = getCoords(data0)
         current_sites = getCoords(data1)
 
-        velocity = data1.qvel
+        velocity = data1.qvel * 0.05
 
         #l_grf, r_grf = self.determineGRF(data1)
         # external_contact_forces are excluded
-        angvel = data1.xd.ang[self.pelvis_id, :]
-        lfangvel = data1.xd.ang[self.left_foot_id, :]
-        rfangvel = data1.xd.ang[self.right_foot_id, :]
+        angvel = data1.xd.ang[self.pelvis_id, :] * 0.25
 
         com0 = data1.subtree_com[0]
         com1 = data1.subtree_com[1]
-        vel = (com1 - com0) / self.dt
+        com_vel = (com1 - com0) / self.dt
+        com_vel = com_vel * 2
 
         z = data1.x.pos[self.pelvis_id, 2:3]
 
@@ -143,21 +141,21 @@ class NemoEnv(PipelineEnv):
 
             rng, key = jax.random.split(rng)
             velocity_noise = jax.random.uniform(key, shape = velocity.shape, minval = -0.5, maxval = 0.5)
-            velocity += velocity_noise
+            velocity += velocity_noise * 0.05
 
             rng, key = jax.random.split(rng)
             angvel_noise = jax.random.uniform(key, shape = angvel.shape, minval = -0.4, maxval = 0.4)
-            angvel += angvel_noise
+            angvel += angvel_noise * 0.25
 
             rng, key = jax.random.split(rng)
-            vel_noise = jax.random.uniform(key, shape = vel.shape, minval = -0.1, maxval = 0.1)
-            vel += vel_noise
+            vel_noise = jax.random.uniform(key, shape = com_vel.shape, minval = -0.1, maxval = 0.1)
+            com_vel += vel_noise * 2.0
 
             state.info["rng"] = rng
 
             vel_target = state.info["velocity"]
             angvel_target = state.info["angvel"]
-            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target])
+            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
 
         else:
             t = 0
@@ -169,34 +167,63 @@ class NemoEnv(PipelineEnv):
             position,
             velocity,
             angvel,
-            vel,
+            com_vel,
             prev_sites, current_sites,
             prev_action, l_coeff, r_coeff, z, cmd
         ])
 
+    def _get_obs(self, data0, data1, prev_action: jnp.ndarray, state = None):
+        inv_pelvis_rot = math.quat_inv(data1.x.rot[self.pelvis_id - 1])
+        vel = data1.xd.vel[self.pelvis_id - 1] * 2.0
+        angvel = data1.xd.ang[self.pelvis_id - 1] * 0.25
+        grav_vec = math.rotate(jnp.array([0,0,-1]),inv_pelvis_rot)
+        position = data1.qpos
+        velocity = data1.qvel * 0.05
+        if state is not None:
+            t = state.info["time"]
+            rng = state.info["rng"]
+
+            rng, key = jax.random.split(rng)
+            position_noise = jax.random.uniform(key, shape = position.shape, minval = -0.1, maxval = 0.1)
+            position += position_noise
+
+            rng, key = jax.random.split(rng)
+            velocity_noise = jax.random.uniform(key, shape = velocity.shape, minval = -0.5, maxval = 0.5)
+            velocity += velocity_noise * 0.05
+
+            rng, key = jax.random.split(rng)
+            angvel_noise = jax.random.uniform(key, shape = angvel.shape, minval = -0.4, maxval = 0.4)
+            angvel += angvel_noise * 0.25
+
+            rng, key = jax.random.split(rng)
+            grav_vec_noise = jax.random.uniform(key, shape = grav_vec.shape, minval = -0.1, maxval = 0.1)
+            grav_vec += grav_vec_noise
+            state.info["rng"] = rng
+        else:
+            t = 0.
+        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+
+        obs = jnp.concatenate([
+            vel, angvel, grav_vec, position, velocity, prev_action, l_coeff, r_coeff
+        ])
+
+        return obs
+
     def reset(self, rng: jax.Array) -> State:
-        rng, key1 = jax.random.split(rng)
-        rng, key2 = jax.random.split(rng)
-
-        vel = jax.random.uniform(key1, shape = [2])
-        # range for 0 from 0 to 0.4, and -0.3 to 0.3
-        vel = (vel + jnp.array([0, -0.5])) * jnp.array([0.4 ,0.6])
-
-        angvel = jax.random.uniform(key2, shape = [1], minval = -1.5, maxval = 1.5)
-
+        vel, angvel, rng = self.makeCmd(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
             "velocity": vel,
-            "angvel": angvel[0],
+            "angvel": angvel,
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12])
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs(pipeline_state, pipeline_state, jnp.zeros(self.nu))
+        obs = self._get_obs_fk(pipeline_state, pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -207,6 +234,25 @@ class NemoEnv(PipelineEnv):
             info=state_info
         )
         return state
+
+    def makeCmd(self, rng):
+        rng, key1 = jax.random.split(rng)
+        rng, key2 = jax.random.split(rng)
+
+        vel = jax.random.uniform(key1, shape=[2])
+        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.8, 0.8])
+        angvel = jax.random.uniform(key2, shape=[1], minval=-1.5, maxval=1.5)
+        return vel, angvel, rng
+
+    def updateCmd(self, state):
+        rng = state.info["rng"]
+        vel, angvel, rng = self.makeCmd(rng)
+        state.info["rng"] = rng
+        tmod = jnp.mod(state.info["time"], 5.0)
+        reroll_cmd = jnp.where(tmod > 4.98, 1, 0)
+        state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
+        state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel * reroll_cmd
+        return
 
     def tanh2Action(self, action: jnp.ndarray):
         pos_t = action[:self.nu//2]
@@ -248,8 +294,9 @@ class NemoEnv(PipelineEnv):
 
         state.info["time"] += self.dt
         state.info["prev_action"] = action
+        self.updateCmd(state)
 
-        obs = self._get_obs(data0, data1, action, state = state)
+        obs = self._get_obs_fk(data0, data1, action, state = state)
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
@@ -267,7 +314,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["velocity"] = vel_reward * 2.0
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 1.0
+        reward_dict["angvel_z"] = angvel_z_reward * 2.0
 
         angvel_xy_reward = self.angvelXYReward(data)
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15
@@ -294,7 +341,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 3.0
+        reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
         reward_dict["swing_height"] = swing_height_reward * 100
@@ -343,7 +390,7 @@ class NemoEnv(PipelineEnv):
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
-        angvel_err = jnp.square(angvel - state.info["angvel"])
+        angvel_err = jnp.square(angvel - state.info["angvel"][0])
         return jnp.exp(angvel_err * -1 / 0.5)
 
     def actionRateReward(self, action, state):
@@ -429,7 +476,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.02)
+            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.005)
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]

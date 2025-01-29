@@ -30,7 +30,7 @@ def makeRollout():
     inference_fn = make_inference_fn(saved_params)
     jit_inference_fn = jax.jit(inference_fn)
 
-    n_steps = 1000
+    n_steps = 4000
     ss=[]
     for i in range(n_steps):
         act_rng, rng = jax.random.split(rng)
