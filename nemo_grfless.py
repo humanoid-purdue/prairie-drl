@@ -17,7 +17,7 @@ STEP_HEIGHT = 0.15
 metrics_dict = {
                    'reward': 0.0,
                     'upright': 0.0,
-                    'healthy': 0.0,
+                    'termination': 0.0,
                     'velocity': 0.0,
                     'feet_airtime': 0.0,
                     'feet_clearance': 0.0,
@@ -225,13 +225,14 @@ class NemoEnv(PipelineEnv):
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         healthy_reward = 1.2 * is_healthy
-        reward_dict["healthy"] = healthy_reward
+        #reward_dict["healthy"] = healthy_reward
+        reward_dict["termination"] = -100 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)
         reward_dict["velocity"] = vel_reward * 1.0
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 0.5
+        reward_dict["angvel_z"] = angvel_z_reward * 0.75
 
         angvel_xy_reward = self.angvelXYReward(data)
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15
@@ -246,13 +247,13 @@ class NemoEnv(PipelineEnv):
         reward_dict["action_rate"] = action_r_reward * -0.01
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * 2.0
+        reward_dict["upright"] = upright_reward * 0.75
 
         phase_reward = self.feetPhaseReward(state.info, data)
         reward_dict["feet_phase"] = phase_reward * 1.0
 
         air_time_reward = self.feetAirtime(state, contact)
-        reward_dict["feet_airtime"] = air_time_reward * 20.0
+        reward_dict["feet_airtime"] = air_time_reward * 2.0
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
@@ -306,12 +307,12 @@ class NemoEnv(PipelineEnv):
         vel = self.pelVel(data0, data1)
         vel_target = state.info["velocity"]
         vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
-        return jnp.exp( vel_n * -1 / 0.5)
+        return jnp.exp( vel_n * -1 / 0.25)
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
         angvel_err = jnp.square(angvel - state.info["angvel"])
-        return jnp.exp(angvel_err * -1 / 0.5)
+        return jnp.exp(angvel_err * -1 / 0.25)
 
     def actionRateReward(self, action, state):
         act_delta = jnp.sum(jnp.square(state.info["prev_action"] - action))
@@ -331,7 +332,7 @@ class NemoEnv(PipelineEnv):
         pelvis_xy = body_pos.pos[self.pelvis_id][0:2]
         head_xy = data.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
-        return jnp.exp(xy_err * -1 / 0.01)
+        return jnp.exp(xy_err * -1 / 0.1)
 
     def energyReward(self, data):
         qfrc_actuator = data.qfrc_actuator
