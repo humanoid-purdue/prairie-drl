@@ -28,7 +28,6 @@ metrics_dict = {
                     'angvel_xy': 0.0,
                     'vel_z': 0.0,
                     'energy': 0.0,
-                    'single_leg': 0.0,
                     'periodic': 0.0}
 
 class NemoEnv(PipelineEnv):
@@ -271,8 +270,8 @@ class NemoEnv(PipelineEnv):
         clearance_reward = self.feetClearanceReward(data0, data)
         reward_dict["feet_clearance"] = clearance_reward * 0.0
 
-        single_rew = self.singleLegReward(contact)
-        reward_dict["single_leg"] = single_rew * 1.0
+        #single_rew = self.singleLegReward(contact)
+        #reward_dict["single_leg"] = single_rew * 1.0
 
         period_rew = self.periodicReward(state.info, data0, data)
         reward_dict["periodic"] = period_rew * 0.0
