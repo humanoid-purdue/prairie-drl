@@ -116,6 +116,8 @@ class NemoEnv(PipelineEnv):
         #l_grf, r_grf = self.determineGRF(data1)
         # external_contact_forces are excluded
         angvel = data1.xd.ang[self.pelvis_id, :]
+        lfangvel = data1.xd.ang[self.left_foot_id, :]
+        rfangvel = data1.xd.ang[self.right_foot_id, :]
 
         com0 = data1.subtree_com[0]
         com1 = data1.subtree_com[1]
