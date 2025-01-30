@@ -479,7 +479,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001) - 1
+            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001)
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]
@@ -490,7 +490,7 @@ class NemoEnv(PipelineEnv):
         rp2 = data.site_xpos[self.right_foot_s2]
         rp3 = data.site_xpos[self.right_foot_s3]
 
-        rew = sites2Rew(lp1, lp2, lp3) * contact[0] + sites2Rew(rp1, rp2, rp3) * contact[1]
+        rew = sites2Rew(lp1, lp2, lp3) * contact[0] + sites2Rew(rp1, rp2, rp3) * contact[1] - 2
 
         return rew
 
@@ -528,8 +528,8 @@ class NemoEnv(PipelineEnv):
 
         #l_rew = jnp.clip(l_h - l_t, min = -10, max = 0)
         #r_rew = jnp.clip(r_h - r_t, min = -10, max = 0)
-        l_err = jnp.exp(-1 * jnp.sum(jnp.square(l_h - l_t)) / 0.01)
-        r_err = jnp.exp(-1 * jnp.sum(jnp.square(r_h - r_t)) / 0.01)
+        l_err = jnp.exp(-1 * jnp.sum(jnp.square(l_h - l_t)) / 0.001)
+        r_err = jnp.exp(-1 * jnp.sum(jnp.square(r_h - r_t)) / 0.001)
 
         rew = l_err * (1 - l_coeff) + r_err * (1 - r_coeff)
         return rew[0]
