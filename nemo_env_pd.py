@@ -12,6 +12,7 @@ from jax import random
 DS_TIME = 0.1
 SS_TIME = 0.4
 BU_TIME = 0.05
+RAND_TIME_RANGE = 0.05
 STEP_HEIGHT = 0.10
 
 
@@ -161,7 +162,7 @@ class NemoEnv(PipelineEnv):
             t = 0
             cmd = jnp.array([0, 0, 0.])
 
-        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+        l_coeff, r_coeff = rewards.dualCycleCC(state.info["inst_ds_time"], state.info["inst_ss_time"], state.info["inst_bu_time"], t)
 
         return jnp.concatenate([
             position,
@@ -184,6 +185,18 @@ class NemoEnv(PipelineEnv):
 
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
+        rng, key_ds_time = jax.random.split(rng)
+        rng, key_ss_time = jax.random.split(rng)
+        rng, key_bu_time = jax.random.split(rng)
+        
+        rand_ds_time = RAND_TIME_RANGE * jax.random.uniform(key_ds_time)
+        rand_ss_time = RAND_TIME_RANGE * jax.random.uniform(key_ss_time)
+        rand_bu_time = 0.1 * RAND_TIME_RANGE * jax.random.uniform(key_bu_time)
+
+        rand_ds_time += DS_TIME
+        rand_ss_time += SS_TIME
+        rand_bu_time += BU_TIME
+        
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
@@ -191,6 +204,9 @@ class NemoEnv(PipelineEnv):
             "angvel": angvel[0],
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12])
+            "inst_ds_time": rand_ds_time
+            "inst_ss_time": rand_ss_time
+            "inst_bu_time": rand_bu_time
         }
         metrics = metrics_dict.copy()
 
@@ -383,7 +399,7 @@ class NemoEnv(PipelineEnv):
     def periodicReward(self, info, data1, data0):
         t = info["time"]
 
-        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+        l_coeff, r_coeff = rewards.dualCycleCC(state.info["inst_ds_time"], state.info["inst_ss_time"], state.info["inst_bu_time"], t)
 
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
@@ -460,8 +476,8 @@ class NemoEnv(PipelineEnv):
 
     def swingHeightReward(self, info, data):
         t = info["time"]
-        l_t, r_t = rewards.heightLimit(DS_TIME, SS_TIME, BU_TIME, STEP_HEIGHT, t)
-        l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
+        l_t, r_t = rewards.heightLimit(state.info["inst_ds_time"], state.info["inst_ss_time"], state.info["inst_bu_time"], STEP_HEIGHT, t)
+        l_coeff, r_coeff = rewards.dualCycleCC(state.info["inst_ds_time"], state.info["inst_ss_time"], state.info["inst_bu_time"], t)
 
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
