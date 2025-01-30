@@ -345,7 +345,8 @@ class NemoEnv(PipelineEnv):
         reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
-        reward_dict["swing_height"] = swing_height_reward * 100.0
+        #reward_dict["swing_height"] = swing_height_reward * 100.0
+        reward_dict["swing_height"] = swing_height_reward * 2.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= self.dt
@@ -528,6 +529,11 @@ class NemoEnv(PipelineEnv):
 
         l_rew = jnp.clip(l_h - l_t, min = -10, max = 0)
         r_rew = jnp.clip(r_h - r_t, min = -10, max = 0)
+
+        #being below is -1, being above is 0.
+        l_rew = jnp.exp(jnp.clip(l_h - l_t, min = None, max = 0) / 0.02) - 1
+        r_rew = jnp.exp(jnp.clip(r_h - r_t, min = None, max = 0) / 0.02) - 1
+
         #l_err = jnp.exp(-1 * jnp.sum(jnp.square(l_h - l_t)) / 0.001)
         #r_err = jnp.exp(-1 * jnp.sum(jnp.square(r_h - r_t)) / 0.001)
 
