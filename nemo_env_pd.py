@@ -345,7 +345,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
-        reward_dict["swing_height"] = swing_height_reward * 2.0
+        reward_dict["swing_height"] = swing_height_reward * 100.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= self.dt
@@ -526,12 +526,12 @@ class NemoEnv(PipelineEnv):
         l_h = ( lp1[2] + lp2[2] + lp3[2] ) / 3
         r_h = ( rp1[2] + rp2[2] + rp3[2]) / 3
 
-        #l_rew = jnp.clip(l_h - l_t, min = -10, max = 0)
-        #r_rew = jnp.clip(r_h - r_t, min = -10, max = 0)
-        l_err = jnp.exp(-1 * jnp.sum(jnp.square(l_h - l_t)) / 0.001)
-        r_err = jnp.exp(-1 * jnp.sum(jnp.square(r_h - r_t)) / 0.001)
+        l_rew = jnp.clip(l_h - l_t, min = -10, max = 0)
+        r_rew = jnp.clip(r_h - r_t, min = -10, max = 0)
+        #l_err = jnp.exp(-1 * jnp.sum(jnp.square(l_h - l_t)) / 0.001)
+        #r_err = jnp.exp(-1 * jnp.sum(jnp.square(r_h - r_t)) / 0.001)
 
-        rew = l_err * (1 - l_coeff) + r_err * (1 - r_coeff)
+        rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
         return rew[0]
 
     def energySymmetryReward(self, data):
