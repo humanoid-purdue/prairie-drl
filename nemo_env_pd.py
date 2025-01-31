@@ -255,7 +255,7 @@ class NemoEnv(PipelineEnv):
         return
 
     def tanh2Action(self, action: jnp.ndarray):
-        pos_t = action#[:self.nu//2]
+        pos_t = action[:self.nu//2]
         vel_t = action[self.nu//2:]
 
         bottom_limit = self.joint_limit[1:, 0]
