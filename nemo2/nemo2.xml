@@ -98,8 +98,7 @@
                   <inertial pos="-0.0056 0 0.02894" quat="1 0 0 0" mass="1" diaginertia="0.4 0.4 0.4"/>
                   <joint name="l_foot_roll" axis="1 0 0" range="-1 1"/>
                   <geom type="mesh" class="visual" mesh="l_foot_roll"/>
-                  <geom type="mesh" class="collision" mesh="col_inner" name="left_foot"/>
-                  <geom type="mesh" class="collision" mesh="col_outer" name="left_edge"/>
+                  <geom type="mesh" class="collision" mesh="col_outer" name="left_foot"/>
 
                   <site name="left_foot_p1" pos="0.05 0.0 -0.0762"/>
                   <site name="left_foot_p2" pos="-0.05 0.0 -0.0762"/>
@@ -136,8 +135,7 @@
                   <inertial pos="-0.0056 0 0.02894" quat="1 0 0 0" mass="1" diaginertia="0.4 0.4 0.4"/>
                   <joint name="r_foot_roll" axis="1 0 0" range="-1 1"/>
                   <geom type="mesh" class="visual" mesh="l_foot_roll"/>
-                  <geom type="mesh" class="collision" mesh="col_inner" name="right_foot"/>
-                  <geom type="mesh" class="collision" mesh="col_outer" name="right_edge"/>
+                  <geom type="mesh" class="collision" mesh="col_outer" name="right_foot"/>
 
                   <site name="right_foot_p1" pos="0.05 0.0 -0.0762"/>
                   <site name="right_foot_p2" pos="-0.05 0.0 -0.0762"/>
