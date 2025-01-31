@@ -5,20 +5,18 @@ from brax.io import mjcf
 import mujoco
 
 metrics_dict = {
-                   'reward': 0.0,
-                    'upright': 0.0,
-                    'termination': 0.0,
-                    'velocity': 0.0,
-                    'feet_airtime': 0.0,
-                    'feet_clearance': 0.0,
-                    'feet_phase': 0.0,
+                    'reward': 0.0,
+                    'lin_vel': 0.0,
+                    'ang_vel': 0.0,
+                    'ang_vel_xy': 0.0,
+                    'orientation': 0.0,
+                    'feet_air_time': 0.0,
                     'feet_slip': 0.0,
-                    'action_rate': 0.0,
-                    'angvel_z': 0.0,
-                    'angvel_xy': 0.0,
-                    'vel_z': 0.0,
-                    'energy': 0.0,
-                    'periodic': 0.0}
+                    'feet_phase': 0.0,
+                    'termination': 0.0,
+                    'knee': 0.0,
+                    'hip': 0.0,
+                    'joint_limit': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
@@ -67,4 +65,5 @@ class NemoEnv(PipelineEnv):
 
 
     def reset(self, rng: jax.Array):
+        return
 

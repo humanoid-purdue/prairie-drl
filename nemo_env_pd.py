@@ -32,7 +32,7 @@ metrics_dict = {
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
-        model = mujoco.MjModel.from_xml_path("nemo/scene.xml")
+        model = mujoco.MjModel.from_xml_path("nemo2/scene.xml")
 
         model.opt.solver = mujoco.mjtSolver.mjSOL_CG
         model.opt.iterations = 6
@@ -240,7 +240,7 @@ class NemoEnv(PipelineEnv):
         rng, key2 = jax.random.split(rng)
 
         vel = jax.random.uniform(key1, shape=[2])
-        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.8, 0.8])
+        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.6, 0.6])
         angvel = jax.random.uniform(key2, shape=[1], minval=-1.5, maxval=1.5)
         return vel, angvel, rng
 
@@ -255,36 +255,35 @@ class NemoEnv(PipelineEnv):
         return
 
     def tanh2Action(self, action: jnp.ndarray):
-        pos_t = action[:self.nu//2]
-        vel_t = action[self.nu//2:]
+        pos_t = action #[:self.nu//2]
+        #vel_t = action[self.nu//2:]
 
         bottom_limit = self.joint_limit[1:, 0]
         top_limit = self.joint_limit[1:, 1]
-        vel_sp = vel_t * 10
+        #vel_sp = vel_t * 10
         pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
 
-        act2 = jnp.concatenate([pos_sp, vel_sp])
-        return act2
+        return pos_sp
 
     def step(self, state: State, action: jnp.ndarray):
         scaled_action = self.tanh2Action(action)
 
         #apply noise to scaled action
-        pos_action = scaled_action[:scaled_action.shape[0]//2]
-        vel_action = scaled_action[scaled_action.shape[0]//2:]
+        pos_action = scaled_action
+        #vel_action = scaled_action[scaled_action.shape[0]//2:]
 
         rng = state.info["rng"]
         rng, key = jax.random.split(rng)
         pos_noise = jax.random.uniform(key, shape = pos_action.shape, minval = -0.1, maxval = 0.1)
         pos_action += pos_noise
 
-        rng, key = jax.random.split(rng)
-        vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
-        vel_action += vel_noise
+        #rng, key = jax.random.split(rng)
+        #vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
+        #vel_action += vel_noise
 
         state.info["rng"] = rng
 
-        scaled_action = jnp.concatenate([pos_action, vel_action])
+        scaled_action = pos_action
 
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
@@ -304,7 +303,7 @@ class NemoEnv(PipelineEnv):
     def rewards(self, state, data, action, contact):
         reward_dict = {}
         data0 = state.pipeline_state
-        min_z, max_z = (0.5, 1.1)
+        min_z, max_z = (0.3, 0.6)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         #healthy_reward = 1.2 * is_healthy
