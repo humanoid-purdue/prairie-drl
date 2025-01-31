@@ -153,19 +153,19 @@
 
 </worldbody>
 <actuator>
-  <position kp="400.0" class="nemo2" name="l_hip_pitch" joint="l_hip_pitch" forcerange="-46 46" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="l_hip_roll" joint="l_hip_roll" forcerange="-23 23" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="l_hip_yaw" joint="l_hip_yaw" forcerange="-23 23" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="l_knee" joint="l_knee" forcerange="-46 46" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="l_foot_pitch" joint="l_foot_pitch" forcerange="-46 46" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="l_foot_roll" joint="l_foot_roll" forcerange="-23 23" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="l_hip_pitch" joint="l_hip_pitch" forcerange="-46 46" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="l_hip_roll" joint="l_hip_roll" forcerange="-23 23" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="l_hip_yaw" joint="l_hip_yaw" forcerange="-23 23" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="l_knee" joint="l_knee" forcerange="-46 46" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="l_foot_pitch" joint="l_foot_pitch" forcerange="-46 46" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="l_foot_roll" joint="l_foot_roll" forcerange="-23 23" inheritrange="1"/>
 
-  <position kp="400.0" class="nemo2" name="r_hip_pitch" joint="r_hip_pitch" forcerange="-46 46" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="r_hip_roll" joint="r_hip_roll" forcerange="-23 23" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="r_hip_yaw" joint="r_hip_yaw" forcerange="-23 23" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="r_knee" joint="r_knee" forcerange="-46 46" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="r_foot_pitch" joint="r_foot_pitch" forcerange="-46 46" inheritrange="1"/>
-  <position kp="400.0" class="nemo2" name="r_foot_roll" joint="r_foot_roll" forcerange="-23 23" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="r_hip_pitch" joint="r_hip_pitch" forcerange="-46 46" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="r_hip_roll" joint="r_hip_roll" forcerange="-23 23" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="r_hip_yaw" joint="r_hip_yaw" forcerange="-23 23" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="r_knee" joint="r_knee" forcerange="-46 46" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="r_foot_pitch" joint="r_foot_pitch" forcerange="-46 46" inheritrange="1"/>
+  <position kp="100.0" class="nemo2" name="r_foot_roll" joint="r_foot_roll" forcerange="-23 23" inheritrange="1"/>
 
 </actuator>
 

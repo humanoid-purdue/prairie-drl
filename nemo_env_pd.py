@@ -411,7 +411,7 @@ class NemoEnv(PipelineEnv):
         pelvis_xy = ((data.site_xpos[self.pelvis_f_id] + data.site_xpos[self.pelvis_b_id]) / 2)[0:2]
         head_xy = data.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
-        return jnp.exp(xy_err * -1 / 0.1)
+        return jnp.exp(xy_err * -1 / 0.05)
 
     def energyReward(self, data):
         qfrc_actuator = data.qfrc_actuator
