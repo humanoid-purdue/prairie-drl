@@ -255,35 +255,35 @@ class NemoEnv(PipelineEnv):
         return
 
     def tanh2Action(self, action: jnp.ndarray):
-        pos_t = action #[:self.nu//2]
-        #vel_t = action[self.nu//2:]
+        pos_t = action[:self.nu//2]
+        vel_t = action[self.nu//2:]
 
         bottom_limit = self.joint_limit[1:, 0]
         top_limit = self.joint_limit[1:, 1]
-        #vel_sp = vel_t * 10
+        vel_sp = vel_t * 10
         pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
 
-        return pos_sp
+        return jnp.concatenate([pos_sp, vel_sp])
 
     def step(self, state: State, action: jnp.ndarray):
         scaled_action = self.tanh2Action(action)
 
         #apply noise to scaled action
-        pos_action = scaled_action
-        #vel_action = scaled_action[scaled_action.shape[0]//2:]
+        pos_action = scaled_action[scaled_action.shape[0]//2:]
+        vel_action = scaled_action[scaled_action.shape[0]//2:]
 
         rng = state.info["rng"]
         rng, key = jax.random.split(rng)
         pos_noise = jax.random.uniform(key, shape = pos_action.shape, minval = -0.1, maxval = 0.1)
         pos_action += pos_noise
 
-        #rng, key = jax.random.split(rng)
-        #vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
-        #vel_action += vel_noise
+        rng, key = jax.random.split(rng)
+        vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
+        vel_action += vel_noise
 
         state.info["rng"] = rng
 
-        scaled_action = pos_action
+        scaled_action = jnp.concatenate([pos_action, vel_action])
 
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
@@ -411,7 +411,7 @@ class NemoEnv(PipelineEnv):
         pelvis_xy = ((data.site_xpos[self.pelvis_f_id] + data.site_xpos[self.pelvis_b_id]) / 2)[0:2]
         head_xy = data.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
-        return jnp.exp(xy_err * -1 / 0.05)
+        return jnp.exp(xy_err * -1 / 0.1)
 
     def energyReward(self, data):
         qfrc_actuator = data.qfrc_actuator
