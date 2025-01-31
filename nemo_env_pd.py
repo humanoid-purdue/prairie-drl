@@ -11,7 +11,7 @@ import rewards
 DS_TIME = 0.1
 SS_TIME = 0.4
 BU_TIME = 0.05
-STEP_HEIGHT = 0.10
+STEP_HEIGHT = 0.07
 
 
 metrics_dict = {
@@ -239,8 +239,8 @@ class NemoEnv(PipelineEnv):
         rng, key1 = jax.random.split(rng)
         rng, key2 = jax.random.split(rng)
 
-        vel = jax.random.uniform(key1, shape=[2])
-        vel = (vel + jnp.array([-0.5, -0.5])) * jnp.array([0.6, 0.6])
+        vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
+        vel = vel * jnp.array([0.2, 0.2])
         angvel = jax.random.uniform(key2, shape=[1], minval=-1.5, maxval=1.5)
         return vel, angvel, rng
 
