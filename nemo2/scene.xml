@@ -1,5 +1,5 @@
 <mujoco model="nemo scene">
-  <include file="nemo2.xml"/>
+  <include file="nemo2_ponly.xml"/>
 
   <statistic center="1 -0.8 1.1" extent=".3"/>
 
