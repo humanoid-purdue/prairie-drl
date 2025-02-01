@@ -241,7 +241,7 @@ class NemoEnv(PipelineEnv):
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
         vel = vel * jnp.array([0.2, 0.2])
-        angvel = jax.random.uniform(key2, shape=[1], minval=-1.5, maxval=1.5)
+        angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         return vel, angvel, rng
 
     def updateCmd(self, state):
