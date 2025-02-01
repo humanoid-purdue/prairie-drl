@@ -95,7 +95,7 @@
                 <joint name="l_foot_pitch" axis="0 1 0" range="-0.5 0.5"/>
                 <geom type="mesh" class="visual" mesh="l_foot_pitch"/>
                 <body name="l_foot_roll" pos="0.05176 0.0381 0" quat="1 0 0 0">
-                  <inertial pos="-0.0056 0 0.02894" quat="1 0 0 0" mass="1" diaginertia="0.4 0.4 0.4"/>
+                  <inertial pos="-0.0056 0 0.02894" quat="1 0 0 0" mass="5" diaginertia="0.4 0.4 0.4"/>
                   <joint name="l_foot_roll" axis="1 0 0" range="-1 1"/>
                   <geom type="mesh" class="visual" mesh="l_foot_roll"/>
                   <geom class="collision" name="left_foot" pos="-0.04164 0 -0.0712" size="0.135 0.0575 0.005" type="box"/>
@@ -132,7 +132,7 @@
                 <joint name="r_foot_pitch" axis="0 1 0" range="-0.5 0.5"/>
                 <geom type="mesh" class="visual" mesh="l_foot_pitch"/>
                 <body name="r_foot_roll" pos="0.05176 0.0381 0" quat="1 0 0 0">
-                  <inertial pos="-0.0056 0 0.02894" quat="1 0 0 0" mass="1" diaginertia="0.4 0.4 0.4"/>
+                  <inertial pos="-0.0056 0 0.02894" quat="1 0 0 0" mass="5" diaginertia="0.4 0.4 0.4"/>
                   <joint name="r_foot_roll" axis="1 0 0" range="-1 1"/>
                   <geom type="mesh" class="visual" mesh="l_foot_roll"/>
                   <geom class="collision" name="right_foot" pos="-0.04164 0 -0.0712" size="0.135 0.0575 0.005" type="box"/>
