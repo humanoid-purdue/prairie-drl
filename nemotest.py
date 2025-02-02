@@ -3,7 +3,7 @@ import dill
 import jax
 from brax import envs
 from brax.io import html, mjcf, model
-from nemo_grfless import NemoEnv
+from nemo_env_pd import NemoEnv
 
 def makeRollout():
     envs.register_environment('nemo', NemoEnv)
@@ -48,6 +48,8 @@ def makeRollout():
     n_steps = 4000
     ss=[]
     for i in range(n_steps):
+        state.info["angvel"] = jax.numpy.array([0.0])
+        state.info["velocity"] = jax.numpy.array([0.3, 0.0])
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(state.obs, act_rng)
         state = jit_step(state, ctrl)
