@@ -419,14 +419,20 @@ class NemoEnv(PipelineEnv):
         return energy
 
     def feetSlipReward(self, data0, data1, contact):
-        lp0, rp0 = self.footPos(data0)
-        lp1, rp1 = self.footPos(data1)
+        # lp0, rp0 = self.footPos(data0)
+        # lp1, rp1 = self.footPos(data1)
 
-        lv = (lp1 - lp0) / self.dt
-        rv = (rp1 - rp0) / self.dt
+        # lv = (lp1 - lp0) / self.dt
+        # rv = (rp1 - rp0) / self.dt
 
-        feet_v = jnp.array([jnp.sum(jnp.square(lv)), jnp.sum(jnp.square(rv))])
-        rew = feet_v * contact
+        # feet_v = jnp.array([jnp.sum(jnp.square(lv)), jnp.sum(jnp.square(rv))])
+        # rew = feet_v * contact
+
+        langvel = data1.xd.ang[self.left_foot_id][2]
+        rangvel = data1.xd.ang[self.right_foot_id][2]
+
+        feet_v = jnp.array([jnp.sum(jnp.square(langvel)), jnp.sum(jnp.square(rangvel))])
+        rew = 0.3 * feet_v * contact
         return jnp.sum(rew)
 
     def periodicReward(self, info, data1, data0):
