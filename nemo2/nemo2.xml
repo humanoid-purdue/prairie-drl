@@ -91,7 +91,7 @@
               <joint name="l_knee" axis="0 1 0" range="-0.3 2"/>
               <geom type="mesh" class="visual" mesh="l_knee"/>
               <body name="l_foot_pitch" pos="0 0 -0.1559" quat="1 0 0 0">
-                <inertial pos="0 0.0381 0" quat="1 0 0 0" mass="0.8" diaginertia="0.64 0.64 0.64"/>
+                <inertial pos="0 0.0381 0" quat="1 0 0 0" mass="1.6" diaginertia="0.64 0.64 0.64"/>
                 <joint name="l_foot_pitch" axis="0 1 0" range="-0.5 0.5"/>
                 <geom type="mesh" class="visual" mesh="l_foot_pitch"/>
                 <body name="l_foot_roll" pos="0.05176 0.0381 0" quat="1 0 0 0">
@@ -128,7 +128,7 @@
               <joint name="r_knee" axis="0 1 0" range="-0.3 2"/>
               <geom type="mesh" class="visual" mesh="l_knee"/>
               <body name="r_foot_pitch" pos="0 0 -0.1559" quat="1 0 0 0">
-                <inertial pos="0 -0.0381 0" quat="1 0 0 0" mass="0.8" diaginertia="0.64 0.64 0.64"/>
+                <inertial pos="0 -0.0381 0" quat="1 0 0 0" mass="1.6" diaginertia="0.64 0.64 0.64"/>
                 <joint name="r_foot_pitch" axis="0 1 0" range="-0.5 0.5"/>
                 <geom type="mesh" class="visual" mesh="l_foot_pitch"/>
                 <body name="r_foot_roll" pos="0.05176 0.0381 0" quat="1 0 0 0">

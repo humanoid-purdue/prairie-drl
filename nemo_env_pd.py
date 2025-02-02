@@ -28,7 +28,8 @@ metrics_dict = {
                     'action_rate': 0.0,
                     'vel_z': 0.0,
                     'feet_slip': 0.0,
-                    'angvel_z': 0.0}
+                    'angvel_z': 0.0,
+                    'feet_orien': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
@@ -349,6 +350,9 @@ class NemoEnv(PipelineEnv):
         #reward_dict["swing_height"] = swing_height_reward * 100.0
         reward_dict["swing_height"] = swing_height_reward * 2.0
 
+        feet_orien_reward = self.footOrienReward(data)
+        reward_dict["feet_orien"] = feet_orien_reward * 1.0
+
         for key in reward_dict.keys():
             reward_dict[key] *= self.dt
 
@@ -543,3 +547,27 @@ class NemoEnv(PipelineEnv):
 
     def energySymmetryReward(self, data):
         return
+
+    def footOrienReward(self, data):
+        lp1 = data.site_xpos[self.left_foot_s1]
+        lp2 = data.site_xpos[self.left_foot_s2]
+
+        rp1 = data.site_xpos[self.right_foot_s1]
+        rp2 = data.site_xpos[self.right_foot_s2]
+
+        l_vec = (lp1 - lp2)[0:2]
+        l_vec = l_vec / jnp.linalg.norm(l_vec)
+        r_vec = (rp1 - rp2)[0:2]
+        r_vec = r_vec / jnp.linalg.norm(r_vec)
+
+        pp1 = data.site_xpos[self.pelvis_f_id]
+        pp2 = data.site_xpos[self.pelvis_b_id]
+        facing_vec = (pp1 - pp2)[0:2]
+        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+
+        dpl = jnp.sum(facing_vec * l_vec)
+        dpr = jnp.sum(facing_vec * r_vec)
+
+        l_rew = jnp.exp(-(dpl - 1)**2 / 0.1)
+        r_rew = jnp.exp(-(dpr - 1) ** 2 / 0.1)
+        return l_rew + r_rew
