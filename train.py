@@ -44,7 +44,8 @@ def progress(num_steps, metrics):
     plt.ylabel('reward per episode')
     plt.title('{}'.format(metrics['eval/episode_reward']))
     for key in y_data.keys():
-        plt.plot(x_data, y_data[key], label = key + " {}".format(metrics[prefix + key]))
+        num = metrics[prefix + key].numpy()
+        plt.plot(x_data, y_data[key], label = key + " {.2f}".format(num))
     plt.legend()
     plt.show()
 
