@@ -196,15 +196,13 @@ class NemoEnv(PipelineEnv):
 
         rng, key_ds_time = jax.random.split(rng)
         rng, key_ss_time = jax.random.split(rng)
-        rng, key_bu_time = jax.random.split(rng)
         
-        rand_ds_time = RAND_TIME_RANGE * jax.random.uniform(key_ds_time)
+        rand_ds_time = RAND_TIME_RANGE * jax.random.uniform(key_ds_time, shape = [1], minval = -1, maxval = 1)
         rand_ss_time = RAND_TIME_RANGE * jax.random.uniform(key_ss_time)
-        rand_bu_time = 0.1 * RAND_TIME_RANGE * jax.random.uniform(key_bu_time)
 
         rand_ds_time += DS_TIME
         rand_ss_time += SS_TIME
-        rand_bu_time += BU_TIME
+        rand_bu_time = rand_ss_time / 2
         
         state_info = {
             "rng": rng,
@@ -213,9 +211,9 @@ class NemoEnv(PipelineEnv):
             "angvel": angvel[0],
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12]),
-            "inst_ds_time": rand_ds_time,
-            "inst_ss_time": rand_ss_time,
-            "inst_bu_time": rand_bu_time
+            "inst_ds_time": rand_ds_time[0],
+            "inst_ss_time": rand_ss_time[0],
+            "inst_bu_time": rand_bu_time[0]
         }
         metrics = metrics_dict.copy()
 
