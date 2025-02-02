@@ -123,11 +123,15 @@ class NemoEnv(PipelineEnv):
         vel = (com1 - com0) / self.dt
 
         z = data1.x.pos[self.pelvis_id, 2:3]
-
+      
+        rng_ds_time = DS_TIME
+        rng_ss_time = SS_TIME
+        rng_bu_time = BU_TIME
+      
         if state is not None:
             t = state.info["time"]
             rng = state.info["rng"]
-
+          
             rng, key = jax.random.split(rng)
             sites_noise_0 = jax.random.uniform(key, shape = prev_sites.shape, minval = -0.02, maxval = 0.02)
             prev_sites += sites_noise_0
@@ -158,11 +162,15 @@ class NemoEnv(PipelineEnv):
             angvel_target = state.info["angvel"]
             cmd = jnp.array([vel_target[0], vel_target[1], angvel_target])
 
+            rng_ds_time = state.info["inst_ds_time"]
+            rng_ss_time = state.info["inst_ss_time"]
+            rng_bu_time = state.info["inst_bu_time"]
+          
         else:
             t = 0
             cmd = jnp.array([0, 0, 0.])
 
-        l_coeff, r_coeff = rewards.dualCycleCC(state.info["inst_ds_time"], state.info["inst_ss_time"], state.info["inst_bu_time"], t)
+        l_coeff, r_coeff = rewards.dualCycleCC(rng_ds_time, rng_ss_time, rng_bu_time, t)
 
         return jnp.concatenate([
             position,
@@ -399,7 +407,7 @@ class NemoEnv(PipelineEnv):
     def periodicReward(self, info, data1, data0):
         t = info["time"]
 
-        l_coeff, r_coeff = rewards.dualCycleCC(state.info["inst_ds_time"], state.info["inst_ss_time"], state.info["inst_bu_time"], t)
+        l_coeff, r_coeff = rewards.dualCycleCC(rng_ds_time, rng_ss_time, rng_bu_time, t)
 
         l_contact_coeff = 2 * l_coeff -1
         r_contact_coeff = 2 * r_coeff - 1
@@ -476,8 +484,8 @@ class NemoEnv(PipelineEnv):
 
     def swingHeightReward(self, info, data):
         t = info["time"]
-        l_t, r_t = rewards.heightLimit(state.info["inst_ds_time"], state.info["inst_ss_time"], state.info["inst_bu_time"], STEP_HEIGHT, t)
-        l_coeff, r_coeff = rewards.dualCycleCC(state.info["inst_ds_time"], state.info["inst_ss_time"], state.info["inst_bu_time"], t)
+        l_t, r_t = rewards.heightLimit(rng_ds_time, rng_ss_time, rng_bu_time, STEP_HEIGHT, t)
+        l_coeff, r_coeff = rewards.dualCycleCC(rng_ds_time, rng_ss_time, rng_bu_time, t)
 
         lp1 = data.site_xpos[self.left_foot_s1]
         lp2 = data.site_xpos[self.left_foot_s2]
