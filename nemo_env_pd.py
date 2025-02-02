@@ -198,7 +198,7 @@ class NemoEnv(PipelineEnv):
         rng, key_ss_time = jax.random.split(rng)
         
         rand_ds_time = RAND_TIME_RANGE * jax.random.uniform(key_ds_time, shape = [1], minval = -1, maxval = 1)
-        rand_ss_time = RAND_TIME_RANGE * jax.random.uniform(key_ss_time)
+        rand_ss_time = RAND_TIME_RANGE * jax.random.uniform(key_ss_time, shape = [1], minval = -1, maxval = 1)
 
         rand_ds_time += DS_TIME
         rand_ss_time += SS_TIME
