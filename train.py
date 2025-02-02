@@ -15,16 +15,17 @@ eval_env = envs.get_environment('nemo')
 
 make_networks_factory = functools.partial(
     ppo_networks.make_ppo_networks,
-        policy_hidden_layer_sizes=(512, 256, 256, 128))
+        policy_hidden_layer_sizes=(512, 256, 128),
+        value_hidden_layer_sizes=(512, 256, 128))
 
 pre_model_path = 'walk_policy'
 pre_model = model.load_params(pre_model_path)
 
 train_fn = functools.partial(
-      ppo.train, num_timesteps=300000000, num_evals=20, episode_length = 2000,
-       normalize_observations=False, unroll_length=20, num_minibatches=64,
-      num_updates_per_batch=4, discounting=0.98, learning_rate=3.0e-4,
-      entropy_cost=1e-3, num_envs=2048, batch_size=1024,
+      ppo.train, num_timesteps=300000000, num_evals=20, clipping_epsilon=0.2, episode_length = 2000,
+       normalize_observations=True, unroll_length=20, num_minibatches=32,
+      num_updates_per_batch=4, discounting=0.97, learning_rate=3.0e-4,
+      entropy_cost=5e-3, num_envs=8192, batch_size=256, max_grad_norm=1.0,
       network_factory=make_networks_factory, randomization_fn = domain_randomize)
 
 x_data = []
