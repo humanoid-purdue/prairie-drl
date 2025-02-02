@@ -24,23 +24,8 @@ def makeRollout():
     saved_params = model.load_params(model_path)
     rng = jax.random.PRNGKey(0)
     # Load saved inference function
-    def makeIFN():
-        from brax.training.agents.ppo import networks as ppo_networks
-        import functools
-        from brax.training.acme import running_statistics
-        network_factory = functools.partial(
-            ppo_networks.make_ppo_networks,
-                policy_hidden_layer_sizes=(128, 128, 128, 128))
-        #normalize = running_statistics.normalize
-        normalize = lambda x, y: x
-        obs_size = env.observation_size
-        ppo_network = network_factory(
-            obs_size, env.action_size, preprocess_observations_fn=normalize
-        )
-        make_inference_fn = ppo_networks.make_inference_fn(ppo_network)
-        return make_inference_fn
-
-    make_inference_fn = makeIFN()
+    with open(full_path, 'rb') as f:
+        make_inference_fn = dill.load(f)
 
     inference_fn = make_inference_fn(saved_params)
     jit_inference_fn = jax.jit(inference_fn)
