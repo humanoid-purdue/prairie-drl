@@ -15,12 +15,6 @@ BU_TIME = 0.05
 RAND_TIME_RANGE = 0.05
 STEP_HEIGHT = 0.10
 
-rng_ds_time = DS_TIME
-rng_ss_time = SS_TIME
-rng_bu_time = BU_TIME
-
-
-
 metrics_dict = {
                    'reward': 0.0,
                    'flatfoot': 0.0,
@@ -170,6 +164,10 @@ class NemoEnv(PipelineEnv):
         else:
             t = 0
             cmd = jnp.array([0, 0, 0.])
+
+            rng_ds_time = DS_TIME
+            rng_ss_time = SS_TIME
+            rng_bu_time = BU_TIME
 
         l_coeff, r_coeff = rewards.dualCycleCC(rng_ds_time, rng_ss_time, rng_bu_time, t)
 
