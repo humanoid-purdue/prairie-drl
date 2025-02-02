@@ -220,7 +220,9 @@ class NemoEnv(PipelineEnv):
             "velocity": vel,
             "angvel": angvel,
             "prev_action": jnp.zeros(self.nu),
-            "energy_hist": jnp.zeros([100, 12])
+            "energy_hist": jnp.zeros([100, 12]),
+            "DS_TIME": jax.random.uniform(rng, minval = 0.01, maxval = 0.1),
+            "SS_TIME": jax.random.uniform(rng, minval = 0.1, maxval = 1)
         }
         metrics = metrics_dict.copy()
 
