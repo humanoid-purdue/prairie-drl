@@ -203,9 +203,9 @@ class NemoEnv(PipelineEnv):
             "velocity": vel,
             "angvel": angvel[0],
             "prev_action": jnp.zeros(self.nu),
-            "energy_hist": jnp.zeros([100, 12])
-            "inst_ds_time": rand_ds_time
-            "inst_ss_time": rand_ss_time
+            "energy_hist": jnp.zeros([100, 12]),
+            "inst_ds_time": rand_ds_time,
+            "inst_ss_time": rand_ss_time,
             "inst_bu_time": rand_bu_time
         }
         metrics = metrics_dict.copy()
