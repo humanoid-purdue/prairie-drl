@@ -344,7 +344,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 6.0
+        reward_dict["flatfoot"] = flatfoot_reward * 2.0
 
         swing_height_reward = self.swingHeightReward(state.info, data)
         #reward_dict["swing_height"] = swing_height_reward * 100.0
@@ -496,7 +496,7 @@ class NemoEnv(PipelineEnv):
         rp2 = data.site_xpos[self.right_foot_s2]
         rp3 = data.site_xpos[self.right_foot_s3]
 
-        rew = sites2Rew(lp1, lp2, lp3) * contact[0] + sites2Rew(rp1, rp2, rp3) * contact[1]
+        rew = sites2Rew(lp1, lp2, lp3) + sites2Rew(rp1, rp2, rp3)
 
         return rew
 

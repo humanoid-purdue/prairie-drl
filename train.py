@@ -15,7 +15,7 @@ eval_env = envs.get_environment('nemo')
 
 make_networks_factory = functools.partial(
     ppo_networks.make_ppo_networks,
-        policy_hidden_layer_sizes=(128, 128, 128, 128))
+        policy_hidden_layer_sizes=(512, 256, 256, 128))
 
 pre_model_path = 'walk_policy'
 pre_model = model.load_params(pre_model_path)
