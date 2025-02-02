@@ -15,6 +15,11 @@ BU_TIME = 0.05
 RAND_TIME_RANGE = 0.05
 STEP_HEIGHT = 0.10
 
+rng_ds_time = DS_TIME
+rng_ss_time = SS_TIME
+rng_bu_time = BU_TIME
+
+
 
 metrics_dict = {
                    'reward': 0.0,
@@ -123,11 +128,7 @@ class NemoEnv(PipelineEnv):
         vel = (com1 - com0) / self.dt
 
         z = data1.x.pos[self.pelvis_id, 2:3]
-      
-        rng_ds_time = DS_TIME
-        rng_ss_time = SS_TIME
-        rng_bu_time = BU_TIME
-      
+            
         if state is not None:
             t = state.info["time"]
             rng = state.info["rng"]
