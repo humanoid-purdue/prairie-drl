@@ -225,7 +225,7 @@ class NemoEnv(PipelineEnv):
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs(pipeline_state, pipeline_state, jnp.zeros(self.nu))
+        obs = self._get_obs_fk(pipeline_state, pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -299,7 +299,7 @@ class NemoEnv(PipelineEnv):
         state.info["prev_action"] = action
         self.updateCmd(state)
 
-        obs = self._get_obs(data0, data1, action, state = state)
+        obs = self._get_obs_fk(data0, data1, action, state = state)
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
