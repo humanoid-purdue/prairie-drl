@@ -129,11 +129,11 @@ class NemoEnv(PipelineEnv):
             rng = state.info["rng"]
 
             rng, key = jax.random.split(rng)
-            sites_noise_0 = jax.random.uniform(key, shape = prev_sites.shape, minval = -0.02, maxval = 0.02)
+            sites_noise_0 = jax.random.uniform(key, shape = prev_sites.shape, minval = -0.1, maxval = 0.1)
             prev_sites += sites_noise_0
 
             rng, key = jax.random.split(rng)
-            sites_noise_1 = jax.random.uniform(key, shape = prev_sites.shape, minval=-0.02, maxval=0.02)
+            sites_noise_1 = jax.random.uniform(key, shape = prev_sites.shape, minval=-0.1, maxval=0.1)
             current_sites += sites_noise_1
 
             rng, key = jax.random.split(rng)
