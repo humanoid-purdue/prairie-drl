@@ -30,7 +30,7 @@ def makeRollout():
         from brax.training.acme import running_statistics
         network_factory = functools.partial(
             ppo_networks.make_ppo_networks,
-            policy_hidden_layer_sizes=(128, 128, 128, 128))
+            policy_hidden_layer_sizes=(512, 256, 256, 128))
         # normalize = running_statistics.normalize
         normalize = lambda x, y: x
         obs_size = env.observation_size
