@@ -180,35 +180,35 @@
   </worldbody>
 
   <actuator>
-    <position kp="400.0" class="g1" name="left_hip_pitch_joint" joint="left_hip_pitch_joint" forcerange="-88 88" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="left_hip_roll_joint" joint="left_hip_roll_joint" forcerange="-88 88" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="left_hip_yaw_joint" joint="left_hip_yaw_joint" forcerange="-88 88" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="left_knee_joint" joint="left_knee_joint" forcerange="-139 139" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="left_ankle_pitch_joint" joint="left_ankle_pitch_joint" forcerange="-40 40" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="left_ankle_roll_joint" joint="left_ankle_roll_joint" forcerange="-40 40" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="left_hip_pitch_joint" joint="left_hip_pitch_joint" forcerange="-44 44" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="left_hip_roll_joint" joint="left_hip_roll_joint" forcerange="-44 44" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="left_hip_yaw_joint" joint="left_hip_yaw_joint" forcerange="-44 44" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="left_knee_joint" joint="left_knee_joint" forcerange="-70 70" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="left_ankle_pitch_joint" joint="left_ankle_pitch_joint" forcerange="-20 20" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="left_ankle_roll_joint" joint="left_ankle_roll_joint" forcerange="-20 20" inheritrange="1"/>
 
-    <position kp="400.0" class="g1" name="right_hip_pitch_joint" joint="right_hip_pitch_joint" forcerange="-88 88" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="right_hip_roll_joint" joint="right_hip_roll_joint" forcerange="-88 88" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="right_hip_yaw_joint" joint="right_hip_yaw_joint" forcerange="-88 88" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="right_knee_joint" joint="right_knee_joint" forcerange="-139 139" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="right_ankle_pitch_joint" joint="right_ankle_pitch_joint" forcerange="-40 40" inheritrange="1"/>
-    <position kp="400.0" class="g1" name="right_ankle_roll_joint" joint="right_ankle_roll_joint" forcerange="-40 40" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="right_hip_pitch_joint" joint="right_hip_pitch_joint" forcerange="-44 44" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="right_hip_roll_joint" joint="right_hip_roll_joint" forcerange="-44 44" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="right_hip_yaw_joint" joint="right_hip_yaw_joint" forcerange="-44 44" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="right_knee_joint" joint="right_knee_joint" forcerange="-70 70" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="right_ankle_pitch_joint" joint="right_ankle_pitch_joint" forcerange="-20 20" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="right_ankle_roll_joint" joint="right_ankle_roll_joint" forcerange="-20 20" inheritrange="1"/>
 
-    <position kp="400.0" class="g1" name="torso_joint" joint="torso_joint" forcerange="-88 88" inheritrange="1"/>
+    <position kp="400.0" class="g1" name="torso_joint" joint="torso_joint" forcerange="-44 44" inheritrange="1"/>
 
-    <velocity kv="40.0" class="g1" name="left_hip_pitch_joint_v" joint="left_hip_pitch_joint" forcerange="-88 88" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="left_hip_roll_joint_v" joint="left_hip_roll_joint" forcerange="-88 88" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="left_hip_yaw_joint_v" joint="left_hip_yaw_joint" forcerange="-88 88" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="left_knee_joint_v" joint="left_knee_joint" forcerange="-139 139" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="left_ankle_pitch_joint_v" joint="left_ankle_pitch_joint" forcerange="-40 40" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="left_ankle_roll_joint_v" joint="left_ankle_roll_joint" forcerange="-40 40" ctrlrange="-10 10"/>
+    <velocity kv="40.0" class="g1" name="left_hip_pitch_joint_v" joint="left_hip_pitch_joint" forcerange="-44 44" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="left_hip_roll_joint_v" joint="left_hip_roll_joint" forcerange="-44 44" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="left_hip_yaw_joint_v" joint="left_hip_yaw_joint" forcerange="-44 44" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="left_knee_joint_v" joint="left_knee_joint" forcerange="-70 70" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="left_ankle_pitch_joint_v" joint="left_ankle_pitch_joint" forcerange="-20 20" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="left_ankle_roll_joint_v" joint="left_ankle_roll_joint" forcerange="-20 20" ctrlrange="-20 20"/>
 
-    <velocity kv="40.0" class="g1" name="right_hip_pitch_joint_v" joint="right_hip_pitch_joint" forcerange="-88 88" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="right_hip_roll_joint_v" joint="right_hip_roll_joint" forcerange="-88 88" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="right_hip_yaw_joint_v" joint="right_hip_yaw_joint" forcerange="-88 88" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="right_knee_joint_v" joint="right_knee_joint" forcerange="-139 139" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="right_ankle_pitch_joint_v" joint="right_ankle_pitch_joint" forcerange="-40 40" ctrlrange="-10 10"/>
-    <velocity kv="40.0" class="g1" name="right_ankle_roll_joint_v" joint="right_ankle_roll_joint" forcerange="-40 40" ctrlrange="-10 10"/>
+    <velocity kv="40.0" class="g1" name="right_hip_pitch_joint_v" joint="right_hip_pitch_joint" forcerange="-44 44" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="right_hip_roll_joint_v" joint="right_hip_roll_joint" forcerange="-44 44" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="right_hip_yaw_joint_v" joint="right_hip_yaw_joint" forcerange="-44 44" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="right_knee_joint_v" joint="right_knee_joint" forcerange="-70 70" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="right_ankle_pitch_joint_v" joint="right_ankle_pitch_joint" forcerange="-20 20" ctrlrange="-20 20"/>
+    <velocity kv="40.0" class="g1" name="right_ankle_roll_joint_v" joint="right_ankle_roll_joint" forcerange="-20 20" ctrlrange="-20 20"/>
 
     <velocity kv="40.0" class="g1" name="torso_joint_v" joint="torso_joint" forcerange="-88 88" ctrlrange="-10 10"/>
   </actuator>
