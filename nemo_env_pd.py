@@ -180,6 +180,7 @@ class NemoEnv(PipelineEnv):
         grav_vec = math.rotate(jnp.array([0,0,-1]),inv_pelvis_rot)
         position = data1.qpos
         velocity = data1.qvel * 0.05
+        z = data1.x.pos[self.pelvis_id, 2:3]
         if state is not None:
             t = state.info["time"]
             rng = state.info["rng"]
@@ -205,7 +206,7 @@ class NemoEnv(PipelineEnv):
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
         obs = jnp.concatenate([
-            vel, angvel, grav_vec, position, velocity, prev_action, l_coeff, r_coeff
+            vel, angvel, grav_vec, position, velocity, prev_action, l_coeff, r_coeff, z
         ])
 
         return obs
