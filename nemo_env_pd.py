@@ -28,6 +28,7 @@ metrics_dict = {
                     'action_rate': 0.0,
                     'vel_z': 0.0,
                     'feet_slip': 0.0,
+                    'feet_slip_ang': 0.0,
                     'angvel_z': 0.0}
 
 class NemoEnv(PipelineEnv):
@@ -334,6 +335,9 @@ class NemoEnv(PipelineEnv):
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
 
+        angslip_reward = self.feetSlipAngReward(data, contact)
+        reward_dict["feet_slip_ang"] = angslip_reward * -0.25
+
         period_rew = self.periodicReward(state.info, data0, data)
         reward_dict["periodic"] = period_rew * 0.15
 
@@ -427,6 +431,14 @@ class NemoEnv(PipelineEnv):
 
         feet_v = jnp.array([jnp.sum(jnp.square(lv)), jnp.sum(jnp.square(rv))])
         rew = feet_v * contact
+        return jnp.sum(rew)
+
+    def feetSlipAngReward(self, data1, contact):
+        langvel = data1.xd.ang[self.left_foot_id][2]
+        rangvel = data1.xd.ang[self.right_foot_id][2]
+
+        feet_v = jnp.array([jnp.sum(jnp.square(langvel)), jnp.sum(jnp.square(rangvel))])
+        rew = 0.3 * feet_v * contact
         return jnp.sum(rew)
 
     def periodicReward(self, info, data1, data0):
