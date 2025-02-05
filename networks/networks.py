@@ -56,10 +56,6 @@ class OptNet(linen.Module): #No parameters, hardcoded first
         self.dense6 = nn.Dense(self.param_size, name = "hidden_6",
                                kernel_init=self.kernel_init, use_bias=True)
 
-    def batched_eqp(self, q, c, a, b):
-
-        return b_qpf(a, b)
-
     def __call__(self, x):
         y1 = nn.swish(self.dense1(x))
         y2 = nn.swish(self.dense2(y1))
