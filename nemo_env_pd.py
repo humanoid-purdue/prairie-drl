@@ -224,7 +224,7 @@ class NemoEnv(PipelineEnv):
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs_fk(pipeline_state, pipeline_state, jnp.zeros(self.nu))
+        obs = self._get_obs(pipeline_state, pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -298,7 +298,7 @@ class NemoEnv(PipelineEnv):
         state.info["prev_action"] = action
         self.updateCmd(state)
 
-        obs = self._get_obs_fk(data0, data1, action, state = state)
+        obs = self._get_obs(data0, data1, action, state = state)
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
@@ -579,6 +579,6 @@ class NemoEnv(PipelineEnv):
         dpl = jnp.sum(facing_vec * l_vec)
         dpr = jnp.sum(facing_vec * r_vec)
 
-        l_rew = jnp.exp(-(dpl - 1)**2 / 0.1)
+        l_rew = jnp.exp(-(dpl - 1) ** 2 / 0.1)
         r_rew = jnp.exp(-(dpr - 1) ** 2 / 0.1)
         return l_rew + r_rew
