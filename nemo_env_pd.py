@@ -484,6 +484,10 @@ class NemoEnv(PipelineEnv):
 
     def swingHeightReward(self, info, data):
         t = info["time"]
+        rng_ds_time = info["inst_ds_time"]
+        rng_ss_time = info["inst_ss_time"]
+        rng_bu_time = info["inst_bu_time"]
+          
         l_t, r_t = rewards.heightLimit(rng_ds_time, rng_ss_time, rng_bu_time, STEP_HEIGHT, t)
         l_coeff, r_coeff = rewards.dualCycleCC(rng_ds_time, rng_ss_time, rng_bu_time, t)
 
