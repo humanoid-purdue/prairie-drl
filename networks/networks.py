@@ -13,11 +13,10 @@ import jax
 import jax.numpy as jnp
 from jaxopt import EqualityConstrainedQP
 
-
 class OptNet(linen.Module): #No parameters, hardcoded first
     param_size: int
     qp_size: int
-    kernel_init: networks.Initializer = jax.nn.initializers.lecun_uniform()
+    kernel_init: jax.nn.initializers.lecun_uniform()
     def setup(self):
         self.dense1 = nn.Dense(256, name = "hidden_1",
                                kernel_init=self.kernel_init, use_bias=True)
@@ -29,8 +28,7 @@ class OptNet(linen.Module): #No parameters, hardcoded first
                                   lambda rng: jnp.eye(self.qp_size))
         self.c_vec_1 = self.param('cvec1',
                                   lambda rng: jnp.zeros([self.qp_size]))
-        self.qp1 = EqualityConstrainedQP(tol=1e-5, refine_regularization=3.,
-                                         refine_maxiter=10)
+        self.qp1 = OSQP(tol=1e-5)
         qpf1 = lambda a, b, q, c: (self.qp1.run(params_obj=(q, c),
                                                params_eq=(a, b)).params).primal
         self.b_qpf1 = jax.vmap(qpf1, (0, 0, None, None), 0)
@@ -45,8 +43,7 @@ class OptNet(linen.Module): #No parameters, hardcoded first
                                   lambda rng: jnp.eye(self.qp_size))
         self.c_vec_2 = self.param('cvec2',
                                   lambda rng: jnp.zeros([self.qp_size]))
-        self.qp2 = EqualityConstrainedQP(tol=1e-5, refine_regularization=3.,
-                                         refine_maxiter=10)
+        self.qp2 = OSQP(tol=1e-5)
         qpf2 = lambda a, b, q, c: (self.qp2.run(params_obj=(q, c),
                                                params_eq=(a, b)).params).primal
         self.b_qpf2 = jax.vmap(qpf2, (0, 0, None, None), 0)
@@ -77,7 +74,6 @@ class OptNet(linen.Module): #No parameters, hardcoded first
         y5 = nn.swish(self.dense5(qp_sol2) + y4)
         y6 = self.dense6(y5)
         return y6
-
 
 #make_inference_fn() and PPONetworks can be shared from default
 #make ppo networks needs to be replaced. Initialization for constructors done below
