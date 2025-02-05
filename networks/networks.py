@@ -11,7 +11,7 @@ from flax import linen
 from flax import linen as nn
 import jax
 import jax.numpy as jnp
-from jaxopt import EqualityConstrainedQP
+from jaxopt import *
 
 class OptNet(linen.Module): #No parameters, hardcoded first
     param_size: int
