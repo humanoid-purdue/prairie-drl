@@ -403,7 +403,10 @@ class NemoEnv(PipelineEnv):
 
     def periodicReward(self, info, data1, data0):
         t = info["time"]
-
+        rng_ds_time = info["inst_ds_time"]
+        rng_ss_time = info["inst_ss_time"]
+        rng_bu_time = info["inst_bu_time"]
+          
         l_coeff, r_coeff = rewards.dualCycleCC(rng_ds_time, rng_ss_time, rng_bu_time, t)
 
         l_contact_coeff = 2 * l_coeff -1
