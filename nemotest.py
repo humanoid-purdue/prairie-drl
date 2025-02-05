@@ -4,8 +4,15 @@ import jax
 from brax import envs
 from brax.io import html, mjcf, model
 from nemo_env_pd import NemoEnv
+import mujoco
+import jax.numpy as jnp
 
 def makeRollout():
+    model_n = mujoco.MjModel.from_xml_path("nemo2/scene.xml")
+    pelvis_b_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
+    pelvis_f_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
+
+
     envs.register_environment('nemo', NemoEnv)
     env_name = 'nemo'
     env = envs.create(env_name='nemo')
@@ -50,6 +57,13 @@ def makeRollout():
     for i in range(n_steps):
         state.info["angvel"] = jax.numpy.array([0.0])
         state.info["velocity"] = jax.numpy.array([0.3, 0.0])
+        data = state.pipeline_state
+        pp1 = data.site_xpos[pelvis_f_id]
+        pp2 = data.site_xpos[pelvis_b_id]
+        facing_vec = (pp1 - pp2)[0:2]
+        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+        state.info["angvel"] = jnp.array([jnp.where(facing_vec[1] > 0, -0.4, 0.4)])
+
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(state.obs, act_rng)
         state = jit_step(state, ctrl)
