@@ -30,10 +30,10 @@ class OptNet(linen.Module): #No parameters, hardcoded first
         self.c_vec_1 = self.param('cvec1',
                                   lambda rng: jnp.zeros([self.qp_size]))
         self.qp1 = EqualityConstrainedQP(tol=1e-5, refine_regularization=3.,
-                                         refine_maxiter=50)
+                                         refine_maxiter=10)
         qpf1 = lambda a, b, q, c: (self.qp1.run(params_obj=(q, c),
                                                params_eq=(a, b)).params).primal
-        self.b_qpf1 = jax.vmap(qpf1, (0, 0, None, None), 0)
+        self.b_qpf1 = jax.vmap(qpf1, ((0, 1), (0, 1), None, None), (0, 1))
 
         self.dense3 = nn.Dense(128, name = "hidden_3",
                                kernel_init=self.kernel_init, use_bias=True)
@@ -46,10 +46,10 @@ class OptNet(linen.Module): #No parameters, hardcoded first
         self.c_vec_2 = self.param('cvec2',
                                   lambda rng: jnp.zeros([self.qp_size]))
         self.qp2 = EqualityConstrainedQP(tol=1e-5, refine_regularization=3.,
-                                         refine_maxiter=50)
+                                         refine_maxiter=10)
         qpf2 = lambda a, b, q, c: (self.qp2.run(params_obj=(q, c),
                                                params_eq=(a, b)).params).primal
-        self.b_qpf2 = jax.vmap(qpf2, (0, 0, None, None), 0)
+        self.b_qpf2 = jax.vmap(qpf2, ((0, 1), (0, 1), None, None), (0, 1))
 
         self.dense5 = nn.Dense(128, name = "hidden_5",
                                kernel_init=self.kernel_init, use_bias=True)
@@ -60,16 +60,14 @@ class OptNet(linen.Module): #No parameters, hardcoded first
         y1 = nn.swish(self.dense1(x))
         y2 = nn.swish(self.dense2(y1))
         A1 = self.a_1(y2)
-        A1 = jnp.reshape(A1, [-1, self.qp_size, self.qp_size])
+        A1 = jnp.reshape(A1, A1.shape[:-1] + (self.qp_size, self.qp_size))
         b1 = self.b_1(y2)
-        b1 = jnp.reshape(b1, [-1, self.qp_size])
         qp_sol1 = self.b_qpf1(A1, b1, self.q_mat_1, self.c_vec_1)
         y3 = nn.swish(self.dense3(qp_sol1) + y2)
         y4 = nn.swish(self.dense4(y3))
         A2 = self.a_1(y4)
-        A2 = jnp.reshape(A2, [-1, self.qp_size, self.qp_size])
+        A2 = jnp.reshape(A2, A1.shape[:-1] + (self.qp_size, self.qp_size))
         b2 = self.b_2(y4)
-        b2 = jnp.reshape(b2, [-1, self.qp_size])
         qp_sol2 = self.b_qpf1(A2, b2, self.q_mat_2, self.c_vec_2)
         y5 = nn.swish(self.dense5(qp_sol2) + y4)
         y6 = self.dense6(y5)
