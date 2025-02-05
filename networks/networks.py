@@ -61,9 +61,9 @@ class OptNet(linen.Module): #No parameters, hardcoded first
         y3 = nn.swish(self.dense3(qp_sol1) + y2)
         y4 = nn.swish(self.dense4(y3))
         A2 = nn.tanh(self.a_1(y4))
-        A2 = jnp.reshape(A2, [self.qp_size, self.qp_size])
+        A2 = jnp.reshape(A2, [-1, self.qp_size, self.qp_size])
         b2 = nn.tanh(self.b_2(y4)) * 5
-        b2 = jnp.reshape(b2, [self.qp_size])
+        b2 = jnp.reshape(b2, [-1, self.qp_size])
         qp_sol2 = (self.qp1.run(params_obj = (self.q_mat_2, self.c_vec_2),
                               params_eq = (A2, b2)).params).primal
         y5 = nn.swish(self.dense5(qp_sol2) + y4)
