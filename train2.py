@@ -1,4 +1,4 @@
-import train
+import qp_train as train
 import dill
 make_inference_fn, params, _= train.train_fn(environment=train.env,
                                        progress_fn=train.progress,

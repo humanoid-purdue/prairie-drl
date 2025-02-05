@@ -54,16 +54,17 @@ class OptNet(linen.Module): #No parameters, hardcoded first
         y2 = nn.swish(self.dense2(y1))
         A1 = nn.tanh(self.a_1(y2))
         A1 = jnp.reshape(A1, [self.qp_size, self.qp_size])
-        b1 = nn.tanh(self.b_2(y2)) * 5
-        qp_sol1 = self.qp1.run(params_obj = (self.q_mat_1, self.c_vec_1),
-                              params_eq = (A1, b1))
+        b1 = nn.tanh(self.b_1(y2)) * 5
+        print(self.q_mat_1.shape, self.c_vec_1.shape, A1.shape, b1.shape)
+        qp_sol1 = (self.qp1.run(params_obj = (self.q_mat_1, self.c_vec_1),
+                              params_eq = (A1, b1)).params).primal
         y3 = nn.swish(self.dense3(qp_sol1) + y2)
         y4 = nn.swish(self.dense4(y3))
         A2 = nn.tanh(self.a_1(y4))
         A2 = jnp.reshape(A2, [self.qp_size, self.qp_size])
         b2 = nn.tanh(self.b_2(y4)) * 5
-        qp_sol2 = self.qp1.run(params_obj = (self.q_mat_2, self.c_vec_2),
-                              params_eq = (A2, b2))
+        qp_sol2 = (self.qp1.run(params_obj = (self.q_mat_2, self.c_vec_2),
+                              params_eq = (A2, b2)).params).primal
         y5 = nn.swish(self.dense5(qp_sol2) + y4)
         y6 = self.dense6(y5)
         return y6
