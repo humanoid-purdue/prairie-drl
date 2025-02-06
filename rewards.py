@@ -98,6 +98,7 @@ def feet_contact(state, floor_id, right_foot_id, left_foot_id):
     contact = jnp.array([l, r])
     return contact
 
+
 def linkPlan(ds_time, ss_time, t):
     step_height = 0.2
 
