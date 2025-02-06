@@ -3,6 +3,9 @@ import functools
 from brax import envs
 from brax.training.agents.ppo import train as ppo
 from brax.training.agents.ppo import networks as ppo_networks
+
+import train_checkpoint
+
 from brax.io import model
 from matplotlib import pyplot as plt
 import dill
@@ -22,11 +25,12 @@ pre_model_path = 'walk_policy'
 pre_model = model.load_params(pre_model_path)
 
 train_fn = functools.partial(
-      ppo.train, num_timesteps=200000000, num_evals=20, episode_length = 2000,
+      train_checkpoint.checkpoint_train, num_timesteps=200000000, num_evals=20, episode_length = 2000,
        normalize_observations=False, unroll_length=20, num_minibatches=64,
       num_updates_per_batch=4, discounting=0.98, learning_rate=3.0e-4,
       entropy_cost=1e-3, num_envs=2048, batch_size=1024,
-      network_factory=make_networks_factory, randomization_fn = domain_randomize)
+      network_factory=make_networks_factory, randomization_fn = domain_randomize, break_steps=50000000,
+      checkpoint_dir="/content/drive/MyDrive/prairie_drl/", checkpoint_time=1800)
 
 x_data = []
 y_data = {}
