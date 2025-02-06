@@ -29,7 +29,8 @@ metrics_dict = {
                     'vel_z': 0.0,
                     'feet_slip': 0.0,
                     'angvel_z': 0.0,
-                    'feet_orien': 0.0}
+                    'feet_orien': 0.0,
+                    'feet_slip_ang': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
@@ -55,8 +56,6 @@ class NemoEnv(PipelineEnv):
         self.nu = system.nu
         self.control_range = system.actuator_ctrlrange
         self.joint_limit = jnp.array(model.jnt_range)
-
-
 
         self.pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
         self.pelvis_b_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
@@ -129,11 +128,11 @@ class NemoEnv(PipelineEnv):
             rng = state.info["rng"]
 
             rng, key = jax.random.split(rng)
-            sites_noise_0 = jax.random.uniform(key, shape = prev_sites.shape, minval = -0.02, maxval = 0.02)
+            sites_noise_0 = jax.random.uniform(key, shape = prev_sites.shape, minval = -0.1, maxval = 0.1)
             prev_sites += sites_noise_0
 
             rng, key = jax.random.split(rng)
-            sites_noise_1 = jax.random.uniform(key, shape = prev_sites.shape, minval=-0.02, maxval=0.02)
+            sites_noise_1 = jax.random.uniform(key, shape = prev_sites.shape, minval=-0.1, maxval=0.1)
             current_sites += sites_noise_1
 
             rng, key = jax.random.split(rng)
@@ -180,12 +179,13 @@ class NemoEnv(PipelineEnv):
         grav_vec = math.rotate(jnp.array([0,0,-1]),inv_pelvis_rot)
         position = data1.qpos
         velocity = data1.qvel * 0.05
+        z = data1.x.pos[self.pelvis_id, 2:3]
         if state is not None:
             t = state.info["time"]
             rng = state.info["rng"]
 
             rng, key = jax.random.split(rng)
-            position_noise = jax.random.uniform(key, shape = position.shape, minval = -0.1, maxval = 0.1)
+            position_noise = jax.random.uniform(key, shape = position.shape, minval = -0.05, maxval = 0.05)
             position += position_noise
 
             rng, key = jax.random.split(rng)
@@ -205,7 +205,7 @@ class NemoEnv(PipelineEnv):
         l_coeff, r_coeff = rewards.dualCycleCC(DS_TIME, SS_TIME, BU_TIME, t)
 
         obs = jnp.concatenate([
-            vel, angvel, grav_vec, position, velocity, prev_action, l_coeff, r_coeff
+            vel, angvel, grav_vec, position, velocity, prev_action, l_coeff, r_coeff, z
         ])
 
         return obs
@@ -241,8 +241,8 @@ class NemoEnv(PipelineEnv):
         rng, key2 = jax.random.split(rng)
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
-        vel = vel * jnp.array([0.2, 0.2])
-        vel = vel + jnp.array([0.2, 0.0])
+        vel = vel * jnp.array([0.3, 0.3])
+        #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         return vel, angvel, rng
 
@@ -353,6 +353,9 @@ class NemoEnv(PipelineEnv):
         feet_orien_reward = self.footOrienReward(data)
         reward_dict["feet_orien"] = feet_orien_reward * 1.0
 
+        angslip_reward = self.feetSlipAngReward(data, contact)
+        reward_dict["feet_slip_ang"] = angslip_reward * -0.25
+
         for key in reward_dict.keys():
             reward_dict[key] *= self.dt
 
@@ -434,6 +437,14 @@ class NemoEnv(PipelineEnv):
 
         feet_v = jnp.array([jnp.sum(jnp.square(lv)), jnp.sum(jnp.square(rv))])
         rew = feet_v * contact
+        return jnp.sum(rew)
+
+    def feetSlipAngReward(self, data1, contact):
+        langvel = data1.xd.ang[self.left_foot_id][2]
+        rangvel = data1.xd.ang[self.right_foot_id][2]
+
+        feet_v = jnp.array([jnp.sum(jnp.square(langvel)), jnp.sum(jnp.square(rangvel))])
+        rew = 0.3 * feet_v * contact
         return jnp.sum(rew)
 
     def periodicReward(self, info, data1, data0):
