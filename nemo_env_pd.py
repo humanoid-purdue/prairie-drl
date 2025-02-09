@@ -270,12 +270,13 @@ class NemoEnv(PipelineEnv):
         return jnp.concatenate([pos_sp, vel_sp])
     #return pos_sp
 
-    def updateEnergyHistory(self, state_info, data):
+    def updateEnergyHistory(self, state, data):
         qfrc_actuator = data.qfrc_actuator
         jv = data.qvel
         power = qfrc_actuator * jv
-        state_info["energy_hist"][state_info["energy_hist_index"]] = power
-        state_info["energy_hist_index"] += 1
+        index = state.info["energy_hist_index"] % 100
+        state.info["energy_hist"][index] = power[:]
+        state.info["energy_hist_index"] += 1
 
         return
 
@@ -308,6 +309,8 @@ class NemoEnv(PipelineEnv):
         state.info["time"] += self.dt
         state.info["prev_action"] = action
         self.updateCmd(state)
+
+        self.updateEnergyHistory(state)
 
         obs = self._get_obs_fk(data0, data1, action, state = state)
         return state.replace(
@@ -571,14 +574,12 @@ class NemoEnv(PipelineEnv):
         return rew[0]
 
     def energySymmetryReward(self, state_info, data):
-        l_qfrc_actuator = data.qfrc_actuator
-        r_qfrc_actuator = data.qfrc_actuator
-        l_jv = data.qvel
-        r_jv = data.qvel
-        energy = jnp.sum(jnp.square(jv * qfrc_actuator)) ** 0.5
-        state_info["energy_hist"]
+        index = 100 if state_info["energy_hist_index"] >= 100 else state_info["energy_hist_index"]
+        leftEnergy = (jnp.sum(state_info["energy_hist"][:index]))
+        rightEnergy = jnp.sum(state_info["energy_hist"][:index])
+        difference = jnp.abs(leftEnergy-rightEnergy)
 
-        return energy
+        return jnp.exp(-1*difference)
 
     def footOrienReward(self, data):
         lp1 = data.site_xpos[self.left_foot_s1]
