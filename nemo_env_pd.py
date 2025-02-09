@@ -310,7 +310,7 @@ class NemoEnv(PipelineEnv):
         state.info["prev_action"] = action
         self.updateCmd(state)
 
-        self.updateEnergyHistory(state)
+        self.updateEnergyHistory(state, data0)
 
         obs = self._get_obs_fk(data0, data1, action, state = state)
         return state.replace(
@@ -370,7 +370,7 @@ class NemoEnv(PipelineEnv):
         angslip_reward = self.feetSlipAngReward(data, contact)
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
 
-        energy_symmetry_reward = self.energySymmetryReward(state.info, data)
+        energy_symmetry_reward = self.energySymmetryReward(state.info)
         reward_dict["energy_symmetry"] = energy_symmetry_reward
 
         for key in reward_dict.keys():
@@ -573,8 +573,9 @@ class NemoEnv(PipelineEnv):
         rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
         return rew[0]
 
-    def energySymmetryReward(self, state_info, data):
-        index = 100 if state_info["energy_hist_index"] >= 100 else state_info["energy_hist_index"]
+    def energySymmetryReward(self, state_info):
+        # index = 100 if state_info["energy_hist_index"] >= 100 else state_info["energy_hist_index"]
+        index = jnp.where(state_info["energy_hist_index"] >= 100, 100, state_info["energy_hist_index"])
         leftEnergy = (jnp.sum(state_info["energy_hist"][:index]))
         rightEnergy = jnp.sum(state_info["energy_hist"][:index])
         difference = jnp.abs(leftEnergy-rightEnergy)
