@@ -10,6 +10,7 @@ import rewards
 
 DS_PROP = 0.06
 BU_PROP = 0.5
+RAND_PHASE_RANGE = 0.25
 
 
 metrics_dict = {
@@ -145,6 +146,11 @@ class NemoEnv(PipelineEnv):
         vel, angvel, rng = self.makeCmd(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
+
+        rng, key_phase_period = jax.random.split(rng)
+        
+        rand_phase_period = RAND_PHASE_RANGE * jax.random.uniform(key_phase_period, shape = [1], minval = 0, maxval = 1)
+      
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
