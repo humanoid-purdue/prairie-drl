@@ -30,7 +30,8 @@ metrics_dict = {
                     'feet_slip': 0.0,
                     'angvel_z': 0.0,
                     'feet_orien': 0.0,
-                    'feet_slip_ang': 0.0}
+                    'feet_slip_ang': 0.0,
+                    'energy_symmetry': 0.0 }
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
@@ -220,7 +221,8 @@ class NemoEnv(PipelineEnv):
             "velocity": vel,
             "angvel": angvel,
             "prev_action": jnp.zeros(self.nu),
-            "energy_hist": jnp.zeros([100, 12])
+            "energy_hist": jnp.zeros([100, 12]),
+            "energy_hist_index": 0
         }
         metrics = metrics_dict.copy()
 
@@ -267,6 +269,15 @@ class NemoEnv(PipelineEnv):
 
         return jnp.concatenate([pos_sp, vel_sp])
     #return pos_sp
+
+    def updateEnergyHistory(self, state_info, data):
+        qfrc_actuator = data.qfrc_actuator
+        jv = data.qvel
+        power = qfrc_actuator * jv
+        state_info["energy_hist"][state_info["energy_hist_index"]] = power
+        state_info["energy_hist_index"] += 1
+
+        return
 
     def step(self, state: State, action: jnp.ndarray):
         scaled_action = self.tanh2Action(action)
@@ -355,6 +366,9 @@ class NemoEnv(PipelineEnv):
 
         angslip_reward = self.feetSlipAngReward(data, contact)
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
+
+        energy_symmetry_reward = self.energySymmetryReward(state.info, data)
+        reward_dict["energy_symmetry"] = energy_symmetry_reward
 
         for key in reward_dict.keys():
             reward_dict[key] *= self.dt
@@ -556,8 +570,15 @@ class NemoEnv(PipelineEnv):
         rew = l_rew * (1 - l_coeff) + r_rew * (1 - r_coeff)
         return rew[0]
 
-    def energySymmetryReward(self, data):
-        return
+    def energySymmetryReward(self, state_info, data):
+        l_qfrc_actuator = data.qfrc_actuator
+        r_qfrc_actuator = data.qfrc_actuator
+        l_jv = data.qvel
+        r_jv = data.qvel
+        energy = jnp.sum(jnp.square(jv * qfrc_actuator)) ** 0.5
+        state_info["energy_hist"]
+
+        return energy
 
     def footOrienReward(self, data):
         lp1 = data.site_xpos[self.left_foot_s1]
