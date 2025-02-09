@@ -466,7 +466,7 @@ class NemoEnv(PipelineEnv):
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.1))
-        rew_z_track = jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1
+        rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
 
         #l_rew = jnp.clip(l_h - l_t, min=-10, max=0)
         #r_rew = jnp.clip(r_h - r_t, min=-10, max=0)
