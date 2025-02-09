@@ -273,9 +273,9 @@ class NemoEnv(PipelineEnv):
     def updateEnergyHistory(self, state, data):
         qfrc_actuator = data.qfrc_actuator
         jv = data.qvel
-        power = qfrc_actuator * jv
+        energy = qfrc_actuator * jv[6:] * self.dt
         index = state.info["energy_hist_index"] % 100
-        state.info["energy_hist"][index] = power[:]
+        state.info["energy_hist"][index] = energy[:]
         state.info["energy_hist_index"] += 1
 
         return
@@ -310,7 +310,7 @@ class NemoEnv(PipelineEnv):
         state.info["prev_action"] = action
         self.updateCmd(state)
 
-        self.updateEnergyHistory(state, data0)
+        self.updateEnergyHistory(state, data1)
 
         obs = self._get_obs_fk(data0, data1, action, state = state)
         return state.replace(
@@ -575,9 +575,10 @@ class NemoEnv(PipelineEnv):
 
     def energySymmetryReward(self, state_info):
         # index = 100 if state_info["energy_hist_index"] >= 100 else state_info["energy_hist_index"]
-        index = jnp.where(state_info["energy_hist_index"] >= 100, 100, state_info["energy_hist_index"])
-        leftEnergy = (jnp.sum(state_info["energy_hist"][:index]))
-        rightEnergy = jnp.sum(state_info["energy_hist"][:index])
+        # index = jnp.where(state_info["energy_hist_index"] >= 100, 100, state_info["energy_hist_index"])
+
+        leftEnergy = (jnp.sum(state_info["energy_hist"][:6][:]))
+        rightEnergy = jnp.sum(state_info["energy_hist"][6:][:])
         difference = jnp.abs(leftEnergy-rightEnergy)
 
         return jnp.exp(-1*difference)
