@@ -290,9 +290,9 @@ def lr_phase_coeff(phase, ds_prop, bu_prop):
         s2t = lambda x: h00(norm_p(x, np.pi - ds_d))
 
         p1 = jnp.where(t <= ds_d - bu_d, 1, 0)
-        p2 = jnp.where(t > ds_d - bu_d and t <= ds_d, 1, 0)
-        p3 = jnp.where(t > ds_d and t <= np.pi - ds_d, 1, 0)
-        p4 = jnp.where(t > np.pi - ds_d and t <= np.pi - ds_d + bu_d, 1, 0)
+        p2 = jnp.where(t <= ds_d, 1, 0) * jnp.where( ds_d - bu_d < t, 1, 0)
+        p3 = jnp.where(ds_d < t, 1, 0) * jnp.where(t <= np.pi - ds_d, 1, 0)
+        p4 = jnp.where(np.pi - ds_d < t, 1, 0) * jnp.where(t <= np.pi - ds_d + bu_d, 1, 0)
         p5 = jnp.where(t > np.pi - ds_d + bu_d, 1, 0)
         return (p1 * stance +
                 p2 * t2s(t) +
@@ -320,7 +320,7 @@ def quintic_foot_phase(phase, ds_prop):
               coeffs[2] * 3 * nt**2 +
               coeffs[3] * 4 * nt**3 +
               coeffs[4] * 5 * nt**4)
-        p2 = jnp.where(t > ds_d and t <= np.pi - ds_d , 1, 0)
+        p2 = jnp.where(t > ds_d, 1, 0) * jnp.where(t <= np.pi - ds_d, 1, 0)
         return p2 * z, p2 *zd
     lz, lzd = phase_sol(phase[0])
     rz, rzd = phase_sol(phase[1])
@@ -339,6 +339,6 @@ if __name__ == "__main__":
         lrz = lrz.at[c, :].set(z)
         phase += 0.02
         phase = jnp.mod(phase, jnp.pi * 2)
-    plt.plot(lrz[:, 0])
-    plt.plot(lrz[:, 1])
+    plt.plot(lr[:, 0])
+    plt.plot(lr[:, 1])
     plt.show()

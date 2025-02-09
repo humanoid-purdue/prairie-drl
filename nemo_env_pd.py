@@ -230,7 +230,7 @@ class NemoEnv(PipelineEnv):
         state.info["time"] += self.dt
         state.info["prev_action"] = action
 
-        state.info["phase"] += 2 * jnp.pi * self.dt / state.info["phase_time"]
+        state.info["phase"] += 2 * jnp.pi * self.dt / state.info["phase_period"]
         state.info["phase"] = jnp.mod(state.info["phase"], jnp.pi * 2)
 
         self.updateCmd(state)
@@ -405,7 +405,7 @@ class NemoEnv(PipelineEnv):
         vel_reward = lr_grf_coeff[0] * l_spd_rew + lr_grf_coeff[1] * r_spd_rew
         grf_reward = lr_vel_coeff[0] * l_f_rew + lr_vel_coeff[1] * r_f_rew
 
-        return (vel_reward + grf_reward)[0]
+        return vel_reward + grf_reward
 
     def determineGRF(self, data):
 
@@ -457,7 +457,7 @@ class NemoEnv(PipelineEnv):
     def footDynamicsReward(self, info, data0, data1):
         zt, zdt = rewards.quintic_foot_phase(info["phase"], DS_PROP)
         #rescale zdt from 0 to 0.5 to swing time
-        swing_time = info["phase_time"] * 0.5 * (1 - DS_PROP * 2)
+        swing_time = info["phase_period"] * 0.5 * (1 - DS_PROP * 2)
         zdt = zdt * 0.5 / swing_time
 
         lp0, rp0 = self.footPos(data0)
