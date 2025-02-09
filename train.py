@@ -17,9 +17,6 @@ make_networks_factory = functools.partial(
     ppo_networks.make_ppo_networks,
         policy_hidden_layer_sizes=(512, 256, 256, 128))
 
-pre_model_path = 'walk_policy'
-pre_model = model.load_params(pre_model_path)
-
 train_fn = functools.partial(
       ppo.train, num_timesteps=200000000, num_evals=20, episode_length = 1000,
        normalize_observations=False, unroll_length=20, num_minibatches=64,
