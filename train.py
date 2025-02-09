@@ -21,10 +21,12 @@ make_networks_factory = functools.partial(
 
 checkpoint_dir = 'checkpoints'
 if not os.path.exists(checkpoint_dir):
+    checkpoint_dir = os.path.join(os.path.abspath(os.getcwd()), checkpoint_dir)
     os.makedirs(checkpoint_dir)
 
 load_checkpoint_dir = 'load_checkpoints'
 if not os.path.exists(load_checkpoint_dir):
+    load_checkpoint_dir = os.path.join(os.path.abspath(os.getcwd()), load_checkpoint_dir)
     load_checkpoint_dir = None
 
 
