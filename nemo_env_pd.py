@@ -465,8 +465,14 @@ class NemoEnv(PipelineEnv):
         z0 = jnp.array([lp0[2], rp0[2]])
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
-        rew_z_track = jnp.sum(jnp.exp(-1 * (z1 - zt) ** 2 / 0.01))
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.1))
+        rew_z_track = jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1
+
+        #l_rew = jnp.clip(l_h - l_t, min=-10, max=0)
+        #r_rew = jnp.clip(r_h - r_t, min=-10, max=0)
+        # being below is -1, being above is 0.
+        #l_rew = jnp.exp(jnp.clip(l_h - l_t, min=None, max=0) / 0.02) - 1
+        #r_rew = jnp.exp(jnp.clip(r_h - r_t, min=None, max=0) / 0.02) - 1
         return rew_z_track, rew_zd_track
 
     def energySymmetryReward(self, data):
