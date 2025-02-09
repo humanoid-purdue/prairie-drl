@@ -263,7 +263,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["vel_z"] = vel_z_reward * -0.01
 
         energy_reward = self.energyReward(data)
-        reward_dict["energy"] = energy_reward * -0.001
+        reward_dict["energy"] = energy_reward * -0.02
 
         action_r_reward = self.actionRateReward(action, state)
         reward_dict["action_rate"] = action_r_reward * -0.01
@@ -390,8 +390,8 @@ class NemoEnv(PipelineEnv):
         lr_vel_coeff = 2 * lr_coeff - 1
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / 100)
-        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / 100)
+        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / 80)
+        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / 80)
 
         lp0, rp0 = self.footPos(data0)
         lp1, rp1 = self.footPos(data1)
