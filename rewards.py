@@ -307,7 +307,7 @@ def lr_phase_coeff(phase, ds_prop, bu_prop):
 
 def quintic_foot_phase(phase, ds_prop):
     def phase_sol(t):
-        coeffs = jnp.array([0.1, 5.0, -18.8, 12.0, 9.6])
+        coeffs = jnp.array([0.1 , 5.0, -18.8, 12.0, 9.6])
         ds_d = jnp.pi * ds_prop
         nt = (t - ds_d) / (2 * (np.pi - ds_d * 2))
         z = (coeffs[0] * nt +
