@@ -245,7 +245,7 @@ class NemoEnv(PipelineEnv):
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs_fk(pipeline_state, pipeline_state, jnp.zeros(self.nu))
+        obs = self._get_obs(pipeline_state, pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -323,7 +323,7 @@ class NemoEnv(PipelineEnv):
 
         self.updateCmd(state)
 
-        obs = self._get_obs_fk(data0, data1, action, state = state)
+        obs = self._get_obs(data0, data1, action, state = state)
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
@@ -373,7 +373,7 @@ class NemoEnv(PipelineEnv):
 
         feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
         reward_dict["feet_z"] = feet_z_rew * 2.0
-        reward_dict["feet_zd"] = feet_zd_rew * 0.0
+        reward_dict["feet_zd"] = feet_zd_rew * 1.0
 
         feet_orien_reward = self.footOrienReward(data)
         reward_dict["feet_orien"] = feet_orien_reward * 1.0
@@ -555,7 +555,7 @@ class NemoEnv(PipelineEnv):
         zd = (z1 - z0) / self.dt
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.1))
         #rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
-        rew_z_track = jnp.sum(jnp.exp(-8 * (zd - zdt) ** 2))
+        rew_z_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.05))
 
         # get reward for foot being above target
         #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
