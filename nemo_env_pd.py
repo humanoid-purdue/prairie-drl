@@ -8,7 +8,7 @@ import mujoco
 import rewards
 
 
-DS_PROP = 0.06
+DS_PROP = 0.1
 BU_PROP = 0.5
 
 
@@ -84,13 +84,15 @@ class NemoEnv(PipelineEnv):
 
         def joint_rel_pos(d):
             pelvis_pos = d.x.pos[self.pelvis_id]
-            l_pos = d.x.pos[self.left_foot_id] - pelvis_pos
-            r_pos = d.x.pos[self.right_foot_id] - pelvis_pos
-            l_loc = math.rotate(l_pos, inv_pelvis_rot)
-            r_loc = math.rotate(r_pos, inv_pelvis_rot)
-            return jnp.concatenate([l_loc, r_loc], axis = 0)
-
-        locs = joint_rel_pos(data1)
+            l_loc = d.x.pos[self.left_foot_id] - pelvis_pos
+            r_loc = d.x.pos[self.right_foot_id] - pelvis_pos
+            #l_loc = math.rotate(l_loc, inv_pelvis_rot)
+            #r_loc = math.rotate(r_loc, inv_pelvis_rot)
+            com = d.subtree_com[0] - pelvis_pos
+            return jnp.concatenate([l_loc, r_loc, com], axis = 0)
+        locs0 = joint_rel_pos(data0)
+        locs1 = joint_rel_pos(data1)
+        locs = jnp.concatenate([locs0, locs1], axis = 0)
         z = data1.x.pos[self.pelvis_id, 2:3]
         grav_vec = math.rotate(jnp.array([0,0,-1]), inv_pelvis_rot)
         position = data1.qpos
@@ -99,11 +101,11 @@ class NemoEnv(PipelineEnv):
             rng = state.info["rng"]
 
             rng, key = jax.random.split(rng)
-            z_noise_0 = jax.random.uniform(key, shape=z.shape, minval=-0.1, maxval=0.1)
+            z_noise_0 = jax.random.uniform(key, shape=z.shape, minval=-0.02, maxval=0.02)
             z += z_noise_0
 
             rng, key = jax.random.split(rng)
-            locs_noise_0 = jax.random.uniform(key, shape=locs.shape, minval=-0.05, maxval=0.05)
+            locs_noise_0 = jax.random.uniform(key, shape=locs.shape, minval=-0.03, maxval=0.03)
             locs += locs_noise_0
 
             rng, key = jax.random.split(rng)
@@ -469,8 +471,8 @@ class NemoEnv(PipelineEnv):
         rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
 
         # get reward for foot being above target
-        rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
-        rew_z_track += rew_z_above
+        #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
+        #rew_z_track += rew_z_above
         #l_rew = jnp.clip(l_h - l_t, min=-10, max=0)
         #r_rew = jnp.clip(r_h - r_t, min=-10, max=0)
         # being below is -1, being above is 0.
