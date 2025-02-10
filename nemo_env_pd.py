@@ -95,6 +95,8 @@ class NemoEnv(PipelineEnv):
         locs = jnp.concatenate([locs0, locs1], axis = 0)
         z = data1.x.pos[self.pelvis_id, 2:3]
         grav_vec = math.rotate(jnp.array([0,0,-1]), inv_pelvis_rot)
+        #forward_vec = math.rotate(jnp.array([1., 0, 0]), inv_pelvis_rot)
+        #grav_vec = jnp.concatenate([grav_vec, forward_vec], axis = 0)
         position = data1.qpos
         velocity = data1.qvel
         if state is not None:
@@ -138,7 +140,7 @@ class NemoEnv(PipelineEnv):
 
 
         obs = jnp.concatenate([
-            vel, angvel, grav_vec, position, velocity, prev_action, phase_clock, locs, z, cmd
+            vel, angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
         ])
 
         return obs
