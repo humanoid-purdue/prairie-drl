@@ -554,16 +554,12 @@ class NemoEnv(PipelineEnv):
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.1))
-        rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
+        #rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
+        rew_z_track = jnp.sum(jnp.exp(-8 * (zd - zdt) ** 2))
 
         # get reward for foot being above target
         #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
         #rew_z_track += rew_z_above
-        #l_rew = jnp.clip(l_h - l_t, min=-10, max=0)
-        #r_rew = jnp.clip(r_h - r_t, min=-10, max=0)
-        # being below is -1, being above is 0.
-        #l_rew = jnp.exp(jnp.clip(l_h - l_t, min=None, max=0) / 0.02) - 1
-        #r_rew = jnp.exp(jnp.clip(r_h - r_t, min=None, max=0) / 0.02) - 1
         return rew_z_track, rew_zd_track
 
     def energySymmetryReward(self, data):
