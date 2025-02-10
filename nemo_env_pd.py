@@ -143,6 +143,92 @@ class NemoEnv(PipelineEnv):
 
         return obs
 
+    def _get_obs_fk(
+            self, data0, data1, prev_action: jnp.ndarray, state=None
+    ) -> jnp.ndarray:
+        """Observes humanoid body position, velocities, and angles."""
+
+        def getCoords(data_):
+            global_pos = data_.x.pos[self.pelvis_id + 1:, :]
+            center = data_.x.pos[self.pelvis_id, :]
+            local_pos = global_pos - center[None, :]
+            local_pos = local_pos.flatten()
+            # sites
+            lp1 = data_.site_xpos[self.left_foot_s1] - center
+            lp2 = data_.site_xpos[self.left_foot_s2] - center
+            lp3 = data_.site_xpos[self.left_foot_s3] - center
+            rp1 = data_.site_xpos[self.right_foot_s1] - center
+            rp2 = data_.site_xpos[self.right_foot_s2] - center
+            rp3 = data_.site_xpos[self.right_foot_s3] - center
+            head = data_.site_xpos[self.head_id] - center
+            pel_front = data_.site_xpos[self.pelvis_f_id] - center
+            com_offset = (data_.subtree_com[1] - center).flatten()
+            local_sites = jnp.concatenate([local_pos, lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front, com_offset],
+                                          axis=0)
+            return local_sites
+
+        position = data1.qpos
+        prev_sites = getCoords(data0)
+        current_sites = getCoords(data1)
+        velocity = data1.qvel * 0.05
+        # l_grf, r_grf = self.determineGRF(data1)
+        # external_contact_forces are excluded
+        angvel = data1.xd.ang[self.pelvis_id, :] * 0.25
+        com0 = data1.subtree_com[0]
+        com1 = data1.subtree_com[1]
+        com_vel = (com1 - com0) / self.dt
+        com_vel = com_vel * 2
+        z = data1.x.pos[self.pelvis_id, 2:3]
+        if state is not None:
+            t = state.info["time"]
+            rng = state.info["rng"]
+
+            rng, key = jax.random.split(rng)
+            sites_noise_0 = jax.random.uniform(key, shape=prev_sites.shape, minval=-0.1, maxval=0.1)
+            prev_sites += sites_noise_0
+
+            rng, key = jax.random.split(rng)
+            sites_noise_1 = jax.random.uniform(key, shape=prev_sites.shape, minval=-0.1, maxval=0.1)
+            current_sites += sites_noise_1
+
+            rng, key = jax.random.split(rng)
+            position_noise = jax.random.uniform(key, shape=position.shape, minval=-0.1, maxval=0.1)
+            position += position_noise
+
+            rng, key = jax.random.split(rng)
+            velocity_noise = jax.random.uniform(key, shape=velocity.shape, minval=-0.5, maxval=0.5)
+            velocity += velocity_noise * 0.05
+
+            rng, key = jax.random.split(rng)
+            angvel_noise = jax.random.uniform(key, shape=angvel.shape, minval=-0.4, maxval=0.4)
+            angvel += angvel_noise * 0.25
+
+            rng, key = jax.random.split(rng)
+            vel_noise = jax.random.uniform(key, shape=com_vel.shape, minval=-0.1, maxval=0.1)
+            com_vel += vel_noise * 2.0
+            state.info["rng"] = rng
+
+            vel_target = state.info["velocity"]
+            angvel_target = state.info["angvel"]
+            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
+
+            phase = state.info["phase"]
+        else:
+
+            phase = jnp.array([0., jnp.pi])
+            cmd = jnp.array([0, 0, 0.])
+
+        phase_clock = jnp.array([jnp.sin(phase[0]), jnp.cos(phase[0]),
+                                 jnp.sin(phase[1]), jnp.cos(phase[1])])
+        return jnp.concatenate([
+            position,
+            velocity,
+            angvel,
+            com_vel,
+            prev_sites, current_sites,
+            prev_action, phase_clock, z, cmd
+        ])
+
     def reset(self, rng: jax.Array) -> State:
         vel, angvel, rng = self.makeCmd(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
@@ -159,7 +245,7 @@ class NemoEnv(PipelineEnv):
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs(pipeline_state, pipeline_state, jnp.zeros(self.nu))
+        obs = self._get_obs_fk(pipeline_state, pipeline_state, jnp.zeros(self.nu))
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -237,7 +323,7 @@ class NemoEnv(PipelineEnv):
 
         self.updateCmd(state)
 
-        obs = self._get_obs(data0, data1, action, state = state)
+        obs = self._get_obs_fk(data0, data1, action, state = state)
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
