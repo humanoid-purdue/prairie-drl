@@ -24,7 +24,8 @@ class StackedLSTM(nn.Module):
     param_size: int
     kernel_init: jax.nn.initializers.lecun_uniform()
     def setup(self):
-        self.nn_in = nn.Dense(HIDDEN_SIZE, name = "input", kernel_init=self.kernel_init)
+        self.nn_in1 = nn.Dense(512, name = "i1", kernel_init=self.kernel_init)
+        self.nn_in2 = nn.Dense(HIDDEN_SIZE, name = "i2", kernel_init=self.kernel_init)
         self.nn_mi = nn.Dense(HIDDEN_SIZE, name = "mid", kernel_init=self.kernel_init)
         self.nn_ed = nn.Dense(self.param_size, name = "end", kernel_init=self.kernel_init)
         self.lstms = [nn.OptimizedLSTMCell(HIDDEN_SIZE,
@@ -35,7 +36,8 @@ class StackedLSTM(nn.Module):
         bs = x.shape[:-1]
         carry = x[..., :4 * HIDDEN_SIZE * DEPTH]
         obs = x[..., 4 * HIDDEN_SIZE * DEPTH:]
-        y = nn.swish(self.nn_in(obs))
+        y = nn.swish(self.nn_in1(obs))
+        y = nn.swish(self.nn_in2(y))
         y0 = y.copy()
         hidden = carry[..., :2 * HIDDEN_SIZE * DEPTH]
         hidden = jnp.reshape(hidden, bs + (2 * DEPTH, HIDDEN_SIZE,))
