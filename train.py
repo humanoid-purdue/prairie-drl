@@ -6,7 +6,8 @@ from brax.training.agents.ppo import networks as ppo_networks
 from brax.io import model
 from matplotlib import pyplot as plt
 import dill
-from nemo_env_pd import *
+from nemo_lstm import *
+from networks.lstm import make_ppo_networks
 from nemo_randomize import domain_randomize
 import os
 
@@ -15,7 +16,7 @@ env = envs.get_environment('nemo')
 eval_env = envs.get_environment('nemo')
 
 make_networks_factory = functools.partial(
-    ppo_networks.make_ppo_networks,
+    make_ppo_networks,
         policy_hidden_layer_sizes=(512, 256, 256, 128))
 
 
@@ -36,8 +37,8 @@ train_fn = functools.partial(
       num_updates_per_batch=4, discounting=0.995, learning_rate=3.0e-4,
       entropy_cost=1e-3, num_envs=2048, batch_size=1024,
       network_factory=make_networks_factory, randomization_fn = domain_randomize,
-      save_checkpoint_path=checkpoint_dir)
-#, restore_checkpoint_path=load_checkpoint_dir included notebook
+      )
+#, restore_checkpoint_path=load_checkpoint_dir included notebook save_checkpoint_path=checkpoint_dir
 x_data = []
 y_data = {}
 for name in metrics_dict.keys():

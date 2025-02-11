@@ -3,7 +3,7 @@ import dill
 import jax
 from brax import envs
 from brax.io import html, mjcf, model
-from nemo_env_pd import NemoEnv
+from nemo_lstm import NemoEnv
 import mujoco
 import jax.numpy as jnp
 
