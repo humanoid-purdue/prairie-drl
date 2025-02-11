@@ -18,7 +18,7 @@ from jaxopt import *
 #Action size consits of 128 + 128 + a size
 
 HIDDEN_SIZE = 128
-DEPTH = 4
+DEPTH = 2
 
 class StackedLSTM(nn.Module):
     param_size: int
