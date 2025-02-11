@@ -8,9 +8,8 @@ import mujoco
 import rewards
 
 
-DS_PROP = 0.06
+DS_PROP = 0.1
 BU_PROP = 0.5
-RAND_PHASE_RANGE = 0.25
 
 
 metrics_dict = {
@@ -85,26 +84,30 @@ class NemoEnv(PipelineEnv):
 
         def joint_rel_pos(d):
             pelvis_pos = d.x.pos[self.pelvis_id]
-            l_pos = d.x.pos[self.left_foot_id] - pelvis_pos
-            r_pos = d.x.pos[self.right_foot_id] - pelvis_pos
-            l_loc = math.rotate(l_pos, inv_pelvis_rot)
-            r_loc = math.rotate(r_pos, inv_pelvis_rot)
-            return jnp.concatenate([l_loc, r_loc], axis = 0)
-
-        locs = joint_rel_pos(data1)
+            l_loc = d.x.pos[self.left_foot_id] - pelvis_pos
+            r_loc = d.x.pos[self.right_foot_id] - pelvis_pos
+            #l_loc = math.rotate(l_loc, inv_pelvis_rot)
+            #r_loc = math.rotate(r_loc, inv_pelvis_rot)
+            com = d.subtree_com[0] - pelvis_pos
+            return jnp.concatenate([l_loc, r_loc, com], axis = 0)
+        locs0 = joint_rel_pos(data0)
+        locs1 = joint_rel_pos(data1)
+        locs = jnp.concatenate([locs0, locs1], axis = 0)
         z = data1.x.pos[self.pelvis_id, 2:3]
         grav_vec = math.rotate(jnp.array([0,0,-1]), inv_pelvis_rot)
+        #forward_vec = math.rotate(jnp.array([1., 0, 0]), inv_pelvis_rot)
+        #grav_vec = jnp.concatenate([grav_vec, forward_vec], axis = 0)
         position = data1.qpos
         velocity = data1.qvel
         if state is not None:
             rng = state.info["rng"]
 
             rng, key = jax.random.split(rng)
-            z_noise_0 = jax.random.uniform(key, shape=z.shape, minval=-0.1, maxval=0.1)
+            z_noise_0 = jax.random.uniform(key, shape=z.shape, minval=-0.02, maxval=0.02)
             z += z_noise_0
 
             rng, key = jax.random.split(rng)
-            locs_noise_0 = jax.random.uniform(key, shape=locs.shape, minval=-0.05, maxval=0.05)
+            locs_noise_0 = jax.random.uniform(key, shape=locs.shape, minval=-0.03, maxval=0.03)
             locs += locs_noise_0
 
             rng, key = jax.random.split(rng)
@@ -137,20 +140,101 @@ class NemoEnv(PipelineEnv):
 
 
         obs = jnp.concatenate([
-            vel, angvel, grav_vec, position, velocity, prev_action, phase_clock, locs, z, cmd
+            vel, angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
         ])
 
         return obs
+
+    def _get_obs_fk(
+            self, data0, data1, prev_action: jnp.ndarray, state=None
+    ) -> jnp.ndarray:
+        """Observes humanoid body position, velocities, and angles."""
+
+        def getCoords(data_):
+            global_pos = data_.x.pos[self.pelvis_id + 1:, :]
+            center = data_.x.pos[self.pelvis_id, :]
+            local_pos = global_pos - center[None, :]
+            local_pos = local_pos.flatten()
+            # sites
+            lp1 = data_.site_xpos[self.left_foot_s1] - center
+            lp2 = data_.site_xpos[self.left_foot_s2] - center
+            lp3 = data_.site_xpos[self.left_foot_s3] - center
+            rp1 = data_.site_xpos[self.right_foot_s1] - center
+            rp2 = data_.site_xpos[self.right_foot_s2] - center
+            rp3 = data_.site_xpos[self.right_foot_s3] - center
+            head = data_.site_xpos[self.head_id] - center
+            pel_front = data_.site_xpos[self.pelvis_f_id] - center
+            com_offset = (data_.subtree_com[1] - center).flatten()
+            local_sites = jnp.concatenate([local_pos, lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front, com_offset],
+                                          axis=0)
+            return local_sites
+
+        position = data1.qpos
+        prev_sites = getCoords(data0)
+        current_sites = getCoords(data1)
+        velocity = data1.qvel * 0.05
+        # l_grf, r_grf = self.determineGRF(data1)
+        # external_contact_forces are excluded
+        angvel = data1.xd.ang[self.pelvis_id, :] * 0.25
+        com0 = data1.subtree_com[0]
+        com1 = data1.subtree_com[1]
+        com_vel = (com1 - com0) / self.dt
+        com_vel = com_vel * 2
+        z = data1.x.pos[self.pelvis_id, 2:3]
+        if state is not None:
+            t = state.info["time"]
+            rng = state.info["rng"]
+
+            rng, key = jax.random.split(rng)
+            sites_noise_0 = jax.random.uniform(key, shape=prev_sites.shape, minval=-0.1, maxval=0.1)
+            prev_sites += sites_noise_0
+
+            rng, key = jax.random.split(rng)
+            sites_noise_1 = jax.random.uniform(key, shape=prev_sites.shape, minval=-0.1, maxval=0.1)
+            current_sites += sites_noise_1
+
+            rng, key = jax.random.split(rng)
+            position_noise = jax.random.uniform(key, shape=position.shape, minval=-0.1, maxval=0.1)
+            position += position_noise
+
+            rng, key = jax.random.split(rng)
+            velocity_noise = jax.random.uniform(key, shape=velocity.shape, minval=-0.5, maxval=0.5)
+            velocity += velocity_noise * 0.05
+
+            rng, key = jax.random.split(rng)
+            angvel_noise = jax.random.uniform(key, shape=angvel.shape, minval=-0.4, maxval=0.4)
+            angvel += angvel_noise * 0.25
+
+            rng, key = jax.random.split(rng)
+            vel_noise = jax.random.uniform(key, shape=com_vel.shape, minval=-0.1, maxval=0.1)
+            com_vel += vel_noise * 2.0
+            state.info["rng"] = rng
+
+            vel_target = state.info["velocity"]
+            angvel_target = state.info["angvel"]
+            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
+
+            phase = state.info["phase"]
+        else:
+
+            phase = jnp.array([0., jnp.pi])
+            cmd = jnp.array([0, 0, 0.])
+
+        phase_clock = jnp.array([jnp.sin(phase[0]), jnp.cos(phase[0]),
+                                 jnp.sin(phase[1]), jnp.cos(phase[1])])
+        return jnp.concatenate([
+            position,
+            velocity,
+            angvel,
+            com_vel,
+            prev_sites, current_sites,
+            prev_action, phase_clock, z, cmd
+        ])
 
     def reset(self, rng: jax.Array) -> State:
         vel, angvel, rng = self.makeCmd(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
-
-        rng, key_phase_period = jax.random.split(rng)
-        
-        rand_phase_period = RAND_PHASE_RANGE * jax.random.uniform(key_phase_period, shape = [1], minval = 0, maxval = 1)
-      
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
@@ -269,7 +353,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["vel_z"] = vel_z_reward * -0.01
 
         energy_reward = self.energyReward(data)
-        reward_dict["energy"] = energy_reward * -0.01
+        reward_dict["energy"] = energy_reward * -0.003
 
         action_r_reward = self.actionRateReward(action, state)
         reward_dict["action_rate"] = action_r_reward * -0.01
@@ -291,7 +375,7 @@ class NemoEnv(PipelineEnv):
 
         feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
         reward_dict["feet_z"] = feet_z_rew * 2.0
-        reward_dict["feet_zd"] = feet_zd_rew * 0.0
+        reward_dict["feet_zd"] = feet_zd_rew * 1.0
 
         feet_orien_reward = self.footOrienReward(data)
         reward_dict["feet_orien"] = feet_orien_reward * 1.0
@@ -408,8 +492,8 @@ class NemoEnv(PipelineEnv):
         l_spd_rew = 1 - jnp.exp(-2 * jnp.sum(lv**2))
         r_spd_rew = 1 - jnp.exp(-2 * jnp.sum(rv**2))
 
-        vel_reward = lr_grf_coeff[0] * l_spd_rew + lr_grf_coeff[1] * r_spd_rew
-        grf_reward = lr_vel_coeff[0] * l_f_rew + lr_vel_coeff[1] * r_f_rew
+        grf_reward = lr_grf_coeff[0] * l_f_rew + lr_grf_coeff[1] * r_f_rew
+        vel_reward = lr_vel_coeff[0] * l_spd_rew + lr_vel_coeff[1] * r_spd_rew
 
         return vel_reward + grf_reward
 
@@ -472,13 +556,12 @@ class NemoEnv(PipelineEnv):
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.1))
-        rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
+        #rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
+        rew_z_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.05))
 
-        #l_rew = jnp.clip(l_h - l_t, min=-10, max=0)
-        #r_rew = jnp.clip(r_h - r_t, min=-10, max=0)
-        # being below is -1, being above is 0.
-        #l_rew = jnp.exp(jnp.clip(l_h - l_t, min=None, max=0) / 0.02) - 1
-        #r_rew = jnp.exp(jnp.clip(r_h - r_t, min=None, max=0) / 0.02) - 1
+        # get reward for foot being above target
+        #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
+        #rew_z_track += rew_z_above
         return rew_z_track, rew_zd_track
 
     def energySymmetryReward(self, data):
