@@ -168,6 +168,7 @@ class NemoEnv(PipelineEnv):
         metrics = metrics_dict.copy()
 
         obs = self._get_obs(pipeline_state, pipeline_state)
+        state_info["lstm_carry"] = obs[: 2 * HIDDEN_SIZE * DEPTH]
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -301,7 +302,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_zd"] = feet_zd_rew * 1.0
 
         feet_orien_reward = self.footOrienReward(data)
-        reward_dict["feet_orien"] = feet_orien_reward * 1.0
+        reward_dict["feet_orien"] = feet_orien_reward * 0.5
 
         angslip_reward = self.feetSlipAngReward(data, contact)
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
