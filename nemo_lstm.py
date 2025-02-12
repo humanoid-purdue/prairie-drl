@@ -137,7 +137,7 @@ class NemoEnv(PipelineEnv):
         else:
             phase = jnp.array([0., jnp.pi])
             cmd = jnp.array([0., 0., 0.])
-            carry = jnp.zeros([HIDDEN_SIZE * DEPTH * 4])
+            carry = jnp.zeros([HIDDEN_SIZE * DEPTH * 2])
             prev_action = jnp.zeros(self.nu)
 
         phase_clock = jnp.array([jnp.sin(phase[0]), jnp.cos(phase[0]),
@@ -163,7 +163,7 @@ class NemoEnv(PipelineEnv):
             "energy_hist": jnp.zeros([100, 12]),
             "phase": jnp.array([0, jnp.pi]),
             "phase_period": 1.0,
-            "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 4])
+            "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2])
         }
         metrics = metrics_dict.copy()
 
