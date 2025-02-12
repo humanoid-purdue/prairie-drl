@@ -17,7 +17,7 @@ from jaxopt import *
 #Need custom flax nn, make_policy_network, distribution, and make_ppo_network
 #Action size consits of 128 + 128 + a size
 
-HIDDEN_SIZE = 256
+HIDDEN_SIZE = 128
 DEPTH = 1
 
 class StackedLSTM(nn.Module):
