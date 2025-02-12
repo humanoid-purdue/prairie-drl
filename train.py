@@ -6,7 +6,7 @@ from brax.training.agents.ppo import networks as ppo_networks
 from brax.io import model
 from matplotlib import pyplot as plt
 import dill
-from nemo_lstm import *
+from nemo_env_pd import *
 from networks.lstm import make_ppo_networks
 from nemo_randomize import domain_randomize
 import os
