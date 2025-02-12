@@ -26,37 +26,33 @@ class StackedLSTM(nn.Module):
     def setup(self):
         self.nn_in1 = nn.Dense(512, name = "i1", kernel_init=self.kernel_init)
         self.nn_in2 = nn.Dense(HIDDEN_SIZE, name = "i2", kernel_init=self.kernel_init)
-        self.nn_mi = nn.Dense(HIDDEN_SIZE, name = "mid", kernel_init=self.kernel_init)
+        self.nn_mi = nn.Dense(128, name = "mid", kernel_init=self.kernel_init)
+        self.nn_mi2 = nn.Dense(128, name="mid", kernel_init=self.kernel_init)
         self.nn_ed = nn.Dense(self.param_size, name = "end", kernel_init=self.kernel_init)
         self.lstms = [nn.OptimizedLSTMCell(HIDDEN_SIZE,
-                        name = "lstm_{}".format(c)) for c in range(DEPTH * 2)]
+                        name = "lstm_{}".format(c)) for c in range(DEPTH)]
         return
 
     def __call__(self, x):
         bs = x.shape[:-1]
-        carry = x[..., :4 * HIDDEN_SIZE * DEPTH]
-        obs = x[..., 4 * HIDDEN_SIZE * DEPTH:]
+        carry = x[..., :2 * HIDDEN_SIZE * DEPTH]
+        obs = x[..., 2 * HIDDEN_SIZE * DEPTH:]
         y = nn.swish(self.nn_in1(obs))
         y = nn.swish(self.nn_in2(y))
-        y0 = y.copy()
-        hidden = carry[..., :2 * HIDDEN_SIZE * DEPTH]
-        hidden = jnp.reshape(hidden, bs + (2 * DEPTH, HIDDEN_SIZE,))
-        cell = carry[..., 2 * HIDDEN_SIZE * DEPTH:]
-        cell = jnp.reshape(cell, bs + (2 * DEPTH, HIDDEN_SIZE,))
+        hidden = carry[..., :HIDDEN_SIZE * DEPTH]
+        hidden = jnp.reshape(hidden, bs + (DEPTH, HIDDEN_SIZE,))
+        cell = carry[..., HIDDEN_SIZE * DEPTH:]
+        cell = jnp.reshape(cell, bs + (DEPTH, HIDDEN_SIZE,))
 
-        hidden_next = jnp.zeros(bs + (2 * DEPTH, HIDDEN_SIZE,))
-        cell_next = jnp.zeros(bs + (2 * DEPTH, HIDDEN_SIZE,))
+        hidden_next = jnp.zeros(bs + (DEPTH, HIDDEN_SIZE,))
+        cell_next = jnp.zeros(bs + (DEPTH, HIDDEN_SIZE,))
         for i in range(DEPTH):
             state, y = self.lstms[i]((hidden[..., i, :], cell[..., i, :]), y)
             hidden_next = hidden_next.at[..., i, :].set(state[0])
             cell_next = cell_next.at[..., i, :].set(state[1])
-        y1 = nn.swish(self.nn_mi(y + y0))
-        y = y1.copy()
-        for j in range(DEPTH, 2 * DEPTH):
-            state, y = self.lstms[j]((hidden[..., j, :], cell[..., j, :]), y)
-            hidden_next = hidden_next.at[..., j, :].set(state[0])
-            cell_next = cell_next.at[..., j, :].set(state[1])
-        y2 = self.nn_ed(y + y1)
+        y1 = nn.swish(self.nn_mi(y))
+        y1 = nn.swish(self.nn_mi2(y1))
+        y2 = self.nn_ed(y1)
         hidden_next = jnp.reshape(hidden_next, bs + (-1,))
         cell_next = jnp.reshape(cell_next, bs + (-1,))
         output = jnp.concat([hidden_next, cell_next, y2], axis = -1)
@@ -75,32 +71,32 @@ class LSTMTanhDistribution(ParametricDistribution):
         self._var_scale = var_scale
 
     def create_dist(self, parameters):
-        loc, scale = jnp.split(parameters[..., 4 * HIDDEN_SIZE * DEPTH:],
+        loc, scale = jnp.split(parameters[..., 2 * HIDDEN_SIZE * DEPTH:],
                                2, axis=-1)
         scale = (jax.nn.softplus(scale) + self._min_std) * self._var_scale
         return NormalDistribution(loc=loc, scale=scale)
 
     def postprocess(self, event):
         #pass identity of the first 256 and only apply forward to remaining
-        iden_event = event[..., :4 * HIDDEN_SIZE * DEPTH]
+        iden_event = event[..., :2 * HIDDEN_SIZE * DEPTH]
         action_event = self._postprocessor.forward(
-              event[..., 4 * HIDDEN_SIZE * DEPTH:])
+              event[..., 2 * HIDDEN_SIZE * DEPTH:])
         y = jnp.concat([iden_event, action_event], axis = -1)
         return y
 
     def log_prob(self, parameters, actions):
         """Compute the log probability of actions."""
         dist = self.create_dist(parameters)
-        log_probs = dist.log_prob(actions[..., 4 * HIDDEN_SIZE * DEPTH : ])
+        log_probs = dist.log_prob(actions[..., 2 * HIDDEN_SIZE * DEPTH : ])
         log_probs -= self._postprocessor.forward_log_det_jacobian(
-            actions[..., 4 * HIDDEN_SIZE * DEPTH : ])
+            actions[..., 2 * HIDDEN_SIZE * DEPTH : ])
         if self._event_ndims == 1:
             log_probs = jnp.sum(log_probs, axis=-1)  # sum over action dimension
         return log_probs
 
     def sample_no_postprocessing(self, parameters, seed):
         sample_act = self.create_dist(parameters).sample(seed=seed)
-        carry = parameters[..., :4 * HIDDEN_SIZE * DEPTH]
+        carry = parameters[..., :2 * HIDDEN_SIZE * DEPTH]
         y = jnp.concat([carry, sample_act], axis = -1)
         return y
 
