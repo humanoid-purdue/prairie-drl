@@ -21,7 +21,7 @@ Initializer = Callable[..., Any]
 #Need custom flax nn, make_policy_network, distribution, and make_ppo_network
 #Action size consits of 128 + 128 + a size
 
-HIDDEN_SIZE = 256
+HIDDEN_SIZE = 128
 DEPTH = 1
 
 class StackedLSTM(nn.Module):
@@ -29,9 +29,8 @@ class StackedLSTM(nn.Module):
     kernel_init: jax.nn.initializers.lecun_uniform()
     def setup(self):
         self.nn_in1 = nn.Dense(512, name = "i1", kernel_init=self.kernel_init)
-        self.nn_in2 = nn.Dense(HIDDEN_SIZE, name = "i2", kernel_init=self.kernel_init)
+        self.nn_in2 = nn.Dense(256, name = "i2", kernel_init=self.kernel_init)
         self.nn_mi = nn.Dense(128, name = "mid", kernel_init=self.kernel_init)
-        self.nn_mi2 = nn.Dense(128, name="mid2", kernel_init=self.kernel_init)
         self.nn_ed = nn.Dense(self.param_size, name = "end", kernel_init=self.kernel_init)
         self.lstms = [nn.OptimizedLSTMCell(HIDDEN_SIZE,
                         name = "lstm_{}".format(c)) for c in range(DEPTH)]
@@ -48,15 +47,14 @@ class StackedLSTM(nn.Module):
         cell = carry[..., HIDDEN_SIZE * DEPTH:]
         cell = jnp.reshape(cell, bs + (DEPTH, HIDDEN_SIZE,))
 
+        y = nn.swish(self.nn_mi(y))
         hidden_next = jnp.zeros(bs + (DEPTH, HIDDEN_SIZE,))
         cell_next = jnp.zeros(bs + (DEPTH, HIDDEN_SIZE,))
         for i in range(DEPTH):
             state, y = self.lstms[i]((hidden[..., i, :], cell[..., i, :]), y)
             hidden_next = hidden_next.at[..., i, :].set(state[0])
             cell_next = cell_next.at[..., i, :].set(state[1])
-        y1 = nn.swish(self.nn_mi(y))
-        y1 = nn.swish(self.nn_mi2(y1))
-        y2 = self.nn_ed(y1)
+        y2 = self.nn_ed(y)
         hidden_next = jnp.reshape(hidden_next, bs + (-1,))
         cell_next = jnp.reshape(cell_next, bs + (-1,))
         output = jnp.concat([hidden_next, cell_next, y2], axis = -1)
