@@ -261,13 +261,13 @@ class NemoEnv(PipelineEnv):
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         #healthy_reward = 1.2 * is_healthy
         #reward_dict["healthy"] = healthy_reward
-        reward_dict["termination"] = -1000 * (1 - is_healthy)
+        reward_dict["termination"] = -5000 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)
-        reward_dict["velocity"] = vel_reward * 4.0
+        reward_dict["velocity"] = vel_reward * 2.0
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 4.0
+        reward_dict["angvel_z"] = angvel_z_reward * 2.0
 
         angvel_xy_reward = self.angvelXYReward(data)
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15

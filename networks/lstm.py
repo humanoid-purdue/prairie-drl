@@ -156,7 +156,7 @@ def make_ppo_networks(
     action_size: int,
     preprocess_observations_fn: types.PreprocessObservationFn = types.identity_observation_preprocessor,
     policy_hidden_layer_sizes: Sequence[int] = (32,) * 4,
-    value_hidden_layer_sizes: Sequence[int] = (512,) * 6,
+    value_hidden_layer_sizes: Sequence[int] = (256,) * 6,
     activation: networks.ActivationFn = linen.swish,
     policy_obs_key: str = 'state',
     value_obs_key: str = 'state',
