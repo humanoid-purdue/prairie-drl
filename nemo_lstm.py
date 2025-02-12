@@ -3,6 +3,7 @@ from brax.envs import PipelineEnv, State
 from jax import numpy as jnp
 from brax.io import mjcf
 from brax import math
+from networks.lstm import HIDDEN_SIZE, DEPTH
 import mujoco
 
 import rewards
@@ -77,7 +78,7 @@ class NemoEnv(PipelineEnv):
         self.left_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "left_foot")
 
 
-    def _get_obs(self, data0, data1, prev_action: jnp.ndarray, state = None):
+    def _get_obs(self, data0, data1, state = None):
         inv_pelvis_rot = math.quat_inv(data1.x.rot[self.pelvis_id - 1])
         vel = data1.xd.vel[self.pelvis_id - 1]
         angvel = data1.xd.ang[self.pelvis_id - 1]
@@ -131,105 +132,23 @@ class NemoEnv(PipelineEnv):
             vel_target = state.info["velocity"]
             angvel_target = state.info["angvel"]
             cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
+            carry = state.info["lstm_carry"]
+            prev_action = state.info["prev_action"]
         else:
             phase = jnp.array([0., jnp.pi])
             cmd = jnp.array([0., 0., 0.])
+            carry = jnp.zeros([HIDDEN_SIZE * DEPTH * 2])
+            prev_action = jnp.zeros(self.nu)
 
         phase_clock = jnp.array([jnp.sin(phase[0]), jnp.cos(phase[0]),
                                  jnp.sin(phase[1]), jnp.cos(phase[1])])
 
 
-        obs = jnp.concatenate([
+        obs = jnp.concatenate([ carry,
             vel, angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
         ])
 
         return obs
-
-    def _get_obs_fk(
-            self, data0, data1, prev_action: jnp.ndarray, state=None
-    ) -> jnp.ndarray:
-        """Observes humanoid body position, velocities, and angles."""
-
-        def getCoords(data_):
-            global_pos = data_.x.pos[self.pelvis_id + 1:, :]
-            center = data_.x.pos[self.pelvis_id, :]
-            local_pos = global_pos - center[None, :]
-            local_pos = local_pos.flatten()
-            # sites
-            lp1 = data_.site_xpos[self.left_foot_s1] - center
-            lp2 = data_.site_xpos[self.left_foot_s2] - center
-            lp3 = data_.site_xpos[self.left_foot_s3] - center
-            rp1 = data_.site_xpos[self.right_foot_s1] - center
-            rp2 = data_.site_xpos[self.right_foot_s2] - center
-            rp3 = data_.site_xpos[self.right_foot_s3] - center
-            head = data_.site_xpos[self.head_id] - center
-            pel_front = data_.site_xpos[self.pelvis_f_id] - center
-            com_offset = (data_.subtree_com[1] - center).flatten()
-            local_sites = jnp.concatenate([local_pos, lp1, lp2, lp3, rp1, rp2, rp3, head, pel_front, com_offset],
-                                          axis=0)
-            return local_sites
-
-        position = data1.qpos
-        prev_sites = getCoords(data0)
-        current_sites = getCoords(data1)
-        velocity = data1.qvel * 0.05
-        # l_grf, r_grf = self.determineGRF(data1)
-        # external_contact_forces are excluded
-        angvel = data1.xd.ang[self.pelvis_id, :] * 0.25
-        com0 = data1.subtree_com[0]
-        com1 = data1.subtree_com[1]
-        com_vel = (com1 - com0) / self.dt
-        com_vel = com_vel * 2
-        z = data1.x.pos[self.pelvis_id, 2:3]
-        if state is not None:
-            t = state.info["time"]
-            rng = state.info["rng"]
-
-            rng, key = jax.random.split(rng)
-            sites_noise_0 = jax.random.uniform(key, shape=prev_sites.shape, minval=-0.1, maxval=0.1)
-            prev_sites += sites_noise_0
-
-            rng, key = jax.random.split(rng)
-            sites_noise_1 = jax.random.uniform(key, shape=prev_sites.shape, minval=-0.1, maxval=0.1)
-            current_sites += sites_noise_1
-
-            rng, key = jax.random.split(rng)
-            position_noise = jax.random.uniform(key, shape=position.shape, minval=-0.1, maxval=0.1)
-            position += position_noise
-
-            rng, key = jax.random.split(rng)
-            velocity_noise = jax.random.uniform(key, shape=velocity.shape, minval=-0.5, maxval=0.5)
-            velocity += velocity_noise * 0.05
-
-            rng, key = jax.random.split(rng)
-            angvel_noise = jax.random.uniform(key, shape=angvel.shape, minval=-0.4, maxval=0.4)
-            angvel += angvel_noise * 0.25
-
-            rng, key = jax.random.split(rng)
-            vel_noise = jax.random.uniform(key, shape=com_vel.shape, minval=-0.1, maxval=0.1)
-            com_vel += vel_noise * 2.0
-            state.info["rng"] = rng
-
-            vel_target = state.info["velocity"]
-            angvel_target = state.info["angvel"]
-            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
-
-            phase = state.info["phase"]
-        else:
-
-            phase = jnp.array([0., jnp.pi])
-            cmd = jnp.array([0, 0, 0.])
-
-        phase_clock = jnp.array([jnp.sin(phase[0]), jnp.cos(phase[0]),
-                                 jnp.sin(phase[1]), jnp.cos(phase[1])])
-        return jnp.concatenate([
-            position,
-            velocity,
-            angvel,
-            com_vel,
-            prev_sites, current_sites,
-            prev_action, phase_clock, z, cmd
-        ])
 
     def reset(self, rng: jax.Array) -> State:
         vel, angvel, rng = self.makeCmd(rng)
@@ -243,11 +162,13 @@ class NemoEnv(PipelineEnv):
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12]),
             "phase": jnp.array([0, jnp.pi]),
-            "phase_period": 1.0
+            "phase_period": 1.0,
+            "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2])
         }
         metrics = metrics_dict.copy()
 
-        obs = self._get_obs(pipeline_state, pipeline_state, jnp.zeros(self.nu))
+        obs = self._get_obs(pipeline_state, pipeline_state)
+        state_info["lstm_carry"] = obs[: 2 * HIDDEN_SIZE * DEPTH]
         reward, done, zero = jnp.zeros(3)
         state = State(
             pipeline_state=pipeline_state,
@@ -264,7 +185,7 @@ class NemoEnv(PipelineEnv):
         rng, key2 = jax.random.split(rng)
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
-        vel = vel * jnp.array([0.3, 0.3])
+        vel = vel * jnp.array([0.4, 0.4])
         #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         return vel, angvel, rng
@@ -289,10 +210,21 @@ class NemoEnv(PipelineEnv):
         pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
 
         return jnp.concatenate([pos_sp, vel_sp])
-    #return pos_sp
+
+    def zeroStates(self, state):
+        rng = state.info["rng"]
+        rng, key = jax.random.split(rng)
+        state.info["rng"] = rng
+        rand = jax.random.uniform(key, shape = [1])
+        prob = self.dt / 5
+        y = jnp.where(rand[0] < prob, 0, 1)
+        state.info["lstm_carry"] = state.info["lstm_carry"] * y
+        return
 
     def step(self, state: State, action: jnp.ndarray):
-        scaled_action = self.tanh2Action(action)
+        raw_action = action[2 * HIDDEN_SIZE * DEPTH:]
+        carry_state = action[:2 * HIDDEN_SIZE * DEPTH]
+        scaled_action = self.tanh2Action(raw_action)
 
         #apply noise to scaled action
         pos_action = scaled_action[scaled_action.shape[0]//2:]
@@ -315,17 +247,20 @@ class NemoEnv(PipelineEnv):
         data1 = self.pipeline_step(data0, scaled_action)
 
         contact = rewards.feet_contact(data1, self.floor_id, self.left_geom_id, self.right_geom_id)
-        reward, done = self.rewards(state, data1, action, contact)
+        reward, done = self.rewards(state, data1, raw_action, contact)
 
         state.info["time"] += self.dt
-        state.info["prev_action"] = action
+        state.info["prev_action"] = raw_action
+        state.info["lstm_carry"] = carry_state
 
         state.info["phase"] += 2 * jnp.pi * self.dt / state.info["phase_period"]
         state.info["phase"] = jnp.mod(state.info["phase"], jnp.pi * 2)
 
+        self.zeroStates(state)
+
         self.updateCmd(state)
 
-        obs = self._get_obs(data0, data1, action, state = state)
+        obs = self._get_obs(data0, data1, state = state)
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )

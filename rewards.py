@@ -310,23 +310,23 @@ def quintic_foot_phase(phase, ds_prop):
         coeffs = jnp.array([0.1 , 5.0, -18.8, 12.0, 9.6])
         ds_d = jnp.pi * ds_prop
         nt = (t - ds_d) / (2 * (np.pi - ds_d * 2))
-        z = (coeffs[0] * nt +
+        z2 = (coeffs[0] * nt +
              coeffs[1] * nt**2 +
              coeffs[2] * nt**3 +
              coeffs[3] * nt**4 +
              coeffs[4] * nt**5)
-        zd = (coeffs[0] +
+        zd2 = (coeffs[0] +
               coeffs[1] * 2 * nt +
               coeffs[2] * 3 * nt**2 +
               coeffs[3] * 4 * nt**3 +
               coeffs[4] * 5 * nt**4)
         p2 = jnp.where(t > ds_d, 1, 0) * jnp.where(t <= np.pi - ds_d, 1, 0)
-        return p2 * z, p2 *zd
+        return p2 * z2, p2 *zd2
     lz, lzd = phase_sol(phase[0])
     rz, rzd = phase_sol(phase[1])
-    z = jnp.array([lz, rz])
-    zd = jnp.array([lzd, rzd])
-    return z, zd
+    z_h = jnp.array([lz, rz])
+    zd_h = jnp.array([lzd, rzd])
+    return z_h, zd_h
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -339,6 +339,6 @@ if __name__ == "__main__":
         lrz = lrz.at[c, :].set(z)
         phase += 0.02
         phase = jnp.mod(phase, jnp.pi * 2)
-    plt.plot(lr[:, 0])
-    plt.plot(lr[:, 1])
+    plt.plot(lrz[:, 0])
+    plt.plot(lrz[:, 1])
     plt.show()

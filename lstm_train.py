@@ -6,7 +6,7 @@ from brax.training.agents.ppo import networks as ppo_networks
 from brax.io import model
 from matplotlib import pyplot as plt
 import dill
-from nemo_env_pd import *
+from nemo_lstm import *
 from networks.lstm import make_ppo_networks
 from nemo_randomize import domain_randomize
 import os
@@ -16,7 +16,7 @@ env = envs.get_environment('nemo')
 eval_env = envs.get_environment('nemo')
 
 make_networks_factory = functools.partial(
-    ppo_networks.make_ppo_networks,
+    make_ppo_networks,
         policy_hidden_layer_sizes=(512, 256, 256, 128))
 
 
