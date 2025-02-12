@@ -16,7 +16,7 @@ env = envs.get_environment('nemo')
 eval_env = envs.get_environment('nemo')
 
 make_networks_factory = functools.partial(
-    ppo_networks.make_ppo_networks,
+    make_ppo_networks,
         policy_hidden_layer_sizes=(512, 256, 256, 128))
 
 
