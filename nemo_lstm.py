@@ -210,7 +210,16 @@ class NemoEnv(PipelineEnv):
         pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
 
         return jnp.concatenate([pos_sp, vel_sp])
-    #return pos_sp
+
+    def zeroStates(self, state):
+        rng = state.info["rng"]
+        rng, key = jax.random.split(rng)
+        state.info["rng"] = rng
+        rand = jax.random.uniform(key, shape = [1])
+        prob = self.dt / 5
+        y = jnp.where(rand[0] < prob, 0, 1)
+        state.info["lstm_carry"] = state.info["lstm_carry"] * y
+        return
 
     def step(self, state: State, action: jnp.ndarray):
         raw_action = action[2 * HIDDEN_SIZE * DEPTH:]
@@ -246,6 +255,8 @@ class NemoEnv(PipelineEnv):
 
         state.info["phase"] += 2 * jnp.pi * self.dt / state.info["phase_period"]
         state.info["phase"] = jnp.mod(state.info["phase"], jnp.pi * 2)
+
+        self.zeroStates(state)
 
         self.updateCmd(state)
 
