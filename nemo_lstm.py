@@ -264,10 +264,10 @@ class NemoEnv(PipelineEnv):
         reward_dict["termination"] = -500 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)
-        reward_dict["velocity"] = vel_reward * 2.0
+        reward_dict["velocity"] = vel_reward * 4.0
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 2.0
+        reward_dict["angvel_z"] = angvel_z_reward * 4.0
 
         angvel_xy_reward = self.angvelXYReward(data)
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15

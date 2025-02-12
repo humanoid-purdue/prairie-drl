@@ -12,7 +12,6 @@ def makeRollout():
     pelvis_b_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
     pelvis_f_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 
-
     envs.register_environment('nemo', NemoEnv)
     env_name = 'nemo'
     env = envs.create(env_name='nemo')
@@ -33,10 +32,11 @@ def makeRollout():
     # Load saved inference function
     def makeIFN():
         from brax.training.agents.ppo import networks as ppo_networks
+        from networks.lstm import make_ppo_networks
         import functools
         from brax.training.acme import running_statistics
         network_factory = functools.partial(
-            ppo_networks.make_ppo_networks,
+            make_ppo_networks,
             policy_hidden_layer_sizes=(512, 256, 256, 128))
         # normalize = running_statistics.normalize
         normalize = lambda x, y: x

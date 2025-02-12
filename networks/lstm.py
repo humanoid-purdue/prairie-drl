@@ -13,11 +13,15 @@ import jax
 import jax.numpy as jnp
 from jaxopt import *
 
+
+ActivationFn = Callable[[jnp.ndarray], jnp.ndarray]
+Initializer = Callable[..., Any]
+
 #LSTM Network done by passing hidden and cell states as action
 #Need custom flax nn, make_policy_network, distribution, and make_ppo_network
 #Action size consits of 128 + 128 + a size
 
-HIDDEN_SIZE = 128
+HIDDEN_SIZE = 256
 DEPTH = 1
 
 class StackedLSTM(nn.Module):
@@ -105,10 +109,7 @@ def make_policy_network(
     param_size: int,
     obs_size: types.ObservationSize,
     preprocess_observations_fn: types.PreprocessObservationFn = types.identity_observation_preprocessor,
-    hidden_layer_sizes: Sequence[int] = (256, 256),
-    activation: networks.ActivationFn = linen.relu,
     kernel_init: networks.Initializer = jax.nn.initializers.lecun_uniform(),
-    layer_norm: bool = False,
     obs_key: str = 'state',
 ) -> networks.FeedForwardNetwork:
     """Creates a policy network."""
@@ -125,13 +126,39 @@ def make_policy_network(
           init=lambda key: policy_module.init(key, dummy_obs), apply=apply
     )
 
+def make_value_network(
+    obs_size: types.ObservationSize,
+    preprocess_observations_fn: types.PreprocessObservationFn = types.identity_observation_preprocessor,
+    hidden_layer_sizes: Sequence[int] = (256, 256),
+    activation: ActivationFn = linen.relu,
+    obs_key: str = 'state',
+) -> networks.FeedForwardNetwork:
+  """Creates a value network."""
+  value_module = networks.MLP(
+      layer_sizes=list(hidden_layer_sizes) + [1],
+      activation=activation,
+      kernel_init=jax.nn.initializers.lecun_uniform(),
+  )
+
+  def apply(processor_params, value_params, obs):
+    obs = preprocess_observations_fn(obs, processor_params)
+    obs = obs if isinstance(obs, jax.Array) else obs[obs_key]
+    obs = obs[..., 2 * HIDDEN_SIZE * DEPTH:]
+    return jnp.squeeze(value_module.apply(value_params, obs), axis=-1)
+
+  obs_size = networks._get_obs_state_size(obs_size, obs_key)
+  dummy_obs = jnp.zeros((1, obs_size))
+  return networks.FeedForwardNetwork(
+      init=lambda key: value_module.init(key, dummy_obs), apply=apply
+  )
+
 
 def make_ppo_networks(
     observation_size: types.ObservationSize,
     action_size: int,
     preprocess_observations_fn: types.PreprocessObservationFn = types.identity_observation_preprocessor,
     policy_hidden_layer_sizes: Sequence[int] = (32,) * 4,
-    value_hidden_layer_sizes: Sequence[int] = (256,) * 6,
+    value_hidden_layer_sizes: Sequence[int] = (512,) * 6,
     activation: networks.ActivationFn = linen.swish,
     policy_obs_key: str = 'state',
     value_obs_key: str = 'state',
@@ -143,11 +170,9 @@ def make_ppo_networks(
         parametric_action_distribution.param_size,
         observation_size,
         preprocess_observations_fn=preprocess_observations_fn,
-        hidden_layer_sizes=policy_hidden_layer_sizes,
-        activation=activation,
         obs_key=policy_obs_key,
     )
-    value_network = networks.make_value_network(
+    value_network = make_value_network(
         observation_size,
         preprocess_observations_fn=preprocess_observations_fn,
         hidden_layer_sizes=value_hidden_layer_sizes,
