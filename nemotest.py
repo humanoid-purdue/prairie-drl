@@ -1,13 +1,14 @@
-
-import dill
 import jax
 from brax import envs
 from brax.io import html, mjcf, model
-from nemo_lstm import NemoEnv
 import mujoco
 import jax.numpy as jnp
 
-def makeRollout():
+def makeRollout(lstm = False):
+    if lstm:
+        from nemo_lstm import NemoEnv
+    else:
+        from nemo_env_pd import NemoEnv
     model_n = mujoco.MjModel.from_xml_path("nemo2/scene.xml")
     pelvis_b_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
     pelvis_f_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
@@ -35,8 +36,12 @@ def makeRollout():
         from networks.lstm import make_ppo_networks
         import functools
         from brax.training.acme import running_statistics
+        if lstm:
+            mpn = make_ppo_networks
+        else:
+            mpn = ppo_networks.make_ppo_networks
         network_factory = functools.partial(
-            make_ppo_networks,
+            mpn,
             policy_hidden_layer_sizes=(512, 256, 256, 128))
         # normalize = running_statistics.normalize
         normalize = lambda x, y: x

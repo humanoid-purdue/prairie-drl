@@ -52,7 +52,7 @@ class StackedLSTM(nn.Module):
         hidden_next = jnp.zeros(bs + (DEPTH, HIDDEN_SIZE,))
         cell_next = jnp.zeros(bs + (DEPTH, HIDDEN_SIZE,))
         for i in range(DEPTH):
-            state, _ = self.lstms[i]((hidden[..., i, :], cell[..., i, :]), y)
+            state, y = self.lstms[i]((hidden[..., i, :], cell[..., i, :]), y)
             hidden_next = hidden_next.at[..., i, :].set(state[0])
             cell_next = cell_next.at[..., i, :].set(state[1])
         y = nn.swish(self.nn_mi2(y))
@@ -66,9 +66,9 @@ class LSTMTanhDistribution(ParametricDistribution):
     """Normal distribution followed by tanh."""
     def __init__(self, event_size, min_std=0.001, var_scale=1):
         super().__init__(
-            param_size=2 * event_size,
+            param_size = 2 * event_size,
             postprocessor=TanhBijector(),
-            event_ndims=1,
+            event_ndims = 1,
             reparametrizable=True,
         )
         self._min_std = min_std
@@ -129,7 +129,7 @@ def make_policy_network(
 def make_value_network(
     obs_size: types.ObservationSize,
     preprocess_observations_fn: types.PreprocessObservationFn = types.identity_observation_preprocessor,
-    hidden_layer_sizes: Sequence[int] = (256, 256),
+    hidden_layer_sizes: Sequence[int] = (256,) * 5,
     activation: ActivationFn = linen.relu,
     obs_key: str = 'state',
 ) -> networks.FeedForwardNetwork:
@@ -158,7 +158,7 @@ def make_ppo_networks(
     action_size: int,
     preprocess_observations_fn: types.PreprocessObservationFn = types.identity_observation_preprocessor,
     policy_hidden_layer_sizes: Sequence[int] = (32,) * 4,
-    value_hidden_layer_sizes: Sequence[int] = (256,) * 6,
+    value_hidden_layer_sizes: Sequence[int] = (256,) * 5,
     activation: networks.ActivationFn = linen.swish,
     policy_obs_key: str = 'state',
     value_obs_key: str = 'state',
