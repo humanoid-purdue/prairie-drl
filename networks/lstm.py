@@ -147,7 +147,7 @@ def make_value_network(
     return jnp.squeeze(value_module.apply(value_params, obs), axis=-1)
 
   obs_size = networks._get_obs_state_size(obs_size, obs_key)
-  dummy_obs = jnp.zeros((1, obs_size))
+  dummy_obs = jnp.zeros((1, obs_size - 2 * HIDDEN_SIZE * DEPTH))
   return networks.FeedForwardNetwork(
       init=lambda key: value_module.init(key, dummy_obs), apply=apply
   )
