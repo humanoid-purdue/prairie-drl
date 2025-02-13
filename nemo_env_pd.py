@@ -270,7 +270,7 @@ class NemoEnv(PipelineEnv):
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         phase_period = jax.random.uniform(key2, shape=[1], minval=1, maxval=1.25)
       
-        return vel, angvel, phase_period rng
+        return vel, angvel, phase_period, rng
 
     def updateCmd(self, state):
         rng = state.info["rng"]
