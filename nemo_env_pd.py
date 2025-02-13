@@ -232,7 +232,7 @@ class NemoEnv(PipelineEnv):
         ])
 
     def reset(self, rng: jax.Array) -> State:
-        vel, angvel, rng = self.makeCmd(rng)
+        vel, angvel, phase_period, rng = self.makeCmd(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
 
         state_info = {
@@ -243,7 +243,7 @@ class NemoEnv(PipelineEnv):
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12]),
             "phase": jnp.array([0, jnp.pi]),
-            "phase_period": 1.0
+            "phase_period": phase_period
         }
         metrics = metrics_dict.copy()
 
