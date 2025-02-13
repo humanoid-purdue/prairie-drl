@@ -338,7 +338,7 @@ class NemoEnv(PipelineEnv):
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
 
-        is_healthy = is_healthy*(1- self.feetColliding(data))
+        is_healthy = is_healthy*(1 - self.feetColliding(data))
         #healthy_reward = 1.2 * is_healthy
         #reward_dict["healthy"] = healthy_reward
         reward_dict["termination"] = -500 * (1 - is_healthy)

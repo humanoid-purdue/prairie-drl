@@ -265,6 +265,9 @@ class NemoEnv(PipelineEnv):
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
 
+    def feetColliding(self, data1):
+        return rewards.geoms_colliding(data1, self.left_geom_id, self.right_geom_id)
+
     def rewards(self, state, data, action, contact):
         reward_dict = {}
         data0 = state.pipeline_state
@@ -273,6 +276,7 @@ class NemoEnv(PipelineEnv):
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         #healthy_reward = 1.2 * is_healthy
         #reward_dict["healthy"] = healthy_reward
+        is_healthy = is_healthy*( 1 - self.feetColliding(data))
         reward_dict["termination"] = -500 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)

@@ -67,7 +67,7 @@ def makeRollout(lstm = False):
         pp2 = data.site_xpos[pelvis_b_id]
         facing_vec = (pp1 - pp2)[0:2]
         facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
-        state.info["angvel"] = facing_vec[1] * -2
+        state.info["angvel"] = jnp.array([facing_vec[1] * -2])
         #state.info["angvel"] = jnp.array([jnp.where(facing_vec[1] > 0, -0.4, 0.4)])
 
         act_rng, rng = jax.random.split(rng)
