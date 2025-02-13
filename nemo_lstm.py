@@ -494,9 +494,9 @@ class NemoEnv(PipelineEnv):
         z0 = jnp.array([lp0[2], rp0[2]])
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
-        rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.1))
+        rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.05))
         #rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
-        rew_z_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.05))
+        rew_z_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.02))
 
         # get reward for foot being above target
         #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
