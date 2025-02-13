@@ -25,7 +25,7 @@ train_fn = functools.partial(
        normalize_observations=False, unroll_length=20, num_minibatches=64,
       num_updates_per_batch=4, discounting=0.98, learning_rate=3.0e-4,
       entropy_cost=1e-3, num_envs=2048, batch_size=1024,
-      network_factory=make_networks_factory)
+      network_factory=make_networks_factory, randomization_fn = domain_randomize)
 
 x_data = []
 y_data = {}
