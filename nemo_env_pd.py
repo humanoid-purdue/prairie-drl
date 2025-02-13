@@ -213,11 +213,6 @@ class NemoEnv(PipelineEnv):
             vel_target = state.info["velocity"]
             angvel_target = state.info["angvel"]
             cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
-
-            rng, key = jax.random.split(rng)
-            phase_period_noise = jax.random.uniform(key, shape=com_vel.shape, minval=0, maxval=0.25)
-            state.info["phase_period"] = 1 + phase_period_noise
-
           
             phase = state.info["phase"]
         else:
@@ -267,21 +262,28 @@ class NemoEnv(PipelineEnv):
     def makeCmd(self, rng):
         rng, key1 = jax.random.split(rng)
         rng, key2 = jax.random.split(rng)
+        rng, key3 = jax.random.split(rng)
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
         vel = vel * jnp.array([0.3, 0.3])
         #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
-        return vel, angvel, rng
+        phase_period = jax.random.uniform(key2, shape=[1], minval=1, maxval=1.25)
+      
+        return vel, angvel, phase_period rng
 
     def updateCmd(self, state):
         rng = state.info["rng"]
-        vel, angvel, rng = self.makeCmd(rng)
+        vel, angvel, phase_period, rng = self.makeCmd(rng)
+      
         state.info["rng"] = rng
         tmod = jnp.mod(state.info["time"], 5.0)
-        reroll_cmd = jnp.where(tmod > 4.98, 1, 0)
+        reroll_cmd = jnp.where(tmod > (5.0 - self.dt * 2), 1, 0)
+      
         state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
         state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel * reroll_cmd
+        state.info["phase_period"] = state.info["phase_period"] * (1 - reroll_cmd) + phase_period * reroll_cmd
+      
         return
 
     def tanh2Action(self, action: jnp.ndarray):
