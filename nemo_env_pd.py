@@ -214,6 +214,11 @@ class NemoEnv(PipelineEnv):
             angvel_target = state.info["angvel"]
             cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
 
+            rng, key = jax.random.split(rng)
+            phase_period_noise = jax.random.uniform(key, shape=com_vel.shape, minval=0, maxval=0.25)
+            state.info["phase_period"] = 1 + phase_period_noise
+
+          
             phase = state.info["phase"]
         else:
 
