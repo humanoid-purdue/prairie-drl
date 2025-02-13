@@ -52,18 +52,25 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
         + jax.random.uniform(key, shape=(12,), minval=-0.05, maxval=0.05)
     )
 
+
     #Random facing vector
     rng, key = jax.random.split(rng)
     z = jax.random.uniform(key, shape = [1], minval = -1, maxval = 1)[0]
     w = ( 1 - z**2 ) ** 0.5
     quat = jnp.array([w, 0., 0., z])
     qpos0 = qpos0.at[3:7].set(quat)
+
+    # Randomize timestep
+    rng, key = jax.random.split(rng)
+    timestep = jax.random.uniform(key, minval=0.025, maxval=0.05)
+
     return (
         geom_friction,
         dof_frictionloss,
         dof_armature,
         body_mass,
         qpos0,
+        timestep,
     )
 
   (
@@ -72,15 +79,18 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
       armature,
       body_mass,
       qpos0,
+      timestep,
   ) = rand_dynamics(rng)
 
   in_axes = jax.tree_util.tree_map(lambda x: None, model)
+  in_axes_opt = jax.tree_util.tree_map(lambda x: None, model.opt)
   in_axes = in_axes.tree_replace({
       "geom_friction": 0,
       "dof_frictionloss": 0,
       "dof_armature": 0,
       "body_mass": 0,
       "qpos0": 0,
+      "opt": in_axes_opt.tree_replace({"timestep": 0}),
   })
 
   model = model.tree_replace({
@@ -89,6 +99,7 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
       "dof_armature": armature,
       "body_mass": body_mass,
       "qpos0": qpos0,
+      "opt": model.opt.tree_replace({"timestep": timestep}),
   })
 
   return model, in_axes

@@ -270,5 +270,76 @@ def get_rz(
   swing = cubic_bezier_interpolation(swing_height, 0, 2 * x - 1)
   return jnp.where(x <= 0.5, stance, swing)
 
+#Phase is a 0 - 2pi value for each foot offset by pi radians.
+def lr_phase_coeff(phase, ds_prop, bu_prop):
+    #buffer lies entirely within ds prop
+
+    def phase_sol(t):
+        ds_d = jnp.pi * ds_prop
+        bu_d = ds_d * bu_prop
+
+        stance = 0.0
+        swing = 1.0
+
+        def norm_p(x, st):
+            return (x - st) / bu_d
+
+        h00 = lambda x: 2 * x**3 - 3 * x**2 + 1
+        h01 = lambda x: -2 * x**3 + 3 * x**2
+
+        t2s = lambda x: h01(norm_p(x, ds_d - bu_d))
+        s2t = lambda x: h00(norm_p(x, np.pi - ds_d))
+
+        p1 = jnp.where(t <= ds_d - bu_d, 1, 0)
+        p2 = jnp.where(t <= ds_d, 1, 0) * jnp.where( ds_d - bu_d < t, 1, 0)
+        p3 = jnp.where(ds_d < t, 1, 0) * jnp.where(t <= np.pi - ds_d, 1, 0)
+        p4 = jnp.where(np.pi - ds_d < t, 1, 0) * jnp.where(t <= np.pi - ds_d + bu_d, 1, 0)
+        p5 = jnp.where(t > np.pi - ds_d + bu_d, 1, 0)
+        return (p1 * stance +
+                p2 * t2s(t) +
+                p3 * swing +
+                p4 * s2t(t) +
+                p5 * stance)
+    l = phase_sol(phase[0])
+    r = phase_sol(phase[1])
+    return jnp.array([l, r])
+
+
+
+def quintic_foot_phase(phase, ds_prop):
+    def phase_sol(t):
+        coeffs = jnp.array([0.1 , 5.0, -18.8, 12.0, 9.6])
+        ds_d = jnp.pi * ds_prop
+        nt = (t - ds_d) / (2 * (np.pi - ds_d * 2))
+        z2 = (coeffs[0] * nt +
+             coeffs[1] * nt**2 +
+             coeffs[2] * nt**3 +
+             coeffs[3] * nt**4 +
+             coeffs[4] * nt**5)
+        zd2 = (coeffs[0] +
+              coeffs[1] * 2 * nt +
+              coeffs[2] * 3 * nt**2 +
+              coeffs[3] * 4 * nt**3 +
+              coeffs[4] * 5 * nt**4)
+        p2 = jnp.where(t > ds_d, 1, 0) * jnp.where(t <= np.pi - ds_d, 1, 0)
+        return p2 * z2, p2 *zd2
+    lz, lzd = phase_sol(phase[0])
+    rz, rzd = phase_sol(phase[1])
+    z_h = jnp.array([lz, rz])
+    zd_h = jnp.array([lzd, rzd])
+    return z_h, zd_h
+
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
     phase = jnp.array([0, jnp.pi])
+    lr = jnp.zeros([1000, 2])
+    lrz = jnp.zeros([1000, 2])
+    for c in range(1000):
+        lr = lr.at[c, :].set(lr_phase_coeff( phase,0.1, 0.5))
+        z, zd = quintic_foot_phase(phase, 0.1)
+        lrz = lrz.at[c, :].set(z)
+        phase += 0.02
+        phase = jnp.mod(phase, jnp.pi * 2)
+    plt.plot(lrz[:, 0])
+    plt.plot(lrz[:, 1])
+    plt.show()
