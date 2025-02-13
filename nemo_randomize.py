@@ -83,13 +83,14 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
   ) = rand_dynamics(rng)
 
   in_axes = jax.tree_util.tree_map(lambda x: None, model)
+  in_axes_opt = jax.tree_util.tree_map(lambda x: None, model.opt)
   in_axes = in_axes.tree_replace({
       "geom_friction": 0,
       "dof_frictionloss": 0,
       "dof_armature": 0,
       "body_mass": 0,
       "qpos0": 0,
-      "opt": in_axes.opt.tree_replace({"timestep": 0}),
+      "opt": in_axes_opt.tree_replace({"timestep": 0}),
   })
 
   model = model.tree_replace({
