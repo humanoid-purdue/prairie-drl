@@ -323,7 +323,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
 
         for key in reward_dict.keys():
-            reward_dict[key] *= self.dt
+            reward_dict[key] *= 0.035
 
         reward = 0.0
         for key in reward_dict.keys():
