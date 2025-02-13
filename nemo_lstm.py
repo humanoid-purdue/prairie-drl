@@ -195,7 +195,7 @@ class NemoEnv(PipelineEnv):
         vel, angvel, rng = self.makeCmd(rng)
         state.info["rng"] = rng
         tmod = jnp.mod(state.info["time"], 5.0)
-        reroll_cmd = jnp.where(tmod > 4.98, 1, 0)
+        reroll_cmd = jnp.where(tmod > 5.0 - self.dt * 2, 1, 0)
         state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
         state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel * reroll_cmd
         return
