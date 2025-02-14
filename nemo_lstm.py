@@ -317,7 +317,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_zd"] = feet_zd_rew * 2.0
 
         feet_orien_reward = self.footOrienReward(data)
-        reward_dict["feet_orien"] = feet_orien_reward * 1.0
+        reward_dict["feet_orien"] = feet_orien_reward * 0.25
 
         angslip_reward = self.feetSlipAngReward(data, contact)
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
@@ -496,7 +496,7 @@ class NemoEnv(PipelineEnv):
         zd = (z1 - z0) / self.dt
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.05))
         #rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
-        rew_z_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.02))
+        rew_z_track = jnp.sum(jnp.exp(-1 * jnp.abs(zd - zdt) / 0.02))
 
         # get reward for foot being above target
         #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
