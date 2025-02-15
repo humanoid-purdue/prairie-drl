@@ -216,9 +216,9 @@ class NemoEnv(PipelineEnv):
         rng, key = jax.random.split(rng)
         state.info["rng"] = rng
         rand = jax.random.uniform(key, shape = [1], minval = 0, maxval = 1)
-        prob = self.dt / 5
+        prob = self.dt / 10
         y = jnp.where(rand[0] < prob, 0, 1)
-        #state.info["lstm_carry"] = state.info["lstm_carry"] * y
+        state.info["lstm_carry"] = state.info["lstm_carry"] * y
         return
 
     def step(self, state: State, action: jnp.ndarray):
@@ -452,7 +452,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001)
+            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001) - 1
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]
