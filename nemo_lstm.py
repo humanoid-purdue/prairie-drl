@@ -218,7 +218,7 @@ class NemoEnv(PipelineEnv):
         rand = jax.random.uniform(key, shape = [1], minval = 0, maxval = 1)
         prob = self.dt / 5
         y = jnp.where(rand[0] < prob, 0, 1)
-        state.info["lstm_carry"] = state.info["lstm_carry"] * y
+        #state.info["lstm_carry"] = state.info["lstm_carry"] * y
         return
 
     def step(self, state: State, action: jnp.ndarray):
