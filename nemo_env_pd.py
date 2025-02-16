@@ -1,16 +1,27 @@
 import jax
 from brax.envs import PipelineEnv, State
+"""PipelineEnv is a base class for building custom environments, while State represents the environment's state, including observations, rewards, and other metrics.
+"""
 from jax import numpy as jnp
+"""jax.numpy is a NumPy-compatible API for numerical operations that supports automatic differentiation."""
 from brax.io import mjcf
+"""MJCF (MuJoCo XML format) is used to define the physical properties and structure of the robot. This module helps load the model from the XML file"""
 from brax import math
+"""Contains mathematical functions for vector operations, rotations, and other numerical calculations."""
 import mujoco
-
+"""
+MuJoCo (Multi-Joint dynamics with Contact) is a physics engine used for accurate simulation of physical systems, especially for robotics and biomechanics. 
+It provides realistic contact dynamics and joint control
+"""
 import rewards
 
 
 DS_PROP = 0.1
 BU_PROP = 0.5
-
+"""
+DS_PROP (Double Support Proportion): The fraction of the gait cycle where both feet are in contact with the ground.
+BU_PROP (Body Upright Proportion): Likely used to ensure the robot remains upright during a specific portion of the gait.
+"""
 
 metrics_dict = {
                    'reward': 0.0,
@@ -30,32 +41,64 @@ metrics_dict = {
                     'angvel_z': 0.0,
                     'feet_orien': 0.0,
                     'feet_slip_ang': 0.0}
-
+"""
+reward: Total reward accumulated in a step.
+flatfoot: Rewards stable foot contact with the ground.
+periodic: Encourages periodic gait cycles.
+upright: Rewards maintaining an upright posture.
+limit: Penalizes exceeding joint limits.
+feet_z and feet_zd: Track the z-coordinate and vertical velocity of the feet.
+termination: Flags termination events (e.g., falls).
+velocity, vel_z: Track horizontal and vertical velocities.
+energy: Measures energy consumption.
+angvel_xy, angvel_z: Track angular velocities.
+action_rate: Penalizes abrupt changes in actions.
+feet_slip, feet_slip_ang: Penalize slipping or rotational instability of the feet.
+feet_orien: Rewards maintaining the correct foot orientation.
+"""
 class NemoEnv(PipelineEnv):
     def __init__(self):
         model = mujoco.MjModel.from_xml_path("nemo2/scene.xml")
-
+"""
+loads the MuJoCo XML file describing the robot's physical structure and properties.
+"""
         model.opt.solver = mujoco.mjtSolver.mjSOL_CG
+"""
+Conjugate Gradient solver for faster convergence
+"""
         model.opt.iterations = 6
         model.opt.ls_iterations = 6
-
+"""
+Control the number of solver iterations, balancing accuracy and computational cost.
+"""
         self.model = model
 
         system = mjcf.load_model(model)
-
+"""
+mjcf.load_model: Converts the MuJoCo model into a Brax system
+"""
         n_frames = 10
-
+"""
+n_frames = 10: Sets the number of frames for rendering smooth animations
+"""
         super().__init__(sys = system,
             backend='mjx',
             n_frames = n_frames
         )
 
         self.initial_state = jnp.array(system.mj_model.keyframe('stand').qpos)
+"""
+initial_state: Loads the robot's initial pose from the keyframe labeled "stand" in the XML
+"""
         self.nv = system.nv
         self.nu = system.nu
         self.control_range = system.actuator_ctrlrange
         self.joint_limit = jnp.array(model.jnt_range)
-
+"""
+nv and nu: Represent the number of generalized velocities and controls (actuators) in the system.
+control_range: Stores the control range for each actuator.
+joint_limit: Stores the joint angle limits.
+"""
         self.pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
         self.pelvis_b_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
         self.pelvis_f_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
@@ -78,6 +121,9 @@ class NemoEnv(PipelineEnv):
 
 
     def _get_obs(self, data0, data1, prev_action: jnp.ndarray, state = None):
+      """
+This method calculates the observation vector for the agent, which includes information about the robot's position, velocity, rotation, and other relevant state variables.
+      """
         inv_pelvis_rot = math.quat_inv(data1.x.rot[self.pelvis_id - 1])
         vel = data1.xd.vel[self.pelvis_id - 1]
         angvel = data1.xd.ang[self.pelvis_id - 1]
@@ -329,20 +375,16 @@ class NemoEnv(PipelineEnv):
         return state.replace(
             pipeline_state = data1, obs=obs, reward=reward, done=done
         )
-    def feetColliding(self, data1):
-        return rewards.geoms_colliding(data1, self.left_geom_id, self.right_geom_id)
+
     def rewards(self, state, data, action, contact):
         reward_dict = {}
         data0 = state.pipeline_state
         min_z, max_z = (0.4, 0.7)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
-
-        is_healthy = is_healthy*(1 - self.feetColliding(data))
         #healthy_reward = 1.2 * is_healthy
         #reward_dict["healthy"] = healthy_reward
         reward_dict["termination"] = -500 * (1 - is_healthy)
-
 
         vel_reward = self.velocityReward(state, data0, data)
         reward_dict["velocity"] = vel_reward * 2.0
@@ -517,7 +559,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001) - 1
+            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001)
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]
