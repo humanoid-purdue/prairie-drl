@@ -270,10 +270,12 @@ class NemoEnv(PipelineEnv):
     #return pos_sp
 
     def updateEnergyHistory(self, state, data):
-        qfrc_actuator = data.qfrc_actuator
-        jv = data.qvel
-        energy = qfrc_actuator * jv[6:] * self.dt
-        state.info["energy_hist"] = jnp.concatenate([energy, state.info["energy_hist"][:][:99]])
+        qfrc_actuator = data.qfrc_actuator #data.qfrc_actuator.size = 18
+        jv = data.qvel ##data.qvel.size = 18
+
+        energy = (qfrc_actuator * jv * self.dt)
+        state.info["energy_hist"] = jnp.concatenate([energy[None,6:], state.info["energy_hist"][:][:99]])
+
         return
 
     def step(self, state: State, action: jnp.ndarray):
@@ -570,11 +572,11 @@ class NemoEnv(PipelineEnv):
         return rew[0]
 
     def energySymmetryReward(self, state_info):
-        leftEnergy = (jnp.sum(state_info["energy_hist"][:6][:]))
-        rightEnergy = jnp.sum(state_info["energy_hist"][6:][:])
+        leftEnergy = jnp.sum(state_info["energy_hist"][:6][:] ** 2) #square
+        rightEnergy = jnp.sum(state_info["energy_hist"][6:][:] ** 2) #square
         difference = jnp.abs(leftEnergy-rightEnergy)
 
-        return jnp.exp(-1*difference)
+        return jnp.exp(-1 * difference * 10)
 
     def footOrienReward(self, data):
         lp1 = data.site_xpos[self.left_foot_s1]
