@@ -262,18 +262,22 @@ class NemoEnv(PipelineEnv):
         rng, key1 = jax.random.split(rng)
         rng, key2 = jax.random.split(rng)
         rng, key3 = jax.random.split(rng)
+        rng, key4 = jax.random.split(rng)
+
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
         vel = vel * jnp.array([0.3, 0.3])
         #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
-        phase_period = jax.random.uniform(key2, shape=[1], minval=1, maxval=1.25)
+        phase_period = jax.random.uniform(key3, shape=[1], minval=1, maxval=1.25)
+        velocity_drift = jax.random.normal(key4, shape=[1], minval=9.9, maxval=10.1)
+        
       
-        return vel, angvel, phase_period, rng
+        return vel, angvel, phase_period, velocity_drift, rng
 
     def updateCmd(self, state):
         rng = state.info["rng"]
-        vel, angvel, phase_period, rng = self.makeCmd(rng)
+        vel, angvel, phase_period, velocity_drift, rng = self.makeCmd(rng)
       
         state.info["rng"] = rng
         tmod = jnp.mod(state.info["time"], 5.0)
@@ -282,6 +286,10 @@ class NemoEnv(PipelineEnv):
         state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
         state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel * reroll_cmd
         state.info["phase_period"] = state.info["phase_period"] * (1 - reroll_cmd) + phase_period * reroll_cmd
+
+        
+
+        # something needs to be here about velocity_drift, possibly?
       
         return
 
