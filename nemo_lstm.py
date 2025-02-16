@@ -145,7 +145,7 @@ class NemoEnv(PipelineEnv):
 
 
         obs = jnp.concatenate([ carry,
-            vel, angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
+            angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
         ])
 
         return obs
