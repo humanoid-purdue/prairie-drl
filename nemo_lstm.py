@@ -31,7 +31,8 @@ metrics_dict = {
                     'feet_slip': 0.0,
                     'angvel_z': 0.0,
                     'feet_orien': 0.0,
-                    'feet_slip_ang': 0.0}
+                    'feet_slip_ang': 0.0,
+                    'energy_symmetry': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
@@ -212,6 +213,15 @@ class NemoEnv(PipelineEnv):
 
         return jnp.concatenate([pos_sp, vel_sp])
 
+    def updateEnergyHistory(self, state, data):
+        qfrc_actuator = data.qfrc_actuator #data.qfrc_actuator.size = 18
+        jv = data.qvel ##data.qvel.size = 18
+
+        energy = (qfrc_actuator * jv * self.dt)
+        state.info["energy_hist"] = jnp.concatenate([energy[None,6:], state.info["energy_hist"][:][:99]])
+
+        return
+
     def zeroStates(self, state):
         rng = state.info["rng"]
         rng, key = jax.random.split(rng)
@@ -260,6 +270,8 @@ class NemoEnv(PipelineEnv):
         self.zeroStates(state)
 
         self.updateCmd(state)
+
+        self.updateEnergyHistory(state, data1)
 
         obs = self._get_obs(data0, data1, state = state)
         return state.replace(
@@ -322,6 +334,10 @@ class NemoEnv(PipelineEnv):
 
         angslip_reward = self.feetSlipAngReward(data, contact)
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
+
+        energy_symmetry_reward = self.energySymmetryReward(state.info)
+        reward_dict["energy_symmetry"] = energy_symmetry_reward
+
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
@@ -504,8 +520,11 @@ class NemoEnv(PipelineEnv):
         #rew_z_track += rew_z_above
         return rew_z_track, rew_zd_track
 
-    def energySymmetryReward(self, data):
-        return
+    def energySymmetryReward(self, state_info):
+        leftEnergy = jnp.sum(state_info["energy_hist"][:6][:] ** 2) #square
+        rightEnergy = jnp.sum(state_info["energy_hist"][6:][:] ** 2) #square
+        difference = jnp.abs(leftEnergy-rightEnergy)
+
 
     def footOrienReward(self, data):
         lp1 = data.site_xpos[self.left_foot_s1]
