@@ -11,6 +11,7 @@ import rewards
 
 DS_PROP = 0.1
 BU_PROP = 0.5
+BU_PROP = 0.5
 
 
 metrics_dict = {
