@@ -218,7 +218,7 @@ class NemoEnv(PipelineEnv):
         jv = data.qvel ##data.qvel.size = 18
 
         energy = (qfrc_actuator * jv * self.dt)
-        state.info["energy_hist"] = jnp.concatenate([energy[None,6:], state.info["energy_hist"][:][:99]])
+        state.info["energy_hist"] = jnp.concatenate([energy[None,6:], state.info["energy_hist"][:99][:]])
 
         return
 
