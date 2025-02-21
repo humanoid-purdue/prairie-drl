@@ -389,7 +389,7 @@ class NemoEnv(PipelineEnv):
 
     def actionRateReward(self, action, state):
         act_delta = jnp.sum(jnp.square(state.info["prev_action"] - action))
-        return jnp.exp(act_delta * -1)
+        return act_delta
 
     def angvelXYReward(self, data):
         angvel = data.xd.ang[self.pelvis_id][0:2]
