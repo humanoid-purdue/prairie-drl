@@ -132,12 +132,13 @@ class NemoEnv(PipelineEnv):
 
             vel_target = state.info["velocity"]
             angvel_target = state.info["angvel"]
-            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
+            halt = state.info["halt_cmd"]
+            cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0], halt])
             carry = state.info["lstm_carry"]
             prev_action = state.info["prev_action"]
         else:
             phase = jnp.array([0., jnp.pi])
-            cmd = jnp.array([0., 0., 0.])
+            cmd = jnp.array([0., 0., 0., 0.])
             carry = jnp.zeros([HIDDEN_SIZE * DEPTH * 2])
             prev_action = jnp.zeros(self.nu)
 
@@ -145,16 +146,18 @@ class NemoEnv(PipelineEnv):
                                  jnp.sin(phase[1]), jnp.cos(phase[1])])
 
 
-        obs = jnp.concatenate([ carry,
+        obs = jnp.concatenate([ carry, vel,
             angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
         ])
 
         return obs
 
     def reset(self, rng: jax.Array) -> State:
-        vel, angvel, rng = self.makeCmd(rng)
+        vel, angvel, rng, phase_period = self.makeCmd(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
-
+        rng, key = jax.random.split(rng)
+        event_period = jax.random.uniform(key, shape = [2], minval = 0, maxval = 1)
+        event_period = event_period * jnp.array([3, 2.]) + jnp.array([4, 0.])
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
@@ -163,8 +166,10 @@ class NemoEnv(PipelineEnv):
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12]),
             "phase": jnp.array([0, jnp.pi]),
-            "phase_period": 1.0,
-            "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2])
+            "phase_period": phase_period[0],
+            "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
+            "halt_cmd": 0,
+            "event_period": event_period
         }
         metrics = metrics_dict.copy()
 
@@ -184,21 +189,32 @@ class NemoEnv(PipelineEnv):
     def makeCmd(self, rng):
         rng, key1 = jax.random.split(rng)
         rng, key2 = jax.random.split(rng)
+        rng, key3 = jax.random.split(rng)
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
         vel = vel * jnp.array([0.2, 0.2])
         #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
-        return vel, angvel, rng
+        phase_period = jax.random.uniform(key3, shape=[1], minval=1, maxval=1.25)
+        return vel, angvel, rng, phase_period
+
+    def periodicHalting(self, state):
+        #period of ep[0] + ep[1]
+        tmod = jnp.mod(state.info["time"], state.info["event_period"][0] +
+                       state.info["event_period"][1])
+        halt = jnp.where(tmod > state.info["event_period"][0], 1, 0)[0]
+        state.info["halt_cmd"] = halt
+        state.info["phase"] = state.info["phase"] * (1 - halt) + jnp.array([0, jnp.pi]) * halt
 
     def updateCmd(self, state):
         rng = state.info["rng"]
-        vel, angvel, rng = self.makeCmd(rng)
+        vel, angvel, rng, phase_period = self.makeCmd(rng)
         state.info["rng"] = rng
         tmod = jnp.mod(state.info["time"], 5.0)
         reroll_cmd = jnp.where(tmod > 5.0 - self.dt * 2, 1, 0)
         state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
         state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel * reroll_cmd
+        state.info["phase_period"] = phase_period[0]
         return
 
     def tanh2Action(self, action: jnp.ndarray):
@@ -260,6 +276,7 @@ class NemoEnv(PipelineEnv):
         self.zeroStates(state)
 
         self.updateCmd(state)
+        self.periodicHalting(state)
 
         obs = self._get_obs(data0, data1, state = state)
         return state.replace(
@@ -361,12 +378,12 @@ class NemoEnv(PipelineEnv):
 
     def velocityReward(self, state, data0, data1):
         vel = self.pelVel(data0, data1)
-        vel_target = state.info["velocity"]
+        vel_target = state.info["velocity"] * (1 - state.info["halt_cmd"])
         vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
         return jnp.exp( vel_n * -1 / 0.05)
 
     def angvelZReward(self, state, data):
-        angvel = data.xd.ang[self.pelvis_id][2]
+        angvel = data.xd.ang[self.pelvis_id][2] * (1 - state.info["halt_cmd"])
         angvel_err = jnp.square(angvel - state.info["angvel"][0])
         return jnp.exp(angvel_err * -1 / 0.10)
 
@@ -415,9 +432,18 @@ class NemoEnv(PipelineEnv):
         return jnp.sum(rew)
 
     def periodicReward(self, info, data1, data0):
+        #when halt = 1, lr_grf_coeff = 1, lr_vel_coeff = -1
+        lr_halt_grf_coeff = 1
+        lr_halt_vel_coeff = -1
+
         lr_coeff = rewards.lr_phase_coeff(info["phase"], DS_PROP, BU_PROP)
         lr_grf_coeff = 1 - 2 * lr_coeff
         lr_vel_coeff = 2 * lr_coeff - 1
+
+        lr_grf_coeff = (lr_grf_coeff * (1 - info["halt_cmd"]) +
+                        info["halt_cmd"] * lr_halt_grf_coeff)
+        lr_vel_coeff = (lr_vel_coeff * (1 - info["halt_cmd"]) +
+                        info["halt_cmd"] * lr_halt_vel_coeff)
 
         l_grf, r_grf = self.determineGRF(data1)
         l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / 80)

@@ -32,7 +32,7 @@ class StackedLSTM(nn.Module):
         self.nn_mi = nn.Dense(256, name = "mid", kernel_init=self.kernel_init)
         self.nn_mi2 = nn.Dense(128, name = "mid2", kernel_init=self.kernel_init)
         self.nn_ed = nn.Dense(self.param_size, name = "end", kernel_init=self.kernel_init)
-        self.lstms = [nn.OptimizedLSTMCell(HIDDEN_SIZE,
+        self.lstms = [nn.LSTMCell(HIDDEN_SIZE,
                         name = "lstm_{}".format(c)) for c in range(DEPTH)]
         return
 
