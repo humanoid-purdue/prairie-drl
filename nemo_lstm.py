@@ -378,14 +378,14 @@ class NemoEnv(PipelineEnv):
 
     def velocityReward(self, state, data0, data1):
         vel = self.pelVel(data0, data1)
-        vel_target = state.info["velocity"] * (1 - state.info["halt_cmd"])
+        vel_target = state.info["velocity"]
         vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
-        return jnp.exp( vel_n * -1 / 0.05)
+        return jnp.exp( vel_n * -1 / 0.05) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
-        angvel = data.xd.ang[self.pelvis_id][2] * (1 - state.info["halt_cmd"])
+        angvel = data.xd.ang[self.pelvis_id][2]
         angvel_err = jnp.square(angvel - state.info["angvel"][0])
-        return jnp.exp(angvel_err * -1 / 0.10)
+        return jnp.exp(angvel_err * -1 / 0.10) * (1 - state.info["halt_cmd"])
 
     def actionRateReward(self, action, state):
         act_delta = jnp.sum(jnp.square(state.info["prev_action"] - action))
