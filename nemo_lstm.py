@@ -433,8 +433,8 @@ class NemoEnv(PipelineEnv):
 
     def periodicReward(self, info, data1, data0):
         #when halt = 1, lr_grf_coeff = 1, lr_vel_coeff = -1
-        lr_halt_grf_coeff = 1
-        lr_halt_vel_coeff = -1
+        lr_halt_grf_coeff = 0.2
+        lr_halt_vel_coeff = 0
 
         lr_coeff = rewards.lr_phase_coeff(info["phase"], DS_PROP, BU_PROP)
         lr_grf_coeff = 1 - 2 * lr_coeff
