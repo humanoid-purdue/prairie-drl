@@ -272,7 +272,7 @@ class NemoEnv(PipelineEnv):
         #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         phase_period = jax.random.uniform(key3, shape=[1], minval=1, maxval=1.25)
-        velocity_drift = jnp.dot(0.05 * jax.random.normal(key4, shape=[1])) # imu velocity drift, where the standard deviation is sigma = 0.05
+        velocity_drift = 0.05 * jax.random.normal(key4, shape=[1])# imu velocity drift, where the standard deviation is sigma = 0.05
         
       
         return vel, angvel, phase_period, velocity_drift, rng  
