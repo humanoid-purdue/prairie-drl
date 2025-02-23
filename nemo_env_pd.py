@@ -264,7 +264,7 @@ class NemoEnv(PipelineEnv):
         rng, key1 = jax.random.split(rng)
         rng, key2 = jax.random.split(rng)
         rng, key3 = jax.random.split(rng)
-        rng, key4 = jax.random.split(rng)
+        # rng, key4 = jax.random.split(rng)
 
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
