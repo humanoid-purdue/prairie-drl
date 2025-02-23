@@ -287,7 +287,7 @@ class NemoEnv(PipelineEnv):
         state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
         state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel * reroll_cmd
         state.info["phase_period"] = state.info["phase_period"] * (1 - reroll_cmd) + phase_period * reroll_cmd
-        state.info["velocity_drift"] = state.info["veelocity_drift"] * (1 - reroll_cmd) + velocity_drift * reroll_cmd
+        state.info["velocity_drift"] = state.info["velocity_drift"] * (1 - reroll_cmd) + velocity_drift * reroll_cmd
 
         return
 
