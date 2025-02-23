@@ -35,7 +35,7 @@ metrics_dict = {
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
-        model = mujoco.MjModel.from_xml_path("nemo2/scene.xml")
+        model = mujoco.MjModel.from_xml_path("nemo3/scene.xml")
 
         model.opt.solver = mujoco.mjtSolver.mjSOL_CG
         model.opt.iterations = 6
