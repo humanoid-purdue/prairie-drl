@@ -127,7 +127,7 @@ class NemoEnv(PipelineEnv):
             grav_vec += grav_vec_noise
             state.info["rng"] = rng
             phase = state.info["phase"]
-
+            velocity_drift = state.info["velocity_drift"]
             vel_target = state.info["velocity"]
             angvel_target = state.info["angvel"]
             cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
@@ -214,7 +214,7 @@ class NemoEnv(PipelineEnv):
             angvel_target = state.info["angvel"]
             cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0]])
             phase = state.info["phase"]
-           # velocity_drift = state.info["velocity_drift"]
+            velocity_drift = state.info["velocity_drift"]
         else:
 
             phase = jnp.array([0., jnp.pi])
@@ -243,8 +243,8 @@ class NemoEnv(PipelineEnv):
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12]),
             "phase": jnp.array([0, jnp.pi]),
-            "phase_period": phase_period
-         # ,"velocity_drift": velocity_drift
+            "phase_period": phase_period,
+            "velocity_drift": velocity_drift
         }
         metrics = metrics_dict.copy()
 
@@ -264,7 +264,7 @@ class NemoEnv(PipelineEnv):
         rng, key1 = jax.random.split(rng)
         rng, key2 = jax.random.split(rng)
         rng, key3 = jax.random.split(rng)
-        # rng, key4 = jax.random.split(rng)
+        rng, key4 = jax.random.split(rng)
 
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
@@ -272,14 +272,14 @@ class NemoEnv(PipelineEnv):
         #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         phase_period = jax.random.uniform(key3, shape=[1], minval=1, maxval=1.25)
-        #velocity_drift = jnp.dot([0.05], jax.random.normal(key4, shape=[1])) # imu velocity drift, where the standard deviation is sigma = 0.05
+        velocity_drift = jnp.dot([0.05], jax.random.normal(key4, shape=[1])) # imu velocity drift, where the standard deviation is sigma = 0.05
         
       
-        return vel, angvel, phase_period, rng # velocity_drift,
+        return vel, angvel, phase_period, velocity_drift, rng  
 
     def updateCmd(self, state):
         rng = state.info["rng"]
-        vel, angvel, phase_period, rng = self.makeCmd(rng) #velocity_drift, 
+        vel, angvel, phase_period, velocity_drift, rng = self.makeCmd(rng) 
       
         state.info["rng"] = rng
         tmod = jnp.mod(state.info["time"], 5.0)
@@ -288,7 +288,7 @@ class NemoEnv(PipelineEnv):
         state.info["velocity"] = state.info["velocity"] * (1 - reroll_cmd) + vel * reroll_cmd
         state.info["angvel"] = state.info["angvel"] * (1 - reroll_cmd) + angvel * reroll_cmd
         state.info["phase_period"] = state.info["phase_period"] * (1 - reroll_cmd) + phase_period * reroll_cmd
-       # state.info["velocity_drift"] = state.info["velocity_drift"] * (1 - reroll_cmd) + velocity_drift * reroll_cmd
+        state.info["velocity_drift"] = state.info["velocity_drift"] * (1 - reroll_cmd) + velocity_drift * reroll_cmd
 
         return
 
