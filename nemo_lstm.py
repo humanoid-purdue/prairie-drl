@@ -289,12 +289,12 @@ class NemoEnv(PipelineEnv):
     def rewards(self, state, data, action, contact):
         reward_dict = {}
         data0 = state.pipeline_state
-        min_z, max_z = (0.4, 0.7)
+        min_z, max_z = (0.4, 0.8)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         #healthy_reward = 1.2 * is_healthy
         #reward_dict["healthy"] = healthy_reward
-        is_healthy = is_healthy*( 1 - self.feetColliding(data))
+        is_healthy = is_healthy # * ( 1 - self.feetColliding(data))
         reward_dict["termination"] = -1000 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)

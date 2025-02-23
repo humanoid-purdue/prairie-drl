@@ -68,4 +68,3 @@ if __name__ == "__main__":
     model.save_params("walk_policy", params)
     with open("inference_fn", 'wb') as f:
         dill.dump(make_inference_fn, f)
- 
