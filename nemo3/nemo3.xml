@@ -64,19 +64,19 @@
 <worldbody>
   <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30" />
   <body name="pelvis" pos="0.0 0.0 0.6075" childclass="robot">
-    <inertial pos="0.0 0.0 -0.028416610000000002" mass="12.34472558" fullinertia="0.0009968411876276066 0.0009968411876276066 0.0009968411876276066 0.0 0.0 0.0" />
+    <inertial pos="0.0 0.0 -0.028416610000000002" mass="6.34472558" fullinertia="0.0009968411876276066 0.0009968411876276066 0.0009968411876276066 0.0 0.0 0.0" />
     <freejoint name="floating_base" />
     <geom type="mesh" class="visual" mesh="pelvis" />
     <body name="l_hip_pitch" pos="0.0 0.074 -0.114">
-      <inertial pos="-0.02654803 -0.01950795 -1.923e-05" mass="3.11222426" fullinertia="0.0003377878680645317 0.0003377878680645317 0.0003377878680645317 -0.0 0.0 -0.0" />
+      <inertial pos="-0.02654803 -0.01950795 -1.923e-05" mass="2.11222426" fullinertia="0.0003377878680645317 0.0003377878680645317 0.0003377878680645317 -0.0 0.0 -0.0" />
       <joint name="l_hip_pitch" axis="0 1 0" range="-1.3 1.3" />
       <geom type="mesh" class="visual" mesh="l_hip_pitch" />
       <body name="l_hip_roll" pos="-0.0655 0.1475 0.0">
-        <inertial pos="0.05411370000000001 -1.11e-05 -0.04747620000000001" mass="3.18541932" fullinertia="0.0016507741896807284 0.0016507741896807284 0.0016507741896807284 -0.0 0.0 -0.0" />
+        <inertial pos="0.05411370000000001 -1.11e-05 -0.04747620000000001" mass="2.18541932" fullinertia="0.0016507741896807284 0.0016507741896807284 0.0016507741896807284 -0.0 0.0 -0.0" />
         <joint name="l_hip_roll" axis="1 0 0" range="-0.35 1.0" />
         <geom type="mesh" class="visual" mesh="l_hip_roll" />
         <body name="l_hip_yaw" pos="0.0841 0.0 -0.1158">
-          <inertial pos="-2.282e-05 -0.0 -0.06721509" mass="2.62272168" fullinertia="0.0011849112565763106 0.0011849112565763106 0.0011849112565763106 -0.0 0.0 -0.0" />
+          <inertial pos="-2.282e-05 -0.0 -0.06721509" mass="1.62272168" fullinertia="0.0011849112565763106 0.0011849112565763106 0.0011849112565763106 -0.0 0.0 -0.0" />
           <joint name="l_hip_yaw" axis="0 0 1" range="-2.5 2.5" />
           <geom type="mesh" class="visual" mesh="l_hip_yaw" />
           <body name="l_knee" pos="0.0 0.0 -0.0855">
@@ -84,11 +84,11 @@
             <joint name="l_knee" axis="0 1 0" range="-0.3 2" />
             <geom type="mesh" class="visual" mesh="l_knee" />
             <body name="l_foot_pitch" pos="0.0 0.0 -0.206">
-              <inertial pos="0.01828491 -0.0 -2.282e-05" mass="2.62272168" fullinertia="8.768767129712466e-05 8.768767129712466e-05 8.768767129712466e-05 -0.0 0.0 -0.0" />
+              <inertial pos="0.01828491 -0.0 -2.282e-05" mass="1.62272168" fullinertia="8.768767129712466e-05 8.768767129712466e-05 8.768767129712466e-05 -0.0 0.0 -0.0" />
               <joint name="l_foot_pitch" axis="0 1 0" range="-0.5 0.5" />
               <geom type="mesh" class="visual" mesh="l_foot_pitch" />
               <body name="l_foot_roll" pos="0.0855 0.0 0.0">
-                <inertial pos="0.01657002 -0.0 -0.03378122" mass="2.39388829" fullinertia="0.0003389114759736342 0.0003389114759736342 0.0003389114759736342 -0.0 0.0 -0.0" />
+                <inertial pos="0.01657002 -0.0 -0.03378122" mass="1.39388829" fullinertia="0.0003389114759736342 0.0003389114759736342 0.0003389114759736342 -0.0 0.0 -0.0" />
                 <joint name="l_foot_roll" axis="1 0 0" range="-1 1" />
                 <geom type="mesh" class="visual" mesh="l_foot_roll" />
                 <geom class="collision" name="left_foot" pos="-0.0117 0 -0.07625" size="0.1 0.0575 0.01" type="box" />
