@@ -218,13 +218,18 @@ class NemoEnv(PipelineEnv):
         return
 
     def tanh2Action(self, action: jnp.ndarray):
+        q_offset = self.initial_state[7:]
+
         pos_t = action[:self.nu//2]
         vel_t = action[self.nu//2:]
 
-        bottom_limit = self.joint_limit[1:, 0]
-        top_limit = self.joint_limit[1:, 1]
+        bottom_limit = self.joint_limit[1:, 0] - q_offset
+        top_limit = self.joint_limit[1:, 1] - q_offset
         vel_sp = vel_t * 10
+
         pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+        pos_sp += q_offset
+
 
         return jnp.concatenate([pos_sp, vel_sp])
 
@@ -316,7 +321,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["action_rate"] = action_r_reward * -0.01
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * 1.5
+        reward_dict["upright"] = upright_reward * 1.0
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
