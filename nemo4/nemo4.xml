@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<mujoco model="nemo3">
+<mujoco model="nemo4">
 <compiler angle="radian" meshdir="assets" autolimits="true" />
 
   <option timestep="0.0035" iterations="8" ls_iterations="4">
@@ -63,19 +63,19 @@
   </asset>
 <worldbody>
   <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30" />
-  <body name="pelvis" pos="0.0 0.0 0.6075" childclass="robot">
+  <body name="pelvis" pos="0.0 0.0 0.618" childclass="robot">
     <inertial pos="0.0 0.0 -0.028416610000000002" mass="6.34472558" fullinertia="0.0009968411876276066 0.0009968411876276066 0.0009968411876276066 0.0 0.0 0.0" />
     <freejoint name="floating_base" />
     <geom type="mesh" class="visual" mesh="pelvis" />
-    <body name="l_hip_pitch" pos="0.0 0.074 -0.114">
-      <inertial pos="-0.02654803 -0.01950795 -1.923e-05" mass="3.11222426" fullinertia="0.0003377878680645317 0.0003377878680645317 0.0003377878680645317 -0.0 0.0 -0.0" />
+    <body name="l_hip_pitch" pos="0.0 0.1568 -0.1244">
+      <inertial pos="-0.01828491 -0.0 -2.282e-05" mass="2.62272168" fullinertia="8.768767129712466e-05 8.768767129712466e-05 8.768767129712466e-05 -0.0 0.0 -0.0" />
       <joint name="l_hip_pitch" axis="0 1 0" range="-1.3 1.3" />
       <geom type="mesh" class="visual" mesh="l_hip_pitch" />
-      <body name="l_hip_roll" pos="-0.0655 0.1475 0.0">
-        <inertial pos="0.05411370000000001 -1.11e-05 -0.04747620000000001" mass="2.18541932" fullinertia="0.0016507741896807284 0.0016507741896807284 0.0016507741896807284 -0.0 0.0 -0.0" />
+      <body name="l_hip_roll" pos="-0.0855 0.0 0.0">
+        <inertial pos="-0.05411370000000001 -1.11e-05 -0.04747620000000001" mass="2.18541932" fullinertia="0.0016507741896807284 0.0016507741896807284 0.0016507741896807284 -0.0 0.0 -0.0" />
         <joint name="l_hip_roll" axis="1 0 0" range="-0.35 1.0" />
         <geom type="mesh" class="visual" mesh="l_hip_roll" />
-        <body name="l_hip_yaw" pos="0.0841 0.0 -0.1158">
+        <body name="l_hip_yaw" pos="-0.0841 0.0 -0.1158">
           <inertial pos="-2.282e-05 -0.0 -0.06721509" mass="2.62272168" fullinertia="0.0011849112565763106 0.0011849112565763106 0.0011849112565763106 -0.0 0.0 -0.0" />
           <joint name="l_hip_yaw" axis="0 0 1" range="-2.5 2.5" />
           <geom type="mesh" class="visual" mesh="l_hip_yaw" />
@@ -103,15 +103,15 @@
     </body>
 
 
-    <body name="r_hip_pitch" pos="0.0 -0.074 -0.114">
-      <inertial pos="-0.02654803 -0.01950795 -1.923e-05" mass="3.11222426" fullinertia="0.0003377878680645317 0.0003377878680645317 0.0003377878680645317 -0.0 0.0 -0.0" />
+    <body name="r_hip_pitch" pos="0.0 -0.1568 -0.1244">
+      <inertial pos="-0.01828491 -0.0 -2.282e-05" mass="2.62272168" fullinertia="8.768767129712466e-05 8.768767129712466e-05 8.768767129712466e-05 -0.0 0.0 -0.0" />
       <joint name="r_hip_pitch" axis="0 1 0" range="-1.3 1.3" />
       <geom type="mesh" class="visual" mesh="r_hip_pitch" />
-      <body name="r_hip_roll" pos="-0.0655 -0.1475 0.0">
-        <inertial pos="0.05411370000000001 -1.11e-05 -0.04747620000000001" mass="3.18541932" fullinertia="0.0016507741896807284 0.0016507741896807284 0.0016507741896807284 -0.0 0.0 -0.0" />
+      <body name="r_hip_roll" pos="-0.0855 0.0 0.0">
+        <inertial pos="-0.05411370000000001 -1.11e-05 -0.04747620000000001" mass="3.18541932" fullinertia="0.0016507741896807284 0.0016507741896807284 0.0016507741896807284 -0.0 0.0 -0.0" />
         <joint name="r_hip_roll" axis="1 0 0" range="-1.0 0.35" />
         <geom type="mesh" class="visual" mesh="r_hip_roll" />
-        <body name="r_hip_yaw" pos="0.0841 -0.0 -0.1158">
+        <body name="r_hip_yaw" pos="-0.0841 -0.0 -0.1158">
           <inertial pos="-2.282e-05 -0.0 -0.06721509" mass="2.62272168" fullinertia="0.0011849112565763106 0.0011849112565763106 0.0011849112565763106 -0.0 0.0 -0.0" />
           <joint name="r_hip_yaw" axis="0 0 1" range="-2.5 2.5" />
           <geom type="mesh" class="visual" mesh="r_hip_yaw" />
@@ -174,7 +174,7 @@
 </actuator>
 
 <keyframe>
-    <key name="stand" qpos="       0 0 0.5975       1 0 0 0       0 0 0 0.314159 -0.314159 0       0 0 0 0.314159 -0.314159 0       " />
+    <key name="stand" qpos="       0 0 0.618       1 0 0 0       0 0 0 0 0 0       0 0 0 0 0 0       " />
 </keyframe>
 
 </mujoco>
