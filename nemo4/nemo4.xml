@@ -108,7 +108,7 @@
       <joint name="r_hip_pitch" axis="0 1 0" range="-1.3 1.3" />
       <geom type="mesh" class="visual" mesh="r_hip_pitch" />
       <body name="r_hip_roll" pos="-0.0855 0.0 0.0">
-        <inertial pos="-0.05411370000000001 -1.11e-05 -0.04747620000000001" mass="3.18541932" fullinertia="0.0016507741896807284 0.0016507741896807284 0.0016507741896807284 -0.0 0.0 -0.0" />
+        <inertial pos="-0.05411370000000001 -1.11e-05 -0.04747620000000001" mass="2.18541932" fullinertia="0.0016507741896807284 0.0016507741896807284 0.0016507741896807284 -0.0 0.0 -0.0" />
         <joint name="r_hip_roll" axis="1 0 0" range="-1.0 0.35" />
         <geom type="mesh" class="visual" mesh="r_hip_roll" />
         <body name="r_hip_yaw" pos="-0.0841 -0.0 -0.1158">
