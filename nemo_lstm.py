@@ -352,6 +352,8 @@ class NemoEnv(PipelineEnv):
         for key in reward_dict.keys():
             reward += reward_dict[key]
 
+        reward = jnp.clip(reward, min = 0, max = None)
+
         metric_dict = reward_dict.copy()
         metric_dict["reward"] = reward
 
