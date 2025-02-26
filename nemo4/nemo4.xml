@@ -114,23 +114,23 @@
         <body name="r_hip_yaw" pos="-0.0841 -0.0 -0.1158">
           <inertial pos="-2.282e-05 -0.0 -0.06721509" mass="2.62272168" fullinertia="0.0011849112565763106 0.0011849112565763106 0.0011849112565763106 -0.0 0.0 -0.0" />
           <joint name="r_hip_yaw" axis="0 0 1" range="-2.5 2.5" />
-          <geom type="mesh" class="visual" mesh="r_hip_yaw" />
+          <geom type="mesh" class="visual" mesh="r_hip_yaw"/>
           <body name="r_knee" pos="0.0 -0.0 -0.0855">
             <inertial pos="0.0 -0.0 -0.103" mass="0.56082045" fullinertia="0.000594974415405 0.000594974415405 0.000594974415405 -0.0 0.0 -0.0" />
-            <joint name="r_knee" axis="0 1 0" range="-0.3 2" />
-            <geom type="mesh" class="visual" mesh="l_knee" />
+            <joint name="r_knee" axis="0 1 0" range="-0.3 2"/>
+            <geom type="mesh" class="visual" mesh="l_knee"/>
             <body name="r_foot_pitch" pos="0.0 -0.0 -0.206">
               <inertial pos="0.01828491 -0.0 -2.282e-05" mass="2.62272168" fullinertia="8.768767129712466e-05 8.768767129712466e-05 8.768767129712466e-05 -0.0 0.0 -0.0" />
-              <joint name="r_foot_pitch" axis="0 1 0" range="-0.5 0.5" />
-              <geom type="mesh" class="visual" mesh="l_foot_pitch" />
+              <joint name="r_foot_pitch" axis="0 1 0" range="-0.5 0.5"/>
+              <geom type="mesh" class="visual" mesh="l_foot_pitch"/>
               <body name="r_foot_roll" pos="0.0855 -0.0 0.0">
                 <inertial pos="0.01657002 -0.0 -0.03378122" mass="2.39388829" fullinertia="0.0003389114759736342 0.0003389114759736342 0.0003389114759736342 -0.0 0.0 -0.0" />
-                <joint name="r_foot_roll" axis="1 0 0" range="-1 1" />
-                <geom type="mesh" class="visual" mesh="l_foot_roll" />
+                <joint name="r_foot_roll" axis="1 0 0" range="-1 1"/>
+                <geom type="mesh" class="visual" mesh="l_foot_roll"/>
                 <geom class="collision" name="right_foot" pos="-0.04164 0 -0.0712" size="0.135 0.0575 0.005" type="box" />
-                <site name="right_foot_p1" pos="0.05 0.0 -0.0762" />
-                <site name="right_foot_p2" pos="-0.05 0.0 -0.0762" />
-                <site name="right_foot_p3" pos="0.0 -0.05 -0.0762" />
+                <site name="right_foot_p1" pos="0.05 0.0 -0.0762"/>
+                <site name="right_foot_p2" pos="-0.05 0.0 -0.0762"/>
+                <site name="right_foot_p3" pos="0.0 -0.05 -0.0762"/>
               </body>
             </body>
           </body>
