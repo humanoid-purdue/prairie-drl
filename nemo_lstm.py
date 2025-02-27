@@ -314,7 +314,7 @@ class NemoEnv(PipelineEnv):
         vel_z_reward = self.velZReward(data0, data)
         reward_dict["vel_z"] = vel_z_reward * -0.01
 
-        energy_reward = self.energyReward(data)
+        energy_reward = self.energyReward(data, state.info)
         reward_dict["energy"] = energy_reward * -0.002
 
         action_r_reward = self.actionRateReward(action, state)
@@ -413,10 +413,12 @@ class NemoEnv(PipelineEnv):
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
         return jnp.exp(xy_err * -1 / 0.1)
 
-    def energyReward(self, data):
+    def energyReward(self, data, info):
         qfrc_actuator = data.qfrc_actuator
         jv = data.qvel
+        halt_mult = 10
         energy = jnp.sum(jnp.square(jv * qfrc_actuator)) ** 0.5
+        energy = energy * (1 + info["halt_cmd"] * halt_mult)
         return energy
 
     def feetSlipReward(self, data0, data1, contact):
@@ -440,8 +442,8 @@ class NemoEnv(PipelineEnv):
 
     def periodicReward(self, info, data1, data0):
         #when halt = 1, lr_grf_coeff = 1, lr_vel_coeff = -1
-        lr_halt_grf_coeff = 1.
-        lr_halt_vel_coeff = -1.
+        lr_halt_grf_coeff = 0.2
+        lr_halt_vel_coeff = -0.2
 
         lr_coeff = rewards.lr_phase_coeff(info["phase"], DS_PROP, BU_PROP)
         lr_grf_coeff = 1 - 2 * lr_coeff
@@ -453,8 +455,8 @@ class NemoEnv(PipelineEnv):
                         info["halt_cmd"] * lr_halt_vel_coeff)
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / 80)
-        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / 80)
+        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / 40)
+        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / 40)
 
         lp0, rp0 = self.footPos(data0)
         lp1, rp1 = self.footPos(data1)
