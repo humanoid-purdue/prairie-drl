@@ -347,7 +347,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
 
         halt_reward = self.haltReward(data, state.info)
-        reward_dict["halt_reward"] = halt_reward * 2.0
+        reward_dict["halt"] = halt_reward * 2.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
