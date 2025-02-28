@@ -315,7 +315,7 @@ class NemoEnv(PipelineEnv):
         vel_z_reward = self.velZReward(data0, data)
         reward_dict["vel_z"] = vel_z_reward * -0.01
 
-        energy_reward = self.energyReward(data)
+        energy_reward = self.energyReward(data, state.info)
         reward_dict["energy"] = energy_reward * -0.002
 
         action_r_reward = self.actionRateReward(action, state)
@@ -347,7 +347,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
 
         halt_reward = self.haltReward(data, state.info)
-        reward_dict["halt"] = halt_reward * 2.0
+        reward_dict["halt"] = halt_reward * 6.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
@@ -417,10 +417,12 @@ class NemoEnv(PipelineEnv):
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
         return jnp.exp(xy_err * -1 / 0.1)
 
-    def energyReward(self, data):
+    def energyReward(self, data, info):
+        halt_mult = 10.0 - 1
         qfrc_actuator = data.qfrc_actuator
         jv = data.qvel
         energy = jnp.sum(jnp.square(jv * qfrc_actuator)) ** 0.5
+        energy = energy * (1 + info["halt_cmd"] * halt_mult)
         return energy
 
     def feetSlipReward(self, data0, data1, contact):
@@ -573,9 +575,9 @@ class NemoEnv(PipelineEnv):
         r_rew = jnp.exp(-(dpr - 1) ** 2 / 0.1)
         return l_rew + r_rew
 
-    def haltReward(self, data, info):
+    def haltReward(self, data0, info):
         #give halt reward for foot below height
-        lp, rp = self.footPos(data)
-        l_rew = jnp.exp(-1 * (lp[2] ** 2) / 0.0001)
-        r_rew = jnp.exp(-1 * (rp[2] ** 2) / 0.0001)
-        return (l_rew + r_rew) * info["halt_cmd"]
+        lp, rp = self.footPos(data0)
+        l_z_rew = jnp.exp(-1 * (lp[2] ** 2) / 0.0001)
+        r_z_rew = jnp.exp(-1 * (rp[2] ** 2) / 0.0001)
+        return (l_z_rew + r_z_rew) * info["halt_cmd"]
