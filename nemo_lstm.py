@@ -31,7 +31,8 @@ metrics_dict = {
                     'feet_slip': 0.0,
                     'angvel_z': 0.0,
                     'feet_orien': 0.0,
-                    'feet_slip_ang': 0.0}
+                    'feet_slip_ang': 0.0,
+                    'halt': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self):
@@ -345,6 +346,9 @@ class NemoEnv(PipelineEnv):
         angslip_reward = self.feetSlipAngReward(data, contact)
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25
 
+        halt_reward = self.haltReward(data, state.info)
+        reward_dict["halt_reward"] = halt_reward * 2.0
+
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
 
@@ -568,3 +572,10 @@ class NemoEnv(PipelineEnv):
         l_rew = jnp.exp(-(dpl - 1) ** 2 / 0.1)
         r_rew = jnp.exp(-(dpr - 1) ** 2 / 0.1)
         return l_rew + r_rew
+
+    def haltReward(self, data, info):
+        #give halt reward for foot below height
+        lp, rp = self.footPos(data)
+        l_rew = jnp.exp(-1 * (lp[2] ** 2) / 0.0001)
+        r_rew = jnp.exp(-1 * (rp[2] ** 2) / 0.0001)
+        return (l_rew + r_rew) * info["halt_cmd"]
