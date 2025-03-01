@@ -525,6 +525,7 @@ class NemoEnv(PipelineEnv):
 
     def footDynamicsReward(self, info, data0, data1):
         halt_zt = jnp.array([0.0, 0.0])
+        halt_zdt = jnp.array([0.0, 0.0])
 
         zt, zdt = rewards.quintic_foot_phase(info["phase"], DS_PROP)
 
@@ -532,6 +533,7 @@ class NemoEnv(PipelineEnv):
         #rescale zdt from 0 to 0.5 to swing time
         swing_time = info["phase_period"] * 0.5 * (1 - DS_PROP * 2)
         zdt = zdt * 0.5 / swing_time
+        zdt = zdt * (1 - info["halt_cmd"]) + halt_zdt * info["halt_cmd"]
 
         lp0, rp0 = self.footPos(data0)
         lp1, rp1 = self.footPos(data1)
@@ -540,7 +542,6 @@ class NemoEnv(PipelineEnv):
         zd = (z1 - z0) / self.dt
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.05))
         rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
-        rew_zd_track = rew_zd_track * (1 - info["halt_cmd"])
         #rew_z_track = jnp.sum(jnp.exp(-1 * jnp.abs(z1 - zt) / 0.02))
 
         # get reward for foot being above target

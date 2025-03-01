@@ -4,7 +4,7 @@ from brax.io import html, mjcf, model
 import mujoco
 import jax.numpy as jnp
 
-def makeRollout(lstm = False):
+def makeRollout(lstm = False, walk_forward = True):
     if lstm:
         from nemo_lstm import NemoEnv
     else:
@@ -60,19 +60,20 @@ def makeRollout(lstm = False):
     n_steps = 1000
     ss=[]
     for i in range(n_steps):
-        state.info["angvel"] = jax.numpy.array([0.0])
-        state.info["velocity"] = jax.numpy.array([0.2, 0.0])
-        state.info["event_period"] = jax.numpy.array([100., 100.])
-        data = state.pipeline_state
-        pp1 = data.site_xpos[pelvis_f_id]
-        pp2 = data.site_xpos[pelvis_b_id]
-        facing_vec = (pp1 - pp2)[0:2]
-        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
-        state.info["angvel"] = jnp.array([facing_vec[1] * -2])
-        state.info["halt_cmd"] = 0
-        if i > 500 and i < 600:
-            state.info["halt_cmd"] = 1
-            state.info["phase"] = jnp.array([0, jnp.pi])
+        if walk_forward:
+            state.info["angvel"] = jax.numpy.array([0.0])
+            state.info["velocity"] = jax.numpy.array([0.2, 0.0])
+            state.info["event_period"] = jax.numpy.array([100., 100.])
+            data = state.pipeline_state
+            pp1 = data.site_xpos[pelvis_f_id]
+            pp2 = data.site_xpos[pelvis_b_id]
+            facing_vec = (pp1 - pp2)[0:2]
+            facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+            state.info["angvel"] = jnp.array([facing_vec[1] * -2])
+            state.info["halt_cmd"] = 0
+            if i > 500 and i < 600:
+                state.info["halt_cmd"] = 1
+                state.info["phase"] = jnp.array([0, jnp.pi])
         #state.info["angvel"] = jnp.array([jnp.where(facing_vec[1] > 0, -0.4, 0.4)])
 
         act_rng, rng = jax.random.split(rng)
