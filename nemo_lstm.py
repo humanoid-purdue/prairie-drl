@@ -337,7 +337,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
         feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
-        reward_dict["feet_z"] = feet_z_rew * 4.0
+        reward_dict["feet_z"] = feet_z_rew * 6.0
         reward_dict["feet_zd"] = feet_zd_rew * 1.0
 
         feet_orien_reward = self.footOrienReward(data)
@@ -418,7 +418,7 @@ class NemoEnv(PipelineEnv):
         return jnp.exp(xy_err * -1 / 0.1)
 
     def energyReward(self, data, info):
-        halt_mult = 40.0 - 1
+        halt_mult = 20.0 - 1
         qfrc_actuator = data.qfrc_actuator
         jv = data.qvel
         energy = jnp.sum(jnp.square(jv * qfrc_actuator)) ** 0.5
@@ -450,7 +450,7 @@ class NemoEnv(PipelineEnv):
         lr_halt_vel_coeff = -1.
 
         lr_coeff = rewards.lr_phase_coeff(info["phase"], DS_PROP, BU_PROP)
-        lr_grf_coeff = 1 - 4 * lr_coeff
+        lr_grf_coeff = 1 - 2 * lr_coeff
         lr_vel_coeff = 2 * lr_coeff - 1
 
         lr_grf_coeff = (lr_grf_coeff * (1 - info["halt_cmd"]) +
@@ -524,7 +524,7 @@ class NemoEnv(PipelineEnv):
         return reward * -1
 
     def footDynamicsReward(self, info, data0, data1):
-        halt_zt = 0.0
+        halt_zt = jnp.zeros([0.0, 0.0])
 
         zt, zdt = rewards.quintic_foot_phase(info["phase"], DS_PROP)
 
