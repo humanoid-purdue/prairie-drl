@@ -337,7 +337,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
         feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
-        reward_dict["feet_z"] = feet_z_rew * 6.0
+        reward_dict["feet_z"] = feet_z_rew * 4.0
         reward_dict["feet_zd"] = feet_zd_rew * 1.0
 
         feet_orien_reward = self.footOrienReward(data)
