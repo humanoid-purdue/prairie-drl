@@ -524,7 +524,7 @@ class NemoEnv(PipelineEnv):
         return reward * -1
 
     def footDynamicsReward(self, info, data0, data1):
-        halt_zt = jnp.zeros([0.0, 0.0])
+        halt_zt = jnp.array([0.0, 0.0])
 
         zt, zdt = rewards.quintic_foot_phase(info["phase"], DS_PROP)
 
