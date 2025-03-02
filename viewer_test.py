@@ -11,11 +11,26 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
+DT = 0.035
+
+
+mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
+data = mujoco.MjData(mj_model)
+viewer = mujoco.viewer.launch_passive(mj_model, data)
+
+
+def get_sensor_data(sensor_name):
+    sensor_id = mj_model.sensor(sensor_name).id
+    sensor_adr = mj_model.sensor_adr[sensor_id]
+    sensor_dim = mj_model.sensor_dim[sensor_id]
+    return sensor_adr, sensor_dim
+
+gyro = get_sensor_data("gyro_pelvis")
 
 def _get_obs(data1, state_info):
-    inv_pelvis_rot = math.quat_inv(data1.x.rot[0])
-    vel = data1.xd.vel[0]
-    angvel = data1.xd.ang[0]
+    inv_pelvis_rot = math.quat_inv(data1.xquat[0])
+    angvel = data1.sensordata[gyro[0]: gyro[0] + gyro[1]]
+    vel = ( data1.xpos[0] - state_info["prev_pos"] ) / DT
 
     grav_vec = math.rotate(jnp.array([0, 0, -1]), inv_pelvis_rot)
     position = data1.qpos
@@ -38,9 +53,7 @@ def _get_obs(data1, state_info):
                            ])
     return obs
 
-mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
-data = mujoco.MjData(mj_model)
-viewer = mujoco.viewer.launch_passive(mj_model, data)
+
 
 
 def makeIFN():
@@ -61,6 +74,20 @@ def makeIFN():
     make_inference_fn = ppo_networks.make_inference_fn(ppo_network)
     return make_inference_fn
 
+joint_limit = jnp.array(mj_model.jnt_range)
+
+def tanh2Action(action: jnp.ndarray):
+    pos_t = action[:ACT_SIZE//2]
+    vel_t = action[ACT_SIZE//2:]
+
+    bottom_limit = joint_limit[1:, 0] # - q_offset
+    top_limit = joint_limit[1:, 1] # - q_offset
+    vel_sp = vel_t * 10
+
+    pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+
+    return jnp.concatenate([pos_sp, vel_sp])
+
 
 make_inference_fn = makeIFN()
 policy_path = 'walk_policy'
@@ -74,7 +101,9 @@ state_info = {
     "angvel_target": jnp.array([0.]),
     "prev_action": jnp.zeros(ACT_SIZE),
     "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
+    "prev_pos": data.xpos[0]
 }
+prev_data = data
 data.ctrl = np.zeros([ACT_SIZE])
 mujoco.mj_step(mj_model, data)
 rng = jax.random.PRNGKey(0)
@@ -86,8 +115,13 @@ for c in range(10000):
         state_info["lstm_carry"] = obs[: 2 * HIDDEN_SIZE * DEPTH]
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
-        state_info["prev_action"] = ctrl
-        data.ctrl = ctrl
+
+        state_info["prev_pos"] = data.xpos[0]
+        raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
+        state_info["prev_action"] = raw_action
+        state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
+
+        data.ctrl = tanh2Action(raw_action)
 
     state_info["phase"] += 2 * jnp.pi * 0.0035 / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)

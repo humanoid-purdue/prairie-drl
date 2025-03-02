@@ -79,11 +79,24 @@ class NemoEnv(PipelineEnv):
         self.right_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "right_foot")
         self.left_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "left_foot")
 
+        def get_sensor_data(sensor_name):
+            sensor_id = system.mj_model.sensor(sensor_name).id
+            sensor_adr = system.mj_model.sensor_adr[sensor_id]
+            sensor_dim = system.mj_model.sensor_dim[sensor_id]
+            return sensor_adr, sensor_dim
+
+        self.gyro = get_sensor_data("gyro_pelvis")
+        self.vel = get_sensor_data("local_linvel_pelvis")
+
+    def get_sensor_data(self, data, tuple):
+        return data.sensordata[tuple[0]: tuple[0] + tuple[1]]
 
     def _get_obs(self, data0, data1, state = None):
         inv_pelvis_rot = math.quat_inv(data1.x.rot[self.pelvis_id - 1])
-        vel = data1.xd.vel[self.pelvis_id - 1]
-        angvel = data1.xd.ang[self.pelvis_id - 1]
+        #vel = data1.xd.vel[self.pelvis_id - 1]
+        vel = self.get_sensor_data(data1, self.vel)
+        #angvel = data1.xd.ang[self.pelvis_id - 1]
+        angvel = self.get_sensor_data(data1, self.gyro)
 
         def joint_rel_pos(d):
             pelvis_pos = d.x.pos[self.pelvis_id]

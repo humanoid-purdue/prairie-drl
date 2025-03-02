@@ -140,6 +140,7 @@
     <site name="pelvis_back" pos="-0.05 0.0 0.0" />
     <site name="pelvis_front" pos="0.05 0.0 0.0" />
     <site name="head" pos="0.0 0.0 0.5" />
+    <site name="imu_in_pelvis" size="0.01" pos="0.0 0.0 0.0" />
     <light name="tracking" mode="trackcom" pos="0 0 2" />
   </body>
 </worldbody>
@@ -176,5 +177,11 @@
 <keyframe>
     <key name="stand" qpos="       0 0 0.618       1 0 0 0       0 0 0 0 0 0       0 0 0 0 0 0       " />
 </keyframe>
+
+<sensor>
+    <velocimeter site="imu_in_pelvis" name="local_linvel_pelvis"/>
+    <accelerometer site="imu_in_pelvis" name="accelerometer_pelvis"/>
+    <gyro site="imu_in_pelvis" name="gyro_pelvis"/>
+</sensor>
 
 </mujoco>
