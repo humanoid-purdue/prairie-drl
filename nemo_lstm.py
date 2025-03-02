@@ -92,7 +92,7 @@ class NemoEnv(PipelineEnv):
         return data.sensordata[tuple[0]: tuple[0] + tuple[1]]
 
     def _get_obs(self, data0, data1, state = None):
-        inv_pelvis_rot = math.quat_inv(data1.x.rot[self.pelvis_id - 1])
+        inv_pelvis_rot = math.quat_inv(data1.xquat[self.pelvis_id])
         #vel = data1.xd.vel[self.pelvis_id - 1]
         vel = self.get_sensor_data(data1, self.vel)
         #angvel = data1.xd.ang[self.pelvis_id - 1]
@@ -308,7 +308,7 @@ class NemoEnv(PipelineEnv):
     def rewards(self, state, data, action, contact):
         reward_dict = {}
         data0 = state.pipeline_state
-        min_z, max_z = (0.4, 0.8)
+        min_z, max_z = (0.4, 1.2)
         is_healthy = jnp.where(data.q[2] < min_z, 0.0, 1.0)
         is_healthy = jnp.where(data.q[2] > max_z, 0.0, is_healthy)
         #healthy_reward = 1.2 * is_healthy

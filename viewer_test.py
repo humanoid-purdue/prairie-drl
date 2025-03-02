@@ -17,6 +17,7 @@ DT = 0.035
 mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
 data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
+mj_model.opt.timestep = 0.001
 
 
 def get_sensor_data(sensor_name):
@@ -108,28 +109,24 @@ prev_data = data
 data.ctrl = np.zeros([ACT_SIZE])
 mujoco.mj_step(mj_model, data)
 rng = jax.random.PRNGKey(0)
-mj_model.geom_friction[0, 0] = 0.7
+mj_model.geom_friction[0, 0] = 1.0
 print(mj_model.geom_friction)
-
+t = 0
 for c in range(10000):
-
-    if c % 10 == 0:
+    if c % round(0.035 / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
-        state_info["lstm_carry"] = obs[: 2 * HIDDEN_SIZE * DEPTH]
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
-
         state_info["prev_pos"] = data.xpos[1]
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
-
         data.ctrl = tanh2Action(raw_action)
-
-    state_info["phase"] += 2 * jnp.pi * 0.0035 / 1.0
+        state_info["phase"] += 2 * jnp.pi * 0.035 / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
     mujoco.mj_step(mj_model, data)
     viewer.sync()
+    t += mj_model.opt.timestep
 
 viewer.close()
 time.sleep(0.5)
