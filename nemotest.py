@@ -16,6 +16,7 @@ def makeRollout(lstm = False, walk_forward = True):
     envs.register_environment('nemo', NemoEnv)
     env_name = 'nemo'
     env = envs.create(env_name='nemo')
+    #print(env.observation_size, env.action_size)
 
     jit_reset = jax.jit(env.reset)
     jit_step = jax.jit(env.step)
@@ -80,3 +81,6 @@ def makeRollout(lstm = False, walk_forward = True):
         rollout.append(state.pipeline_state)
 
     return env, rollout
+
+if __name__ == "__main__":
+    makeRollout(lstm = True)

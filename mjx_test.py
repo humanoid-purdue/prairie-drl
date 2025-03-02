@@ -8,7 +8,7 @@ from nemo_env_pd import NemoEnv
 import mujoco
 import mujoco.mjx as mjx
 
-model = mujoco.MjModel.from_xml_path("nemo2/scene.xml")
+model = mujoco.MjModel.from_xml_path("nemo4/scene.xml")
 
 model.opt.solver = mujoco.mjtSolver.mjSOL_CG
 model.opt.iterations = 6
@@ -18,3 +18,5 @@ system = mjcf.load_model(model)
 
 print(dir(model))
 print(model.opt.timestep)
+pelvis_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, 'pelvis')
+print(pelvis_id)
