@@ -159,19 +159,19 @@
   <position kp="64.0" class="robot" name="r_foot_pitch" joint="r_foot_pitch"  inheritrange="1" />
   <position kp="32.0" class="robot" name="r_foot_roll" joint="r_foot_roll"  inheritrange="1" />
 
-  <velocity kv="0.0" class="robot" name="l_hip_pitch_v" joint="l_hip_pitch"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="l_hip_roll_v" joint="l_hip_roll"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="l_hip_yaw_v" joint="l_hip_yaw"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="l_knee_v" joint="l_knee"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="l_foot_pitch_v" joint="l_foot_pitch"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="l_foot_roll_v" joint="l_foot_roll"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="l_hip_pitch_v" joint="l_hip_pitch"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="l_hip_roll_v" joint="l_hip_roll"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="l_hip_yaw_v" joint="l_hip_yaw"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="l_knee_v" joint="l_knee"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="l_foot_pitch_v" joint="l_foot_pitch"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="l_foot_roll_v" joint="l_foot_roll"  ctrlrange="-20 20" />
 
-  <velocity kv="0.0" class="robot" name="r_hip_pitch_v" joint="r_hip_pitch"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="r_hip_roll_v" joint="r_hip_roll"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="r_hip_yaw_v" joint="r_hip_yaw"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="r_knee_v" joint="r_knee"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="r_foot_pitch_v" joint="r_foot_pitch"  ctrlrange="-20 20" />
-  <velocity kv="0.0" class="robot" name="r_foot_roll_v" joint="r_foot_roll"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="r_hip_pitch_v" joint="r_hip_pitch"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="r_hip_roll_v" joint="r_hip_roll"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="r_hip_yaw_v" joint="r_hip_yaw"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="r_knee_v" joint="r_knee"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="r_foot_pitch_v" joint="r_foot_pitch"  ctrlrange="-20 20" />
+  <velocity kv="0.01" class="robot" name="r_foot_roll_v" joint="r_foot_roll"  ctrlrange="-20 20" />
 </actuator>
 
 <keyframe>
