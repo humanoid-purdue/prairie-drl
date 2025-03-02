@@ -26,11 +26,12 @@ def get_sensor_data(sensor_name):
     return sensor_adr, sensor_dim
 
 gyro = get_sensor_data("gyro_pelvis")
+vel_t = get_sensor_data("local_linvel_pelvis")
 
 def _get_obs(data1, state_info):
-    inv_pelvis_rot = math.quat_inv(data1.xquat[0])
+    inv_pelvis_rot = math.quat_inv(data1.xquat[1])
     angvel = data1.sensordata[gyro[0]: gyro[0] + gyro[1]]
-    vel = ( data1.xpos[0] - state_info["prev_pos"] ) / DT
+    vel = data1.sensordata[vel_t[0]: vel_t[0] + vel_t[1]]
 
     grav_vec = math.rotate(jnp.array([0, 0, -1]), inv_pelvis_rot)
     position = data1.qpos
@@ -101,12 +102,14 @@ state_info = {
     "angvel_target": jnp.array([0.]),
     "prev_action": jnp.zeros(ACT_SIZE),
     "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
-    "prev_pos": data.xpos[0]
+    "prev_pos": data.xpos[1]
 }
 prev_data = data
 data.ctrl = np.zeros([ACT_SIZE])
 mujoco.mj_step(mj_model, data)
 rng = jax.random.PRNGKey(0)
+mj_model.geom_friction[0, 0] = 0.7
+print(mj_model.geom_friction)
 
 for c in range(10000):
 
@@ -116,7 +119,7 @@ for c in range(10000):
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
 
-        state_info["prev_pos"] = data.xpos[0]
+        state_info["prev_pos"] = data.xpos[1]
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
