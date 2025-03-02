@@ -92,7 +92,7 @@ class NemoEnv(PipelineEnv):
         return data.sensordata[tuple[0]: tuple[0] + tuple[1]]
 
     def _get_obs(self, data0, data1, state = None):
-        inv_pelvis_rot = math.quat_inv(data1.xquat[self.pelvis_id])
+        inv_pelvis_rot = math.quat_inv(data1.x.rot[self.pelvis_id - 1])
         #vel = data1.xd.vel[self.pelvis_id - 1]
         vel = self.get_sensor_data(data1, self.vel)
         #angvel = data1.xd.ang[self.pelvis_id - 1]
@@ -231,21 +231,23 @@ class NemoEnv(PipelineEnv):
         state.info["phase_period"] = phase_period[0]
         return
 
-    def tanh2Action(self, action: jnp.ndarray):
+    def tanh2Action(self, action: jnp.ndarray, posonly = True):
         #q_offset = self.initial_state[7:]
+        if posonly:
+            pos_t = action
+            return pos_t * 1.0
 
-        pos_t = action[:self.nu//2]
-        vel_t = action[self.nu//2:]
+        else:
+            pos_t = action[:self.nu//2]
+            vel_t = action[self.nu//2:]
 
-        bottom_limit = self.joint_limit[1:, 0] # - q_offset
-        top_limit = self.joint_limit[1:, 1] # - q_offset
-        vel_sp = vel_t * 10
+            bottom_limit = self.joint_limit[1:, 0] # - q_offset
+            top_limit = self.joint_limit[1:, 1] # - q_offset
+            vel_sp = vel_t * 10
 
-        pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+            pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
         #pos_sp += q_offset
-
-
-        return jnp.concatenate([pos_sp, vel_sp])
+            return jnp.concatenate([pos_sp, vel_sp])
 
     def zeroStates(self, state):
         rng = state.info["rng"]
