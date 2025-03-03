@@ -235,7 +235,10 @@ class NemoEnv(PipelineEnv):
         #q_offset = self.initial_state[7:]
         if posonly:
             pos_t = action
-            return pos_t * 1.0
+            bottom_limit = self.joint_limit[1:, 0]  # - q_offset
+            top_limit = self.joint_limit[1:, 1]  # - q_offset
+            pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+            return pos_sp
 
         else:
             pos_t = action[:self.nu//2]
@@ -246,7 +249,6 @@ class NemoEnv(PipelineEnv):
             vel_sp = vel_t * 10
 
             pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
-        #pos_sp += q_offset
             return jnp.concatenate([pos_sp, vel_sp])
 
     def zeroStates(self, state):
