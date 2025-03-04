@@ -231,7 +231,7 @@ class NemoEnv(PipelineEnv):
         state.info["phase_period"] = phase_period[0]
         return
 
-    def tanh2Action(self, action: jnp.ndarray, posonly = False):
+    def tanh2Action(self, action: jnp.ndarray, posonly = True):
         #q_offset = self.initial_state[7:]
         if posonly:
             pos_t = action
