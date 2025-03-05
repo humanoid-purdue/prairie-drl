@@ -63,7 +63,7 @@
 <worldbody>
   <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30" />
   <body name="pelvis" pos="0.0 0.0 0.618" childclass="robot">
-    <inertial pos="0.0 0.0 -0.028416610000000002" mass="6.34472558" diaginertia="0.01 0.01 0.01" quat="1 0 0 0"/>
+    <inertial pos="0.0 0.0 -0.028416610000000002" mass="6.34472558" fullinertia="0.01 0.01 0.01 0 0 0"/>
     <freejoint name="floating_base" />
     <geom type="mesh" class="visual" mesh="pelvis" />
     <body name="l_hip_pitch" pos="0.0 0.1568 -0.1244">
