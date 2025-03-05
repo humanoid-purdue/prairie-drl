@@ -63,7 +63,7 @@
 <worldbody>
   <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30" />
   <body name="pelvis" pos="0.0 0.0 0.8073" childclass="robot">
-    <inertial pos="0.0 0.0 0.783" mass="0.93335" fullinertia="0.00136452 0.00167626 0.00081819 0.0 0.0 0.0" />
+    <inertial pos="0.0 0.0 0.783" mass="6.93335" fullinertia="0.00136452 0.00167626 0.00081819 0.0 0.0 0.0" />
     <freejoint name="floating_base" />
     <geom type="mesh" class="visual" mesh="pelvis" />
     <body name="l_hip_pitch" pos="0.0 0.0522 -0.07">
@@ -174,7 +174,7 @@
 </actuator>
 
 <keyframe>
-    <key name="stand" qpos="       0 0 0.783       1 0 0 0       0 0 0 0 0 0       0 0 0 0 0 0       " />
+    <key name="stand" qpos="       0 0 0.8073       1 0 0 0       0 0 0 0 0 0       0 0 0 0 0 0       " />
 </keyframe>
 
 <sensor>
