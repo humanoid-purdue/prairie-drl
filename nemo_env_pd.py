@@ -119,27 +119,27 @@ class NemoEnv(PipelineEnv):
 
             rng, key = jax.random.split(rng)
             z_noise_0 = jax.random.uniform(key, shape=z.shape, minval=-0.02, maxval=0.02)
-            z += z_noise_0
+            #z += z_noise_0
 
             rng, key = jax.random.split(rng)
             locs_noise_0 = jax.random.uniform(key, shape=locs.shape, minval=-0.03, maxval=0.03)
-            locs += locs_noise_0
+            #locs += locs_noise_0
 
             rng, key = jax.random.split(rng)
             position_noise = jax.random.uniform(key, shape = position.shape, minval = -0.05, maxval = 0.05)
-            position += position_noise
+            #position += position_noise
 
             rng, key = jax.random.split(rng)
             velocity_noise = jax.random.uniform(key, shape = velocity.shape, minval = -0.1, maxval = 0.1)
-            velocity += velocity_noise
+            #velocity += velocity_noise
 
             rng, key = jax.random.split(rng)
             angvel_noise = jax.random.uniform(key, shape = angvel.shape, minval = -0.4, maxval = 0.4)
-            angvel += angvel_noise
+            #angvel += angvel_noise
 
             rng, key = jax.random.split(rng)
             grav_vec_noise = jax.random.uniform(key, shape = grav_vec.shape, minval = -0.1, maxval = 0.1)
-            grav_vec += grav_vec_noise
+            #grav_vec += grav_vec_noise
             state.info["rng"] = rng
             phase = state.info["phase"]
 
