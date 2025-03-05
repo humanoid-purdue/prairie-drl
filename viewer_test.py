@@ -17,7 +17,7 @@ DT = 0.035
 mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
 data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
-mj_model.opt.timestep = 0.001
+mj_model.opt.timestep = 0.002
 
 
 def get_sensor_data(sensor_name):
@@ -117,12 +117,11 @@ for c in range(10000):
         obs = _get_obs(data, state_info)
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
-        state_info["prev_pos"] = data.xpos[1]
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
         data.ctrl = tanh2Action(raw_action)
-        state_info["phase"] += 2 * jnp.pi * 0.035 / 1.0
+    state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
     mujoco.mj_step(mj_model, data)
     viewer.sync()
