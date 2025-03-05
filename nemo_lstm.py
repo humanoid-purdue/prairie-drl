@@ -131,7 +131,7 @@ class NemoEnv(PipelineEnv):
             position += position_noise
 
             rng, key = jax.random.split(rng)
-            velocity_noise = jax.random.uniform(key, shape = velocity.shape, minval = -0.5, maxval = 0.5)
+            velocity_noise = jax.random.uniform(key, shape = velocity.shape, minval = -0.1, maxval = 0.1)
             velocity += velocity_noise
 
             rng, key = jax.random.split(rng)
