@@ -435,7 +435,7 @@ class NemoEnv(PipelineEnv):
         return jnp.exp(xy_err * -1 / 0.1)
 
     def energyReward(self, data, info):
-        halt_mult = 20.0 - 1
+        halt_mult = 5.0 - 1
         qfrc_actuator = data.qfrc_actuator
         jv = data.qvel
         energy = jnp.sum(jnp.square(jv * qfrc_actuator)) ** 0.5
