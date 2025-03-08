@@ -267,7 +267,7 @@ class NemoEnv(PipelineEnv):
         scaled_action = self.tanh2Action(raw_action)
 
         #apply noise to scaled action
-        pos_action = scaled_action[scaled_action.shape[0]//2:]
+        pos_action = scaled_action[:scaled_action.shape[0]//2]
         vel_action = scaled_action[scaled_action.shape[0]//2:]
 
         rng = state.info["rng"]

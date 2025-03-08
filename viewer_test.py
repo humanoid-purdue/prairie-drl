@@ -11,13 +11,13 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.03
+DT = 0.035
 
 
 mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
 data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
-mj_model.opt.timestep = 0.002
+mj_model.opt.timestep = 0.0035
 
 
 def get_sensor_data(sensor_name):
@@ -30,13 +30,13 @@ gyro = get_sensor_data("gyro_pelvis")
 vel_p = get_sensor_data("local_linvel_pelvis")
 
 def _get_obs(data1, s_info):
-    inv_pelvis_rot = math.quat_inv(data1.xquat[0])
+    inv_pelvis_rot = math.quat_inv(data1.xquat[1])
     angvel = data1.sensordata[gyro[0]: gyro[0] + gyro[1]]
     vel = data1.sensordata[vel_p[0]: vel_p[0] + vel_p[1]]
 
     grav_vec = math.rotate(jnp.array([0, 0, -1]), inv_pelvis_rot)
-    position = data1.qpos
-    velocity = data1.qvel
+    position = data1.qpos[7:]
+    velocity = data1.qvel[6:]
     phase = s_info["phase"]
     vel_target = s_info["vel_target"]
     angvel_target = s_info["angvel_target"]
@@ -115,13 +115,13 @@ for c in range(10000):
     if c % round(DT / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
         #print(obs[256:])
-        print(data.xquat[1])
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
-        data.ctrl = tanh2Action(raw_action)
+        act = tanh2Action(raw_action)
+        data.ctrl = act
     state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
     mujoco.mj_step(mj_model, data)
