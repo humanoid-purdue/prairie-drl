@@ -11,7 +11,7 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.035
+DT = 0.03
 
 
 mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
@@ -27,22 +27,22 @@ def get_sensor_data(sensor_name):
     return sensor_adr, sensor_dim
 
 gyro = get_sensor_data("gyro_pelvis")
-vel_t = get_sensor_data("local_linvel_pelvis")
+vel_p = get_sensor_data("local_linvel_pelvis")
 
-def _get_obs(data1, state_info):
-    inv_pelvis_rot = math.quat_inv(data1.xquat[1])
+def _get_obs(data1, s_info):
+    inv_pelvis_rot = math.quat_inv(data1.xquat[0])
     angvel = data1.sensordata[gyro[0]: gyro[0] + gyro[1]]
-    vel = data1.sensordata[vel_t[0]: vel_t[0] + vel_t[1]]
+    vel = data1.sensordata[vel_p[0]: vel_p[0] + vel_p[1]]
 
     grav_vec = math.rotate(jnp.array([0, 0, -1]), inv_pelvis_rot)
     position = data1.qpos
     velocity = data1.qvel
-    phase = state_info["phase"]
-    vel_target = state_info["vel_target"]
-    angvel_target = state_info["angvel_target"]
-    halt = state_info["halt"]
-    carry = state_info["lstm_carry"]
-    prev_action = state_info["prev_action"]
+    phase = s_info["phase"]
+    vel_target = s_info["vel_target"]
+    angvel_target = s_info["angvel_target"]
+    halt = s_info["halt"]
+    carry = s_info["lstm_carry"]
+    prev_action = s_info["prev_action"]
     cmd = jnp.array([vel_target[0], vel_target[1], angvel_target[0], halt])
 
 
@@ -109,12 +109,13 @@ prev_data = data
 data.ctrl = np.zeros([ACT_SIZE])
 mujoco.mj_step(mj_model, data)
 rng = jax.random.PRNGKey(0)
-mj_model.geom_friction[0, 0] = 1.0
 print(mj_model.geom_friction)
 t = 0
 for c in range(10000):
-    if c % round(0.035 / mj_model.opt.timestep) == 0:
+    if c % round(DT / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
+        #print(obs[256:])
+        print(data.xquat[1])
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]

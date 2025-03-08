@@ -92,7 +92,7 @@ class NemoEnv(PipelineEnv):
         return data.sensordata[tuple[0]: tuple[0] + tuple[1]]
 
     def _get_obs(self, data0, data1, state = None):
-        inv_pelvis_rot = math.quat_inv(data1.x.rot[self.pelvis_id - 1])
+        inv_pelvis_rot = math.quat_inv(data1.xquat[1])
         #vel = data1.xd.vel[self.pelvis_id - 1]
         vel = self.get_sensor_data(data1, self.vel)
         #angvel = data1.xd.ang[self.pelvis_id - 1]
@@ -113,8 +113,8 @@ class NemoEnv(PipelineEnv):
         grav_vec = math.rotate(jnp.array([0,0,-1]), inv_pelvis_rot)
         #forward_vec = math.rotate(jnp.array([1., 0, 0]), inv_pelvis_rot)
         #grav_vec = jnp.concatenate([grav_vec, forward_vec], axis = 0)
-        position = data1.qpos
-        velocity = data1.qvel
+        position = data1.qpos[7:]
+        velocity = data1.qvel[6:]
         if state is not None:
             rng = state.info["rng"]
 

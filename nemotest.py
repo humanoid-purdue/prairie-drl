@@ -91,4 +91,4 @@ def makeRollout(lstm = False, walk_forward = True, robot = "nemo4"):
     return env, rollout
 
 if __name__ == "__main__":
-    makeRollout(lstm = True)
+    makeRollout(lstm = True, robot = "nemo4")
