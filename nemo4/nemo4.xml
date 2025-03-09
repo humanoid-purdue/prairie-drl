@@ -148,15 +148,15 @@
   <position kp="40.0" class="robot" name="l_hip_roll" joint="l_hip_roll"  inheritrange="1" />
   <position kp="40.0" class="robot" name="l_hip_yaw" joint="l_hip_yaw"  inheritrange="1" />
   <position kp="50.0" class="robot" name="l_knee" joint="l_knee"  inheritrange="1" />
-  <position kp="50.0" class="robot" name="l_foot_pitch" joint="l_foot_pitch"  inheritrange="1" />
-  <position kp="40.0" class="robot" name="l_foot_roll" joint="l_foot_roll"  inheritrange="1" />
+  <position kp="22.0" class="robot" name="l_foot_pitch" joint="l_foot_pitch"  inheritrange="1" />
+  <position kp="20.0" class="robot" name="l_foot_roll" joint="l_foot_roll"  inheritrange="1" />
 
   <position kp="50.0" class="robot" name="r_hip_pitch" joint="r_hip_pitch"  inheritrange="1" />
   <position kp="40.0" class="robot" name="r_hip_roll" joint="r_hip_roll"  inheritrange="1" />
   <position kp="40.0" class="robot" name="r_hip_yaw" joint="r_hip_yaw"  inheritrange="1" />
   <position kp="50.0" class="robot" name="r_knee" joint="r_knee"  inheritrange="1" />
-  <position kp="50.0" class="robot" name="r_foot_pitch" joint="r_foot_pitch"  inheritrange="1" />
-  <position kp="40.0" class="robot" name="r_foot_roll" joint="r_foot_roll"  inheritrange="1" />
+  <position kp="22.0" class="robot" name="r_foot_pitch" joint="r_foot_pitch"  inheritrange="1" />
+  <position kp="20.0" class="robot" name="r_foot_roll" joint="r_foot_roll"  inheritrange="1" />
 
   <velocity kv="4" class="robot" name="l_hip_pitch_v" joint="l_hip_pitch"  ctrlrange="-20 20"/>
   <velocity kv="2" class="robot" name="l_hip_roll_v" joint="l_hip_roll"  ctrlrange="-20 20"/>
