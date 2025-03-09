@@ -268,8 +268,8 @@ class NemoEnv(PipelineEnv):
         scaled_action = self.tanh2Action(raw_action)
 
         #apply noise to scaled action
-        pos_action = scaled_action[:scaled_action.shape[0]//2]
-        vel_action = scaled_action[scaled_action.shape[0]//2:]
+        #pos_action = scaled_action[:scaled_action.shape[0]//2]
+        #vel_action = scaled_action[scaled_action.shape[0]//2:]
 
         #rng = state.info["rng"]
         #rng, key = jax.random.split(rng)
@@ -280,9 +280,9 @@ class NemoEnv(PipelineEnv):
         #vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
         #vel_action += vel_noise
 
-        state.info["rng"] = rng
+        #state.info["rng"] = rng
 
-        scaled_action = jnp.concatenate([pos_action, vel_action])
+        #scaled_action = jnp.concatenate([pos_action, vel_action])
 
         data0 = state.pipeline_state
         data1 = self.pipeline_step(data0, scaled_action)
