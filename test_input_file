@@ -15,6 +15,6 @@
  "flatfoot", 4.0,
  "feet_z", 4.0,
  "feet_zd", 1.0,
- "feet_orient", 0.25,
+ "feet_orien", 0.25,
 "feet_slip_ang", -0.25,
 "halt", 6.0
