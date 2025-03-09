@@ -13,6 +13,8 @@ DS_PROP = 0.1
 BU_PROP = 0.5
 BU_PROP = 0.5
 
+SIGMA_FAC = 4
+
 
 metrics_dict = {
                    'reward': 0.0,
@@ -409,12 +411,12 @@ class NemoEnv(PipelineEnv):
         vel = self.pelVel(data0, data1)
         vel_target = state.info["velocity"]
         vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
-        return jnp.exp( vel_n * -1 / 0.10) * (1 - state.info["halt_cmd"])
+        return jnp.exp( vel_n * -1 / (0.05 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
         angvel_err = jnp.square(angvel - state.info["angvel"][0])
-        return jnp.exp(angvel_err * -1 / 0.10) * (1 - state.info["halt_cmd"])
+        return jnp.exp(angvel_err * -1 / (0.10 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def actionRateReward(self, action, state):
         act_delta = jnp.sum(jnp.square(state.info["prev_action"] - action))
@@ -423,7 +425,7 @@ class NemoEnv(PipelineEnv):
     def angvelXYReward(self, data):
         angvel = data.xd.ang[self.pelvis_id][0:2]
         angvel_err = jnp.sum(jnp.square(angvel))
-        return jnp.exp(angvel_err * -1)
+        return jnp.exp(angvel_err * -1 / SIGMA_FAC)
 
     def velZReward(self, data0, data1):
         vel = self.pelVel(data0, data1)
@@ -433,7 +435,7 @@ class NemoEnv(PipelineEnv):
         pelvis_xy = ((data.site_xpos[self.pelvis_f_id] + data.site_xpos[self.pelvis_b_id]) / 2)[0:2]
         head_xy = data.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
-        return jnp.exp(xy_err * -1 / 0.1)
+        return jnp.exp(xy_err * -1 / (0.1 * SIGMA_FAC))
 
     def energyReward(self, data, info):
         halt_mult = 5.0 - 1
@@ -477,8 +479,8 @@ class NemoEnv(PipelineEnv):
                         info["halt_cmd"] * lr_halt_vel_coeff)
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / 40)
-        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / 40)
+        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / (40 * SIGMA_FAC))
+        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / (40 * SIGMA_FAC))
 
         lp0, rp0 = self.footPos(data0)
         lp1, rp1 = self.footPos(data1)
@@ -486,8 +488,8 @@ class NemoEnv(PipelineEnv):
         lv = (lp1 - lp0) / self.dt
         rv = (rp1 - rp0) / self.dt
 
-        l_spd_rew = 1 - jnp.exp(-2 * jnp.sum(lv**2))
-        r_spd_rew = 1 - jnp.exp(-2 * jnp.sum(rv**2))
+        l_spd_rew = 1 - jnp.exp(-2 * jnp.sum(lv**2) / (0.1 * SIGMA_FAC))
+        r_spd_rew = 1 - jnp.exp(-2 * jnp.sum(rv**2) / (0.1 * SIGMA_FAC))
 
         grf_reward = lr_grf_coeff[0] * l_f_rew + lr_grf_coeff[1] * r_f_rew
         vel_reward = lr_vel_coeff[0] * l_spd_rew + lr_vel_coeff[1] * r_spd_rew
@@ -510,7 +512,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001) - 1
+            reward = jnp.exp(-1 * (ca -1) ** 2 / (0.001 * SIGMA_FAC)) - 1
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]
@@ -558,8 +560,8 @@ class NemoEnv(PipelineEnv):
         z0 = jnp.array([lp0[2], rp0[2]])
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
-        rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.01))
-        rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
+        rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / (0.01 * SIGMA_FAC)))
+        rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / (0.02 * SIGMA_FAC)) - 1)
         #rew_z_track = jnp.sum(jnp.exp(-1 * jnp.abs(z1 - zt) / 0.02))
 
         # get reward for foot being above target
@@ -590,13 +592,13 @@ class NemoEnv(PipelineEnv):
         dpl = jnp.sum(facing_vec * l_vec)
         dpr = jnp.sum(facing_vec * r_vec)
 
-        l_rew = jnp.exp(-(dpl - 1) ** 2 / 0.1)
-        r_rew = jnp.exp(-(dpr - 1) ** 2 / 0.1)
+        l_rew = jnp.exp(-(dpl - 1) ** 2 / (0.1 * SIGMA_FAC))
+        r_rew = jnp.exp(-(dpr - 1) ** 2 / (0.1 * SIGMA_FAC))
         return l_rew + r_rew
 
     def haltReward(self, data0, info):
         #give halt reward for foot below height
         lp, rp = self.footPos(data0)
-        l_z_rew = jnp.exp(-1 * (lp[2] ** 2) / 0.0001)
-        r_z_rew = jnp.exp(-1 * (rp[2] ** 2) / 0.0001)
+        l_z_rew = jnp.exp(-1 * (lp[2] ** 2) / (0.0001 * SIGMA_FAC))
+        r_z_rew = jnp.exp(-1 * (rp[2] ** 2) / (0.0001 * SIGMA_FAC))
         return (l_z_rew + r_z_rew) * info["halt_cmd"]
