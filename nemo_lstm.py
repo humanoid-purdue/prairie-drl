@@ -271,14 +271,14 @@ class NemoEnv(PipelineEnv):
         pos_action = scaled_action[:scaled_action.shape[0]//2]
         vel_action = scaled_action[scaled_action.shape[0]//2:]
 
-        rng = state.info["rng"]
-        rng, key = jax.random.split(rng)
-        pos_noise = jax.random.uniform(key, shape = pos_action.shape, minval = -0.1, maxval = 0.1)
-        pos_action += pos_noise
+        #rng = state.info["rng"]
+        #rng, key = jax.random.split(rng)
+        #pos_noise = jax.random.uniform(key, shape = pos_action.shape, minval = -0.1, maxval = 0.1)
+        #pos_action += pos_noise
 
-        rng, key = jax.random.split(rng)
-        vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
-        vel_action += vel_noise
+        #rng, key = jax.random.split(rng)
+        #vel_noise = jax.random.uniform(key, shape = vel_action.shape, minval = -1.0, maxval = 1.0)
+        #vel_action += vel_noise
 
         state.info["rng"] = rng
 
