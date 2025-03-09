@@ -17,7 +17,7 @@ DT = 0.035
 mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
 data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
-mj_model.opt.timestep = 0.0035
+mj_model.opt.timestep = 0.001
 
 
 def get_sensor_data(sensor_name):
@@ -88,7 +88,7 @@ def tanh2Action(action: jnp.ndarray):
 
     pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
 
-    return jnp.concatenate([pos_sp, vel_sp])
+    return jnp.concatenate([vel_sp, vel_sp])
 
 
 make_inference_fn = makeIFN()
