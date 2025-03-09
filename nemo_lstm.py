@@ -13,7 +13,7 @@ DS_PROP = 0.1
 BU_PROP = 0.5
 BU_PROP = 0.5
 
-SIGMA_FAC = 4
+SIGMA_FAC = 2
 
 
 metrics_dict = {
