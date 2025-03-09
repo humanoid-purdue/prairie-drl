@@ -144,7 +144,7 @@
   </body>
 </worldbody>
 <actuator>
-  
+
   <position kp="50.0" class="robot" name="l_hip_pitch" joint="l_hip_pitch"  inheritrange="1" />
   <position kp="40.0" class="robot" name="l_hip_roll" joint="l_hip_roll"  inheritrange="1" />
   <position kp="40.0" class="robot" name="l_hip_yaw" joint="l_hip_yaw"  inheritrange="1" />

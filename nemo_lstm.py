@@ -356,7 +356,7 @@ class NemoEnv(PipelineEnv):
 
         feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
         reward_dict["feet_z"] = feet_z_rew * 4.0
-        reward_dict["feet_zd"] = feet_zd_rew * 1.0
+        reward_dict["feet_zd"] = feet_zd_rew * 0.5
 
         feet_orien_reward = self.footOrienReward(data)
         reward_dict["feet_orien"] = feet_orien_reward * 0.25
@@ -409,7 +409,7 @@ class NemoEnv(PipelineEnv):
         vel = self.pelVel(data0, data1)
         vel_target = state.info["velocity"]
         vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
-        return jnp.exp( vel_n * -1 / 0.05) * (1 - state.info["halt_cmd"])
+        return jnp.exp( vel_n * -1 / 0.10) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
@@ -558,7 +558,7 @@ class NemoEnv(PipelineEnv):
         z0 = jnp.array([lp0[2], rp0[2]])
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
-        rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.05))
+        rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.01))
         rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
         #rew_z_track = jnp.sum(jnp.exp(-1 * jnp.abs(z1 - zt) / 0.02))
 

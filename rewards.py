@@ -324,7 +324,7 @@ def quintic_foot_phase(phase, ds_prop):
               coeffs[3] * 4 * nt**3 +
               coeffs[4] * 5 * nt**4)
         p2 = jnp.where(t > ds_d, 1, 0) * jnp.where(t <= np.pi - ds_d, 1, 0)
-        return p2 * z2, p2 *zd2
+        return p2 * z2, p2 * zd2
     lz, lzd = phase_sol(phase[0])
     rz, rzd = phase_sol(phase[1])
     z_h = jnp.array([lz, rz])
