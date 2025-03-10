@@ -22,7 +22,8 @@ metrics_dict = {
                    'periodic': 0.0,
                     'upright': 0.0,
                     'limit': 0.0,
-                    'feet_z': 0.0,
+                    'feet_z_limit': 0.0,
+                    'feet_z_rew': 0.0,
                     'feet_zd': 0.0,
                     'termination': 0.0,
                     'velocity': 0.0,
@@ -267,7 +268,7 @@ class NemoEnv(PipelineEnv):
     def step(self, state: State, action: jnp.ndarray):
         raw_action = action[2 * HIDDEN_SIZE * DEPTH:]
         carry_state = action[:2 * HIDDEN_SIZE * DEPTH]
-        scaled_action = self.tanh2Action(raw_action)
+        scaled_action = self.tanh2Action(state.info["prev_action"])
 
         #apply noise to scaled action
         #pos_action = scaled_action[:scaled_action.shape[0]//2]
@@ -356,8 +357,9 @@ class NemoEnv(PipelineEnv):
         flatfoot_reward = self.flatfootReward(data, contact)
         reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
-        feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
-        reward_dict["feet_z"] = feet_z_rew * 4.0
+        feet_z_limit, feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
+        reward_dict["feet_z_limit"] = feet_z_limit * 4.0
+        reward_dict["feet_z_rew"] = feet_z_rew * 2.0
         reward_dict["feet_zd"] = feet_zd_rew * 0.5
 
         feet_orien_reward = self.footOrienReward(data)
@@ -561,13 +563,13 @@ class NemoEnv(PipelineEnv):
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / (0.01 * SIGMA_FAC)))
-        rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / (0.02 * SIGMA_FAC)) - 1)
-        #rew_z_track = jnp.sum(jnp.exp(-1 * jnp.abs(z1 - zt) / 0.02))
+        rew_z_limit = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / (0.02 * SIGMA_FAC)) - 1)
+        rew_z_track = jnp.sum(jnp.exp(-1 * jnp.square(z1 - zt) / 0.001))
 
         # get reward for foot being above target
         #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
         #rew_z_track += rew_z_above
-        return rew_z_track, rew_zd_track
+        return rew_z_limit, rew_z_track, rew_zd_track
 
     def energySymmetryReward(self, data):
         return

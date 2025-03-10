@@ -86,13 +86,14 @@ def tanh2Action(action: jnp.ndarray):
     top_limit = joint_limit[1:, 1] # - q_offset
     vel_sp = vel_t * 10
 
-    pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+    #pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+    pos_sp = pos_t * 1.0
 
-    return jnp.concatenate([vel_sp, vel_sp])
+    return jnp.concatenate([pos_sp, vel_sp])
 
 
 make_inference_fn = makeIFN()
-policy_path = 'walk_policy'
+policy_path = 'walk_policy2'
 saved_params = model.load_params(policy_path)
 inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
@@ -118,10 +119,11 @@ for c in range(10000):
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
+        act = tanh2Action(state_info["prev_action"])
+        data.ctrl = act
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
-        act = tanh2Action(raw_action)
-        data.ctrl = act
+
     state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
     mujoco.mj_step(mj_model, data)

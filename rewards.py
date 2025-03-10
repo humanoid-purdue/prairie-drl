@@ -335,13 +335,16 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     phase = jnp.array([0, jnp.pi])
     lr = jnp.zeros([1000, 2])
-    lrz = jnp.zeros([1000, 2])
+    lrz = jnp.zeros([1000, 4])
     for c in range(1000):
         lr = lr.at[c, :].set(lr_phase_coeff( phase,0.1, 0.5))
         z, zd = quintic_foot_phase(phase, 0.1)
-        lrz = lrz.at[c, :].set(z)
+        lrz = lrz.at[c, :2].set(z)
+        lrz = lrz.at[c, 2:4].set(zd)
         phase += 0.02
         phase = jnp.mod(phase, jnp.pi * 2)
     plt.plot(lrz[:, 0])
     plt.plot(lrz[:, 1])
+    plt.plot(lrz[:, 2])
+    plt.plot(lrz[:, 3])
     plt.show()
