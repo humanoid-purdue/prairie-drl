@@ -23,7 +23,7 @@ metrics_dict = {
                     'upright': 0.0,
                     'limit': 0.0,
                     'feet_z_limit': 0.0,
-                    'feet_z_rew': 0.0,
+                    'feet_z_track': 0.0,
                     'feet_zd': 0.0,
                     'termination': 0.0,
                     'velocity': 0.0,
@@ -357,9 +357,9 @@ class NemoEnv(PipelineEnv):
         flatfoot_reward = self.flatfootReward(data, contact)
         reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
-        feet_z_limit, feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
+        feet_z_limit, feet_z_track, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
         reward_dict["feet_z_limit"] = feet_z_limit * 4.0
-        reward_dict["feet_z_rew"] = feet_z_rew * 2.0
+        reward_dict["feet_z_track"] = feet_z_track * 0.5
         reward_dict["feet_zd"] = feet_zd_rew * 0.5
 
         feet_orien_reward = self.footOrienReward(data)
@@ -564,7 +564,7 @@ class NemoEnv(PipelineEnv):
         zd = (z1 - z0) / self.dt
         rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / (0.01 * SIGMA_FAC)))
         rew_z_limit = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / (0.02 * SIGMA_FAC)) - 1)
-        rew_z_track = jnp.sum(jnp.exp(-1 * jnp.square(z1 - zt) / 0.001))
+        rew_z_track = jnp.sum(jnp.exp(-1 * (z1 - zt) ** 2 / 0.0001))
 
         # get reward for foot being above target
         #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5

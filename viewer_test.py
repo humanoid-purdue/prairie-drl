@@ -112,14 +112,15 @@ mujoco.mj_step(mj_model, data)
 rng = jax.random.PRNGKey(0)
 print(mj_model.geom_friction)
 t = 0
-for c in range(10000):
+for c in range(20000):
     if c % round(DT / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
         #print(obs[256:])
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
-        act = tanh2Action(state_info["prev_action"])
+        #act = tanh2Action(state_info["prev_action"])
+        act = tanh2Action(raw_action)
         data.ctrl = act
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
