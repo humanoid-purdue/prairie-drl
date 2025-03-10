@@ -268,8 +268,8 @@ class NemoEnv(PipelineEnv):
     def step(self, state: State, action: jnp.ndarray):
         raw_action = action[2 * HIDDEN_SIZE * DEPTH:]
         carry_state = action[:2 * HIDDEN_SIZE * DEPTH]
-        scaled_action = self.tanh2Action(state.info["prev_action"])
-        #scaled_action = self.tanh2Action(raw_action)
+        #scaled_action = self.tanh2Action(state.info["prev_action"])
+        scaled_action = self.tanh2Action(raw_action)
 
         #apply noise to scaled action
         #pos_action = scaled_action[:scaled_action.shape[0]//2]
@@ -414,7 +414,7 @@ class NemoEnv(PipelineEnv):
         vel = self.pelVel(data0, data1)
         vel_target = state.info["velocity"]
         vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
-        return jnp.exp( vel_n * -1 / (0.02 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
+        return jnp.exp( vel_n * -1 / (0.07 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
