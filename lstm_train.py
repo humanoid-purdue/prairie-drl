@@ -39,7 +39,7 @@ def make_trainfns(robot = "nemo4"):
         ppo.train, num_timesteps=200000000, num_evals=20, episode_length=1000,
         normalize_observations=False, unroll_length=20, num_minibatches=32,
         num_updates_per_batch=4, discounting=0.995, learning_rate=3e-5,
-        entropy_cost=5e-3, num_envs=8192, batch_size=256,
+        entropy_cost=3e-3, num_envs=8192, batch_size=256,
         network_factory=make_networks_factory, randomization_fn=domain_randomize,
     )
     #, restore_checkpoint_path=load_checkpoint_dir included notebook save_checkpoint_path=checkpoint_dir
