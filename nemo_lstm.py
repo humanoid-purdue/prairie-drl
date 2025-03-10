@@ -491,8 +491,8 @@ class NemoEnv(PipelineEnv):
         lv = (lp1 - lp0) / self.dt
         rv = (rp1 - rp0) / self.dt
 
-        l_spd_rew = 1 - jnp.exp(-1 * jnp.sum(lv**2) / (0.5 * SIGMA_FAC))
-        r_spd_rew = 1 - jnp.exp(-1 * jnp.sum(rv**2) / (0.5 * SIGMA_FAC))
+        l_spd_rew = 1 - jnp.exp(-1 * jnp.sum(lv**2) / (0.001 * SIGMA_FAC))
+        r_spd_rew = 1 - jnp.exp(-1 * jnp.sum(rv**2) / (0.001 * SIGMA_FAC))
 
         grf_reward = lr_grf_coeff[0] * l_f_rew + lr_grf_coeff[1] * r_f_rew
         vel_reward = lr_vel_coeff[0] * l_spd_rew + lr_vel_coeff[1] * r_spd_rew
