@@ -20,8 +20,8 @@ Initializer = Callable[..., Any]
 #Need custom flax nn, make_policy_network, distribution, and make_ppo_network
 #Action size consits of 128 + 128 + a size
 
-HIDDEN_SIZE = 128
-DEPTH = 2
+HIDDEN_SIZE = 256
+DEPTH = 1
 
 class StackedLSTM(nn.Module):
     param_size: int
