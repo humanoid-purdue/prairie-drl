@@ -11,7 +11,7 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.035
+DT = 0.02
 
 
 mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
@@ -119,8 +119,8 @@ for c in range(20000):
         act_rng, rng = jax.random.split(rng)
         ctrl, _ = jit_inference_fn(obs, act_rng)
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
-        #act = tanh2Action(state_info["prev_action"])
-        act = tanh2Action(raw_action)
+        act = tanh2Action(state_info["prev_action"])
+        #act = tanh2Action(raw_action)
         data.ctrl = act
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]

@@ -268,8 +268,8 @@ class NemoEnv(PipelineEnv):
     def step(self, state: State, action: jnp.ndarray):
         raw_action = action[2 * HIDDEN_SIZE * DEPTH:]
         carry_state = action[:2 * HIDDEN_SIZE * DEPTH]
-        scaled_action = self.tanh2Action(state.info["prev_action"])
-        #scaled_action = self.tanh2Action(raw_action)
+        #scaled_action = self.tanh2Action(state.info["prev_action"])
+        scaled_action = self.tanh2Action(raw_action)
 
         #apply noise to scaled action
         #pos_action = scaled_action[:scaled_action.shape[0]//2]
