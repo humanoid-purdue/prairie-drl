@@ -11,7 +11,7 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.02
+DT = 0.01
 
 
 mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
