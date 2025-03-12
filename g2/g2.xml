@@ -63,7 +63,7 @@
 <worldbody>
   <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30" />
   <body name="pelvis" pos="0.0 0.0 0.8073" childclass="robot">
-    <inertial pos="0.0 0.0 0.783" mass="6.93335" fullinertia="0.00136452 0.00167626 0.00081819 0.0 0.0 0.0" />
+    <inertial pos="0.0 0.0 0.783" mass="9.93335" fullinertia="0.00136452 0.00167626 0.00081819 0.0 0.0 0.0" />
     <freejoint name="floating_base" />
     <geom type="mesh" class="visual" mesh="pelvis" />
     <body name="l_hip_pitch" pos="0.0 0.0522 -0.07">
@@ -144,17 +144,17 @@
   </body>
 </worldbody>
 <actuator>
-  <position kp="45.0" class="robot" name="l_hip_pitch" joint="l_hip_pitch" inheritrange="1" forcerange="-11.85 11.85" />
-  <position kp="45.0" class="robot" name="l_hip_roll" joint="l_hip_roll" inheritrange="1"/>
-  <position kp="45.0" class="robot" name="l_hip_yaw" joint="l_hip_yaw" inheritrange="1" forcerange="-11.85 11.85" />
-  <position kp="45.0" class="robot" name="l_knee" joint="l_knee" inheritrange="1"/>
+  <position kp="65.0" class="robot" name="l_hip_pitch" joint="l_hip_pitch" inheritrange="1" forcerange="-11.85 11.85" />
+  <position kp="65.0" class="robot" name="l_hip_roll" joint="l_hip_roll" inheritrange="1"/>
+  <position kp="65.0" class="robot" name="l_hip_yaw" joint="l_hip_yaw" inheritrange="1" forcerange="-11.85 11.85" />
+  <position kp="65.0" class="robot" name="l_knee" joint="l_knee" inheritrange="1"/>
   <position kp="20.0" class="robot" name="l_foot_pitch" joint="l_foot_pitch" inheritrange="1"/>
   <position kp="20.0" class="robot" name="l_foot_roll" joint="l_foot_roll" inheritrange="1"/>
 
-  <position kp="45.0" class="robot" name="r_hip_pitch" joint="r_hip_pitch" inheritrange="1"/>
-  <position kp="45.0" class="robot" name="r_hip_roll" joint="r_hip_roll" inheritrange="1"/>
-  <position kp="45.0" class="robot" name="r_hip_yaw" joint="r_hip_yaw" inheritrange="1"/>
-  <position kp="45.0" class="robot" name="r_knee" joint="r_knee" inheritrange="1"/>
+  <position kp="65.0" class="robot" name="r_hip_pitch" joint="r_hip_pitch" inheritrange="1"/>
+  <position kp="65.0" class="robot" name="r_hip_roll" joint="r_hip_roll" inheritrange="1"/>
+  <position kp="65.0" class="robot" name="r_hip_yaw" joint="r_hip_yaw" inheritrange="1"/>
+  <position kp="65.0" class="robot" name="r_knee" joint="r_knee" inheritrange="1"/>
   <position kp="20.0" class="robot" name="r_foot_pitch" joint="r_foot_pitch" inheritrange="1"/>
   <position kp="20.0" class="robot" name="r_foot_roll" joint="r_foot_roll" inheritrange="1"/>
 
