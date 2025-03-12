@@ -27,7 +27,7 @@ class StackedLSTM(nn.Module):
     param_size: int
     kernel_init: jax.nn.initializers.lecun_uniform()
     def setup(self):
-        self.nn_in1 = nn.Dense(256, name = "i1", kernel_init=self.kernel_init)
+        self.nn_in1 = nn.Dense(1024, name = "i1", kernel_init=self.kernel_init)
         #self.nn_in2 = nn.Dense(256, name = "i2", kernel_init=self.kernel_init)
         #self.nn_mi = nn.Dense(256, name = "mid", kernel_init=self.kernel_init)
         #self.nn_mi2 = nn.Dense(128, name = "mid2", kernel_init=self.kernel_init)
