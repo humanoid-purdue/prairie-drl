@@ -27,10 +27,10 @@ class StackedLSTM(nn.Module):
     param_size: int
     kernel_init: jax.nn.initializers.lecun_uniform()
     def setup(self):
-        self.nn_in1 = nn.Dense(512, name = "i1", kernel_init=self.kernel_init)
+        self.nn_in1 = nn.Dense(256, name = "i1", kernel_init=self.kernel_init)
         #self.nn_in2 = nn.Dense(256, name = "i2", kernel_init=self.kernel_init)
         #self.nn_mi = nn.Dense(256, name = "mid", kernel_init=self.kernel_init)
-        self.nn_mi2 = nn.Dense(512, name = "mid2", kernel_init=self.kernel_init)
+        #self.nn_mi2 = nn.Dense(128, name = "mid2", kernel_init=self.kernel_init)
         self.nn_ed = nn.Dense(self.param_size, name = "end", kernel_init=self.kernel_init)
         self.lstms = [nn.LSTMCell(HIDDEN_SIZE,
                         name = "lstm_{}".format(c)) for c in range(DEPTH)]
@@ -55,8 +55,8 @@ class StackedLSTM(nn.Module):
             state, y = self.lstms[i]((hidden[..., i, :], cell[..., i, :]), y)
             hidden_next = hidden_next.at[..., i, :].set(state[0])
             cell_next = cell_next.at[..., i, :].set(state[1])
-        y = nn.swish(self.nn_mi2(y))
-        y2 = self.nn_ed(y + y_init)
+        #y = nn.swish(self.nn_mi2(y))
+        y2 = self.nn_ed(y)
         hidden_next = jnp.reshape(hidden_next, bs + (-1,))
         cell_next = jnp.reshape(cell_next, bs + (-1,))
         output = jnp.concat([hidden_next, cell_next, y2], axis = -1)
