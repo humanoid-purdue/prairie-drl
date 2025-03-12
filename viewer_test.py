@@ -117,7 +117,9 @@ for c in range(20000):
         obs = _get_obs(data, state_info)
         #print(obs[256:])
         act_rng, rng = jax.random.split(rng)
+        t = time.time()
         ctrl, _ = jit_inference_fn(obs, act_rng)
+        print(time.time() - t)
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
         act = tanh2Action(state_info["prev_action"])
         #act = tanh2Action(raw_action)
