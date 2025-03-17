@@ -10,8 +10,6 @@ def makeRollout(lstm = False, walk_forward = True, robot = "nemo4"):
         from nemo_lstm import NemoEnv
     else:
         from nemo_env_pd import NemoEnv
-    model_n = mujoco.MjModel.from_xml_path("nemo4/scene.xml")
-    c_env = NemoEnv
     if robot == "nemo4" and lstm:
         model_n = mujoco.MjModel.from_xml_path("nemo4/scene.xml")
         c_env = Nemo4Env
@@ -19,13 +17,13 @@ def makeRollout(lstm = False, walk_forward = True, robot = "nemo4"):
         model_n = mujoco.MjModel.from_xml_path("g2/scene.xml")
         c_env = G2Env
     elif robot == "nemo4b" and lstm:
+        print("nemo4b")
         model_n = mujoco.MjModel.from_xml_path("nemo4b/scene.xml")
         c_env = Nemo4bEnv
     pelvis_b_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
     pelvis_f_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 
     envs.register_environment('nemo', c_env)
-    env_name = 'nemo'
     env = envs.create(env_name='nemo')
     #print(env.observation_size, env.action_size)
 
