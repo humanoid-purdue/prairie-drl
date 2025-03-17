@@ -18,6 +18,9 @@ def makeRollout(lstm = False, walk_forward = True, robot = "nemo4"):
     elif robot == "g2" and lstm:
         model_n = mujoco.MjModel.from_xml_path("g2/scene.xml")
         c_env = G2Env
+    elif robot == "nemo4b" and lstm:
+        model_n = mujoco.MjModel.from_xml_path("nemo4b/scene.xml")
+        c_env = Nemo4bEnv
     pelvis_b_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
     pelvis_f_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 

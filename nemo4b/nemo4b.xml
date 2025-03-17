@@ -1,0 +1,187 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="nemo4b">
+<compiler angle="radian" meshdir="assets" autolimits="true" />
+
+  <option timestep="0.0035" iterations="8" ls_iterations="4">
+    <flag eulerdamp="disable" />
+  </option>
+
+  <custom>
+        <numeric data="2500" name="constraint_limit_stiffness" />
+        <numeric data="27000" name="constraint_stiffness" />
+        <numeric data="30" name="constraint_ang_damping" />
+        <numeric data="80" name="constraint_vel_damping" />
+        <numeric data="-0.05" name="ang_damping" />
+        <numeric data="0.5" name="joint_scale_pos" />
+        <numeric data="0.1" name="joint_scale_ang" />
+        <numeric data="0" name="spring_mass_scale" />
+        <numeric data="1" name="spring_inertia_scale" />
+        <numeric data="20" name="matrix_inv_iterations" />
+        <numeric data="15" name="solver_maxls" />
+  </custom>
+
+
+  <visual>
+    <global ellipsoidinertia="true" />
+  </visual>
+  <default>
+    <geom contype="0" conaffinity="0" condim="3" solref="0.005 1" />
+    <equality solref="0.005 1" />
+    <default class="robot">
+      <site rgba="1 0 0 1" size="0.01" group="5" />
+      <default class="visual">
+        <geom group="2" type="mesh" contype="0" conaffinity="0" density="0" material="metallic" />
+      </default>
+      <default class="collision">
+        <geom conaffinity="1" contype="1" group="3" rgba="0.5 0.5 0.5 1" material="metallic" />
+      </default>
+    </default>
+  </default>
+
+
+  <asset>
+    <material name="metallic" rgba="0.7 0.7 0.7 1" />
+    <material name="black" rgba="0.2 0.2 0.2 1" />
+    <material name="transparent" rgba="0 0 0 0" />
+
+    <mesh file="pelvis.stl" />
+    <mesh name="l_hip_pitch" file="l_hip_pitch.stl" />
+    <mesh name="l_hip_roll" file="l_hip_roll.stl" />
+    <mesh name="l_hip_yaw" file="l_hip_yaw.stl" />
+    <mesh name="l_knee" file="l_knee.stl" />
+    <mesh name="l_foot_pitch" file="l_foot_pitch.stl" />
+    <mesh name="l_foot_roll" file="l_foot_roll.stl" />
+
+    <mesh name="r_hip_pitch" file="l_hip_pitch.stl" scale="1 -1 1" />
+    <mesh name="r_hip_roll" file="l_hip_roll.stl" scale="1 -1 1" />
+    <mesh name="r_hip_yaw" file="l_hip_yaw.stl" scale="1 -1 1" />
+    <mesh name="r_knee" file="l_knee.stl" scale="1 -1 1" />
+    <mesh name="r_foot_pitch" file="l_foot_pitch.stl" scale="1 -1 1" />
+    <mesh name="r_foot_roll" file="l_foot_roll.stl" scale="1 -1 1" />
+
+  </asset>
+<worldbody>
+  <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30" />
+  <body name="pelvis" pos="0.0 0.0 0.6088" childclass="robot">
+    <inertial pos="0.0 0.0 -0.04540398" mass="2.11537484" fullinertia="0.02857927 0.00469137 0.02511219 0.0 0.0 0.0" />
+    <freejoint name="floating_base" />
+    <geom type="mesh" class="visual" mesh="pelvis" />
+    <body name="l_hip_pitch" pos="0.0 0.0965 -0.112">
+      <inertial pos="-0.01821923 -0.0 -3.205e-05" mass="1.8670971" fullinertia="0.00265583 0.00363357 0.00358009 -2e-07 -1.09e-06 -0.0" />
+      <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-46 46" name="l_hip_pitch" axis="0 1 0" range="-1.3 1.3" />
+      <geom type="mesh" class="visual" mesh="l_hip_pitch" />
+      <body name="l_hip_roll" pos="-0.07875 0.0 0.0">
+        <inertial pos="-0.01740501 1.764e-05 -0.05845559" mass="2.00459959" fullinertia="0.0064706 0.00633136 0.00303949 4.7e-07 -0.00070962 9e-07" />
+        <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23 23" name="l_hip_roll" axis="1 0 0" range="-0.35 1.0" />
+        <geom type="mesh" class="visual" mesh="l_hip_roll" />
+        <body name="l_hip_yaw" pos="0.00715 0.0 -0.1263">
+          <inertial pos="3.205e-05 -0.0 -0.06053076999999999" mass="1.8670971" fullinertia="0.00358009 0.00363357 0.00265583 -0.0 -1.09e-06 -2e-07" />
+          <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23 23" name="l_hip_yaw" axis="0 0 1" range="-2.5 2.5" />
+          <geom type="mesh" class="visual" mesh="l_hip_yaw" />
+          <body name="l_knee" pos="0.0 0.0 -0.07875">
+            <inertial pos="0.0 5e-05 -0.10289321" mass="0.58007416" fullinertia="0.0070466 0.00513742 0.00225232 -0.0 0.0 -0.0" />
+            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-46 46" name="l_knee" axis="0 1 0" range="-2 2" />
+            <geom type="mesh" class="visual" mesh="l_knee" />
+            <body name="l_foot_pitch" pos="0.0 0.0 -0.206">
+              <inertial pos="0.01821923 -0.0 -3.205e-05" mass="1.8670971" fullinertia="0.00265583 0.00363357 0.00358009 -2e-07 1.09e-06 -0.0" />
+              <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-46 46" name="l_foot_pitch" axis="0 1 0" range="-1.0 1.0" />
+              <geom type="mesh" class="visual" mesh="l_foot_pitch" />
+              <body name="l_foot_roll" pos="0.07875 0.0 0.0">
+                <inertial pos="0.00757956 1.139e-05 -0.03942379" mass="1.5526793" fullinertia="0.00385478 0.0054167 0.00391016 5.4e-07 0.0010808 3e-07" />
+                <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23 23" name="l_foot_roll" axis="1 0 0" range="-1 1" />
+                <geom type="mesh" class="visual" mesh="l_foot_roll" />
+                <geom class="collision" name="left_foot" pos="-0.0187 0 -0.07975" size="0.1 0.0505 0.006" type="box" />
+                <site name="left_foot_p1" pos="0.05 0.0 -0.0762" />
+                <site name="left_foot_p2" pos="-0.05 0.0 -0.0762" />
+                <site name="left_foot_p3" pos="0.0 0.05 -0.0762" />
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+
+    <body name="r_hip_pitch" pos="0.0 -0.0965 -0.112">
+      <inertial pos="-0.01821923 -0.0 -3.205e-05" mass="1.8670971" fullinertia="0.00265583 0.00363357 0.00358009 -2e-07 -1.09e-06 -0.0" />
+      <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-46 46" name="r_hip_pitch" axis="0 1 0" range="-1.3 1.3" />
+      <geom type="mesh" class="visual" mesh="r_hip_pitch" />
+      <body name="r_hip_roll" pos="-0.07875 -0.0 0.0">
+        <inertial pos="-0.01740501 1.764e-05 -0.05845559" mass="2.00459959" fullinertia="0.0064706 0.00633136 0.00303949 4.7e-07 -0.00070962 9e-07" />
+        <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23 23" name="r_hip_roll" axis="1 0 0" range="-1.0 0.35" />
+        <geom type="mesh" class="visual" mesh="r_hip_roll" />
+        <body name="r_hip_yaw" pos="0.00715 -0.0 -0.1263">
+          <inertial pos="3.205e-05 -0.0 -0.06053076999999999" mass="1.8670971" fullinertia="0.00358009 0.00363357 0.00265583 -0.0 -1.09e-06 -2e-07" />
+          <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23 23" name="r_hip_yaw" axis="0 0 1" range="-2.5 2.5" />
+          <geom type="mesh" class="visual" mesh="r_hip_yaw" />
+          <body name="r_knee" pos="0.0 -0.0 -0.07875">
+            <inertial pos="0.0 5e-05 -0.10289321" mass="0.58007416" fullinertia="0.0070466 0.00513742 0.00225232 -0.0 0.0 -0.0" />
+            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-46 46" name="r_knee" axis="0 1 0" range="-2 2" />
+            <geom type="mesh" class="visual" mesh="l_knee" />
+            <body name="r_foot_pitch" pos="0.0 -0.0 -0.206">
+              <inertial pos="0.01821923 -0.0 -3.205e-05" mass="1.8670971" fullinertia="0.00265583 0.00363357 0.00358009 -2e-07 1.09e-06 -0.0" />
+              <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-46 46" name="r_foot_pitch" axis="0 1 0" range="-1.0 1.0" />
+              <geom type="mesh" class="visual" mesh="l_foot_pitch" />
+              <body name="r_foot_roll" pos="0.07875 -0.0 0.0">
+                <inertial pos="0.00757956 1.139e-05 -0.03942379" mass="1.5526793" fullinertia="0.00385478 0.0054167 0.00391016 5.4e-07 0.0010808 3e-07" />
+                <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23 23" name="r_foot_roll" axis="1 0 0" range="-1 1" />
+                <geom type="mesh" class="visual" mesh="l_foot_roll" />
+                <geom class="collision" name="right_foot" pos="-0.0187 0 -0.07975" size="0.1 0.0505 0.006" type="box" />
+                <site name="right_foot_p1" pos="0.05 0.0 -0.0762" />
+                <site name="right_foot_p2" pos="-0.05 0.0 -0.0762" />
+                <site name="right_foot_p3" pos="0.0 -0.05 -0.0762" />
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <site name="pelvis_back" pos="-0.05 0.0 0.0" />
+    <site name="pelvis_front" pos="0.05 0.0 0.0" />
+    <site name="head" pos="0.0 0.0 0.5" />
+    <site name="imu_in_pelvis" size="0.01" pos="0.0 0.0 0.0" />
+    <light name="tracking" mode="trackcom" pos="0 0 2" />
+  </body>
+</worldbody>
+<actuator>
+
+  <position kp="50.0" class="robot" name="l_hip_pitch" joint="l_hip_pitch" inheritrange="1"/>
+  <position kp="40.0" class="robot" name="l_hip_roll" joint="l_hip_roll" inheritrange="1"/>
+  <position kp="40.0" class="robot" name="l_hip_yaw" joint="l_hip_yaw" inheritrange="1"/>
+  <position kp="50.0" class="robot" name="l_knee" joint="l_knee" inheritrange="1"/>
+  <position kp="22.0" class="robot" name="l_foot_pitch" joint="l_foot_pitch" inheritrange="1"/>
+  <position kp="20.0" class="robot" name="l_foot_roll" joint="l_foot_roll" inheritrange="1"/>
+
+  <position kp="50.0" class="robot" name="r_hip_pitch" joint="r_hip_pitch" inheritrange="1"/>
+  <position kp="40.0" class="robot" name="r_hip_roll" joint="r_hip_roll" inheritrange="1"/>
+  <position kp="40.0" class="robot" name="r_hip_yaw" joint="r_hip_yaw" inheritrange="1"/>
+  <position kp="50.0" class="robot" name="r_knee" joint="r_knee" inheritrange="1"/>
+  <position kp="22.0" class="robot" name="r_foot_pitch" joint="r_foot_pitch" inheritrange="1"/>
+  <position kp="20.0" class="robot" name="r_foot_roll" joint="r_foot_roll" inheritrange="1"/>
+  
+  <velocity kv="4" class="robot" name="l_hip_pitch_v" joint="l_hip_pitch" ctrlrange="-20 20"/>
+  <velocity kv="2" class="robot" name="l_hip_roll_v" joint="l_hip_roll" ctrlrange="-20 20"/>
+  <velocity kv="2" class="robot" name="l_hip_yaw_v" joint="l_hip_yaw" ctrlrange="-20 20"/>
+  <velocity kv="4" class="robot" name="l_knee_v" joint="l_knee" ctrlrange="-20 20"/>
+  <velocity kv="4" class="robot" name="l_foot_pitch_v" joint="l_foot_pitch" ctrlrange="-20 20"/>
+  <velocity kv="2" class="robot" name="l_foot_roll_v" joint="l_foot_roll" ctrlrange="-20 20"/>
+
+  <velocity kv="4" class="robot" name="r_hip_pitch_v" joint="r_hip_pitch" ctrlrange="-20 20"/>
+  <velocity kv="2" class="robot" name="r_hip_roll_v" joint="r_hip_roll" ctrlrange="-20 20"/>
+  <velocity kv="2" class="robot" name="r_hip_yaw_v" joint="r_hip_yaw" ctrlrange="-20 20"/>
+  <velocity kv="4" class="robot" name="r_knee_v" joint="r_knee" ctrlrange="-20 20"/>
+  <velocity kv="4" class="robot" name="r_foot_pitch_v" joint="r_foot_pitch" ctrlrange="-20 20"/>
+  <velocity kv="2" class="robot" name="r_foot_roll_v" joint="r_foot_roll" ctrlrange="-20 20"/>
+</actuator>
+
+<keyframe>
+    <key name="stand" qpos="       0 0 0.6088       1 0 0 0       0 0 0 0 0 0       0 0 0 0 0 0       " />
+</keyframe>
+
+<sensor>
+    <velocimeter site="imu_in_pelvis" name="local_linvel_pelvis" />
+    <accelerometer site="imu_in_pelvis" name="accelerometer_pelvis" />
+    <gyro site="imu_in_pelvis" name="gyro_pelvis" />
+</sensor>
+
+</mujoco>
