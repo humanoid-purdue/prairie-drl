@@ -535,8 +535,8 @@ class NemoEnv(PipelineEnv):
         center = jnp.mean(self.joint_limit[1:, :], axis = 1)
         d_top = self.joint_limit[1:, 1] - center
         d_bottom = self.joint_limit[1:, 0] - center
-        top = center + d_top * 0.8
-        bottom = center + d_bottom * 0.8
+        top = center + d_top * 0.95
+        bottom = center + d_bottom * 0.95
 
         # calculate the joint angles has larger or smaller than the limit
         top_rew = jnp.clip(data1.q[7:] - top, min = 0, max = None)
