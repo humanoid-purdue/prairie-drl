@@ -353,7 +353,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["periodic"] = period_rew * 2.0
 
         limit_reward = self.jointLimitReward(data)
-        reward_dict["limit"] = limit_reward * 5.0
+        reward_dict["limit"] = limit_reward * 0.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
         reward_dict["flatfoot"] = flatfoot_reward * 4.0
