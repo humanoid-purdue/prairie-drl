@@ -326,10 +326,10 @@ class NemoEnv(PipelineEnv):
         reward_dict["termination"] = -1000 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)
-        reward_dict["velocity"] = vel_reward * 0.0
+        reward_dict["velocity"] = vel_reward * 3.0
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 0.0
+        reward_dict["angvel_z"] = angvel_z_reward * 2.0
 
         angvel_xy_reward = self.angvelXYReward(data)
         reward_dict["angvel_xy"] = angvel_xy_reward * -0.15
@@ -353,15 +353,15 @@ class NemoEnv(PipelineEnv):
         reward_dict["periodic"] = period_rew * 2.0
 
         limit_reward = self.jointLimitReward(data)
-        reward_dict["limit"] = limit_reward * 0.0
+        reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
         reward_dict["flatfoot"] = flatfoot_reward * 4.0
 
         feet_z_limit, feet_z_track, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
-        reward_dict["feet_z_limit"] = feet_z_limit * 2.0
-        reward_dict["feet_z_track"] = feet_z_track * 0.0
-        reward_dict["feet_zd"] = feet_zd_rew * 0.0
+        reward_dict["feet_z_limit"] = feet_z_limit * 4.0
+        reward_dict["feet_z_track"] = feet_z_track * 0.5
+        reward_dict["feet_zd"] = feet_zd_rew * 0.5
 
         feet_orien_reward = self.footOrienReward(data)
         reward_dict["feet_orien"] = feet_orien_reward * 0.25
@@ -535,8 +535,8 @@ class NemoEnv(PipelineEnv):
         center = jnp.mean(self.joint_limit[1:, :], axis = 1)
         d_top = self.joint_limit[1:, 1] - center
         d_bottom = self.joint_limit[1:, 0] - center
-        top = center + d_top * 0.95
-        bottom = center + d_bottom * 0.95
+        top = center + d_top * 0.99
+        bottom = center + d_bottom * 0.99
 
         # calculate the joint angles has larger or smaller than the limit
         top_rew = jnp.clip(data1.q[7:] - top, min = 0, max = None)
