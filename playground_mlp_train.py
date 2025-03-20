@@ -22,7 +22,6 @@ def make_trainfns(robot = "g1"):
     eval_env = env
 
 
-
     make_networks_factory = functools.partial(
         ppo_networks.make_ppo_networks,
         policy_hidden_layer_sizes=(512, 256, 256, 128))
@@ -40,7 +39,7 @@ def make_trainfns(robot = "g1"):
 
 
     train_fn = functools.partial(
-        ppo.train, num_timesteps=20_000_000, num_evals=20, episode_length=1000,
+        ppo.train, num_timesteps=200000000, num_evals=20, episode_length=1000,
         normalize_observations=False, unroll_length=20, num_minibatches=32,
         num_updates_per_batch=4, discounting=0.97, learning_rate=0.0003,
         entropy_cost=0.005, num_envs=8192, batch_size=256, clipping_epsilon = 0.2,
@@ -62,7 +61,6 @@ def make_trainfns(robot = "g1"):
         y_data.append(metrics["eval/episode_reward"])
         y_dataerr.append(metrics["eval/episode_reward_std"])
 
-        plt.xlim([0, 20_000_000 * 1.25])
         plt.xlabel("# environment steps")
         plt.ylabel("reward per episode")
         plt.title(f"y={y_data[-1]:.3f}")
