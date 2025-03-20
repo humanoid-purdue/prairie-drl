@@ -58,11 +58,11 @@ def make_trainfns(robot = "g1"):
         y_data.append(metrics["eval/episode_reward"])
         y_dataerr.append(metrics["eval/episode_reward_std"])
 
-        plt.xlim([0, 100_000_000 * 1.25])
+        plt.xlim([0, 200_000_000 * 1.25])
         plt.xlabel("# environment steps")
         plt.ylabel("reward per episode")
         plt.title(f"y={y_data[-1]:.3f}")
-        plt.errorbar(x_data, y_data, yerr=y_dataerr, color="blue")
+        plt.plot(x_data, y_data)
         plt.show()
     return train_fn, env, progress, eval_env
 
