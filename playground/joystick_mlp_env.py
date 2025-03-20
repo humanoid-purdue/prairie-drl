@@ -104,7 +104,6 @@ class Joystick(BaseEnv):
         config=config,
         config_overrides=config_overrides,
     )
-    self.consts = consts
     self._post_init()
 
 

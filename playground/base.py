@@ -21,8 +21,6 @@ class BaseEnv(mjx_env.MjxEnv):
   ) -> None:
     self.consts = consts
     super().__init__(config, config_overrides)
-    print(os.getcwd(), xml_path)
-    print(xml_path)
     self._mj_model = mujoco.MjModel.from_xml_path(
         xml_path
     )

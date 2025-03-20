@@ -15,6 +15,10 @@ from mujoco_playground import wrapper
 def make_trainfns(robot = "g1"):
     if robot == "g1":
         env = G1MLPEnv()
+    elif robot == "g1pgnd":
+        from mujoco_playground import registry
+        env_name = 'G1JoystickFlatTerrain'
+        env = registry.load(env_name)
     eval_env = env
 
 
@@ -36,9 +40,9 @@ def make_trainfns(robot = "g1"):
 
 
     train_fn = functools.partial(
-        ppo.train, num_timesteps=200_000_000, num_evals=20, episode_length=1000,
+        ppo.train, num_timesteps=20_000_000, num_evals=20, episode_length=1000,
         normalize_observations=False, unroll_length=20, num_minibatches=32,
-        num_updates_per_batch=4, discounting=0.97, learning_rate=3e-4,
+        num_updates_per_batch=4, discounting=0.97, learning_rate=0.0003,
         entropy_cost=0.005, num_envs=8192, batch_size=256, clipping_epsilon = 0.2,
         num_resets_per_eval = 1, action_repeat=1, max_grad_norm=1.0,
         reward_scaling = 1.0,
@@ -58,7 +62,7 @@ def make_trainfns(robot = "g1"):
         y_data.append(metrics["eval/episode_reward"])
         y_dataerr.append(metrics["eval/episode_reward_std"])
 
-        plt.xlim([0, 200_000_000 * 1.25])
+        plt.xlim([0, 20_000_000 * 1.25])
         plt.xlabel("# environment steps")
         plt.ylabel("reward per episode")
         plt.title(f"y={y_data[-1]:.3f}")
