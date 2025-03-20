@@ -8,7 +8,7 @@ from nemo_env_pd import NemoEnv
 import mujoco
 import mujoco.mjx as mjx
 
-model = mujoco.MjModel.from_xml_path("nemo4/scene.xml")
+model = mujoco.MjModel.from_xml_path("unitree_g1/scene.xml")
 
 model.opt.solver = mujoco.mjtSolver.mjSOL_CG
 model.opt.iterations = 6
