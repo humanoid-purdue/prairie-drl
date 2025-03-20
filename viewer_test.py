@@ -11,13 +11,13 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.01
+DT = 0.02
 
 
-mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
+mj_model = mujoco.MjModel.from_xml_path('nemo4b/scene.xml')
 data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
-mj_model.opt.timestep = 0.001
+mj_model.opt.timestep = 0.0015
 
 
 def get_sensor_data(sensor_name):
@@ -93,7 +93,7 @@ def tanh2Action(action: jnp.ndarray):
 
 
 make_inference_fn = makeIFN()
-policy_path = 'walk_policy3'
+policy_path = 'walk_policy4'
 saved_params = model.load_params(policy_path)
 inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
@@ -110,16 +110,28 @@ prev_data = data
 data.ctrl = np.zeros([ACT_SIZE])
 mujoco.mj_step(mj_model, data)
 rng = jax.random.PRNGKey(0)
-print(mj_model.geom_friction)
 t = 0
+walk_forward = True
+pelvis_b_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
+pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 for c in range(20000):
+    if walk_forward:
+        state_info["angvel"] = jax.numpy.array([0.0])
+        state_info["velocity"] = jax.numpy.array([0.2, 0.0])
+        state_info["event_period"] = jax.numpy.array([500 * 0.035, 100 * 0.035])
+        pp1 = data.site_xpos[pelvis_f_id]
+        pp2 = data.site_xpos[pelvis_b_id]
+        facing_vec = (pp1 - pp2)[0:2]
+        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+        state_info["angvel"] = jnp.array([facing_vec[1] * -2])
     if c % round(DT / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
         #print(obs[256:])
         act_rng, rng = jax.random.split(rng)
         t = time.time()
         ctrl, _ = jit_inference_fn(obs, act_rng)
-        print(time.time() - t)
+        #print(time.time() - t)
+        print(state_info["angvel"])
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
         act = tanh2Action(state_info["prev_action"])
         #act = tanh2Action(raw_action)
