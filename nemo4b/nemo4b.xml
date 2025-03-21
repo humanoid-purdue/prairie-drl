@@ -44,7 +44,7 @@
     <material name="black" rgba="0.2 0.2 0.2 1" />
     <material name="transparent" rgba="0 0 0 0" />
 
-    <mesh file="pelvis002.stl" />
+    <mesh file="pelvis.stl" />
     <mesh name="l_hip_pitch" file="l_hip_pitch.stl" />
     <mesh name="l_hip_roll" file="l_hip_roll.stl" />
     <mesh name="l_hip_yaw" file="l_hip_yaw.stl" />
