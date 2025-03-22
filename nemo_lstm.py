@@ -209,7 +209,7 @@ class NemoEnv(PipelineEnv):
         rng, key3 = jax.random.split(rng)
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
-        vel = vel * jnp.array([0.2, 0.2])
+        vel = vel * jnp.array([0.3, 0.3])
         #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         phase_period = jax.random.uniform(key3, shape=[1], minval=1, maxval=1.25)
@@ -414,7 +414,7 @@ class NemoEnv(PipelineEnv):
         vel = self.pelVel(data0, data1)
         vel_target = state.info["velocity"]
         vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
-        return jnp.exp( vel_n * -1 / (0.07 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
+        return jnp.exp( vel_n * -1 / (0.04 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
