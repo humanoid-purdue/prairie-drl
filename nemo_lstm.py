@@ -117,7 +117,7 @@ class NemoEnv(PipelineEnv):
         #forward_vec = math.rotate(jnp.array([1., 0, 0]), inv_pelvis_rot)
         #grav_vec = jnp.concatenate([grav_vec, forward_vec], axis = 0)
         position = data1.qpos[7:]
-        velocity = data1.qvel[6:]
+        velocity = data1.qvel[:]
         if state is not None:
             rng = state.info["rng"]
 
