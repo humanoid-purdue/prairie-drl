@@ -117,7 +117,7 @@ class NemoEnv(PipelineEnv):
         #forward_vec = math.rotate(jnp.array([1., 0, 0]), inv_pelvis_rot)
         #grav_vec = jnp.concatenate([grav_vec, forward_vec], axis = 0)
         position = data1.qpos[7:]
-        velocity = data1.qvel[:]
+        velocity = data1.qvel[6:]
         if state is not None:
             rng = state.info["rng"]
 
@@ -326,7 +326,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["termination"] = -1000 * (1 - is_healthy)
 
         vel_reward = self.velocityReward(state, data0, data)
-        reward_dict["velocity"] = vel_reward * 4.0
+        reward_dict["velocity"] = vel_reward * 6.0
 
         angvel_z_reward = self.angvelZReward(state, data)
         reward_dict["angvel_z"] = angvel_z_reward * 4.0
