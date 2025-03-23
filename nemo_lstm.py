@@ -419,7 +419,7 @@ class NemoEnv(PipelineEnv):
         theta = jnp.arctan2(facing_vec[1], facing_vec[0])
         rot_mat = jnp.array([[jnp.cos(-theta), -jnp.sin(-theta)],
                              [jnp.sin(-theta), jnp.cos(-theta)]])
-        local_vel = jnp.matmul( rot_mat , vel)
+        local_vel = jnp.matmul( rot_mat , vel[0:2])
 
         #local_vel = self.get_sensor_data(data1, self.vel)[0:2]
         #convert local vel to xy vel
