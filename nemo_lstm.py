@@ -344,7 +344,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["action_rate"] = action_r_reward * -0.01
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * 1.0
+        reward_dict["upright"] = upright_reward * 3.0
 
         slip_reward = self.feetSlipReward(data0, data, contact)
         reward_dict["feet_slip"] = slip_reward * -0.25
@@ -411,10 +411,21 @@ class NemoEnv(PipelineEnv):
         return lp, rp
 
     def velocityReward(self, state, data0, data1):
-        #vel = self.pelVel(data0, data1)
-        vel = self.get_sensor_data(data1, self.vel)
+        vel = self.pelVel(data0, data1)
+        pp1 = data1.site_xpos[self.pelvis_f_id]
+        pp2 = data1.site_xpos[self.pelvis_b_id]
+        facing_vec = (pp1 - pp2)[0:2]
+        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+        theta = jnp.arctan2(facing_vec[1], facing_vec[0])
+        rot_mat = jnp.array([[jnp.cos(-theta), -jnp.sin(-theta)],
+                             [jnp.sin(-theta), jnp.cos(-theta)]])
+        local_vel = jnp.matmul( rot_mat , vel)
+
+        #local_vel = self.get_sensor_data(data1, self.vel)[0:2]
+        #convert local vel to xy vel
+
         vel_target = state.info["velocity"]
-        vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
+        vel_n = jnp.sum(jnp.square(local_vel - vel_target))
         return jnp.exp( vel_n * -1 / (0.05 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
