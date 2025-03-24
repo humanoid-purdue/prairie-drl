@@ -63,7 +63,7 @@
 <worldbody>
   <light name="spotlight" mode="targetbodycom" target="pelvis" pos="0 -6 4" cutoff="30" />
   <body name="pelvis" pos="0.0 0.0 0.6088" childclass="robot">
-    <inertial pos="0.0 0.0 -0.04540398" mass="2.11537484" fullinertia="0.02857927 0.00469137 0.02511219 0.0 0.0 0.0" />
+    <inertial pos="-0.084 0.0 0.3" mass="5.11537484" fullinertia="0.03 0.03 0.03 0.0 0.0 0.0" />
     <freejoint name="floating_base" />
     <geom type="mesh" class="visual" mesh="pelvis" />
     <body name="l_hip_pitch" pos="0.0 0.1165 -0.112">
@@ -158,7 +158,7 @@
   <position kp="50.0" class="robot" name="r_knee" joint="r_knee" inheritrange="1"/>
   <position kp="50.0" class="robot" name="r_foot_pitch" joint="r_foot_pitch" inheritrange="1"/>
   <position kp="40.0" class="robot" name="r_foot_roll" joint="r_foot_roll" inheritrange="1"/>
-  
+
   <velocity kv="4" class="robot" name="l_hip_pitch_v" joint="l_hip_pitch"/>
   <velocity kv="2" class="robot" name="l_hip_roll_v" joint="l_hip_roll"/>
   <velocity kv="2" class="robot" name="l_hip_yaw_v" joint="l_hip_yaw"/>
