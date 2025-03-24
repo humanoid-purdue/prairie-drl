@@ -76,7 +76,7 @@
         <geom type="mesh" class="visual" mesh="l_hip_roll" />
         <body name="l_hip_yaw" pos="0.00715 0.0 -0.1263">
           <inertial pos="3.205e-05 -0.0 -0.06053076999999999" mass="1.8670971" fullinertia="0.00358009 0.00363357 0.00265583 -0.0 -1.09e-06 -2e-07" />
-          <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23.7 23.7" name="l_hip_yaw" axis="0 0 1" range="-2.5 2.5" />
+          <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23.7 23.7" name="l_hip_yaw" axis="0 0 1" range="-1.0 1.0" />
           <geom type="mesh" class="visual" mesh="l_hip_yaw" />
           <body name="l_knee" pos="0.0 0.0 -0.07875">
             <inertial pos="0.0 5e-05 -0.10289321" mass="0.58007416" fullinertia="0.0070466 0.00513742 0.00225232 -0.0 0.0 -0.0" />
@@ -112,7 +112,7 @@
         <geom type="mesh" class="visual" mesh="r_hip_roll" />
         <body name="r_hip_yaw" pos="0.00715 -0.0 -0.1263">
           <inertial pos="3.205e-05 -0.0 -0.06053076999999999" mass="1.8670971" fullinertia="0.00358009 0.00363357 0.00265583 -0.0 -1.09e-06 -2e-07" />
-          <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23.7 23.7" name="r_hip_yaw" axis="0 0 1" range="-2.5 2.5" />
+          <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23.7 23.7" name="r_hip_yaw" axis="0 0 1" range="-1.0 1.0" />
           <geom type="mesh" class="visual" mesh="r_hip_yaw" />
           <body name="r_knee" pos="0.0 -0.0 -0.07875">
             <inertial pos="0.0 5e-05 -0.10289321" mass="0.58007416" fullinertia="0.0070466 0.00513742 0.00225232 -0.0 0.0 -0.0" />
