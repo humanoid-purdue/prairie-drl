@@ -11,13 +11,13 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.02
+DT = 0.01
 
 
 mj_model = mujoco.MjModel.from_xml_path('nemo4b/scene.xml')
 data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
-mj_model.opt.timestep = 0.0015
+mj_model.opt.timestep = 0.001
 
 
 def get_sensor_data(sensor_name):

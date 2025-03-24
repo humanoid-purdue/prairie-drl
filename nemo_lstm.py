@@ -356,7 +356,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["limit"] = limit_reward * 5.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 5.0
+        reward_dict["flatfoot"] = flatfoot_reward * 8.0
 
         feet_z_limit, feet_z_track, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
         reward_dict["feet_z_limit"] = feet_z_limit * 4.0
