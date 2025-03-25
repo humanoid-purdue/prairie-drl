@@ -374,7 +374,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["halt"] = halt_reward * 6.0
 
         foot_col_reward = self.footColReward(data)
-        reward_dict["foot_col"] = foot_col_reward * 5.0
+        reward_dict["foot_col"] = foot_col_reward * 10.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
@@ -630,4 +630,5 @@ class NemoEnv(PipelineEnv):
         b = -0.5 / (jnp.exp(-0.101 * sigma) - jnp.exp(-0.2 * sigma))
         rew_curve = b * jnp.exp( -1 * sigma * foot_xy_dist) - b * jnp.exp(-0.2 * sigma)
         rew = jnp.where(foot_xy_dist < 0.101, tight_cost, rew_curve)
+        rew = jnp.where(foot_xy_dist < 0.2, rew, 0.0)
         return rew
