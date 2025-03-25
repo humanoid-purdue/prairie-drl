@@ -80,7 +80,7 @@
           <geom type="mesh" class="visual" mesh="l_hip_yaw" />
           <body name="l_knee" pos="0.0 0.0 -0.07875">
             <inertial pos="0.0 5e-05 -0.10289321" mass="0.58007416" fullinertia="0.0070466 0.00513742 0.00225232 -0.0 0.0 -0.0" />
-            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-47.4 47.4" name="l_knee" axis="0 1 0" range="-2 2" />
+            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-47.4 47.4" name="l_knee" axis="0 1 0" range="-2 0.1" />
             <geom type="mesh" class="visual" mesh="l_knee" />
             <body name="l_foot_pitch" pos="0.0 0.0 -0.206">
               <inertial pos="0.01821923 -0.0 -3.205e-05" mass="1.8670971" fullinertia="0.00265583 0.00363357 0.00358009 -2e-07 1.09e-06 -0.0" />
@@ -116,7 +116,7 @@
           <geom type="mesh" class="visual" mesh="r_hip_yaw" />
           <body name="r_knee" pos="0.0 -0.0 -0.07875">
             <inertial pos="0.0 5e-05 -0.10289321" mass="0.58007416" fullinertia="0.0070466 0.00513742 0.00225232 -0.0 0.0 -0.0" />
-            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-47.4 47.4" name="r_knee" axis="0 1 0" range="-2 2" />
+            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-47.4 47.4" name="r_knee" axis="0 1 0" range="-2 0.1" />
             <geom type="mesh" class="visual" mesh="l_knee" />
             <body name="r_foot_pitch" pos="0.0 -0.0 -0.206">
               <inertial pos="0.01821923 -0.0 -3.205e-05" mass="1.8670971" fullinertia="0.00265583 0.00363357 0.00358009 -2e-07 1.09e-06 -0.0" />

@@ -37,9 +37,9 @@ def make_trainfns(robot = "nemo4"):
         load_checkpoint_dir = None
 
     train_fn = functools.partial(
-        ppo.train, num_timesteps=300000000, num_evals=20, episode_length=1000,
+        ppo.train, num_timesteps=200000000, num_evals=20, episode_length=1000,
         normalize_observations=False, unroll_length=20, num_minibatches=32,
-        num_updates_per_batch=4, discounting=0.97, learning_rate=0.00003,
+        num_updates_per_batch=4, discounting=0.97, learning_rate=0.00005,
         entropy_cost=0.005, num_envs=8192, batch_size=256, clipping_epsilon=0.2,
         num_resets_per_eval=1, action_repeat=1, max_grad_norm=1.0,
         reward_scaling=1.0,
