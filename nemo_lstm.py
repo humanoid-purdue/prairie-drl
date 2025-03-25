@@ -35,7 +35,8 @@ metrics_dict = {
                     'angvel_z': 0.0,
                     'feet_orien': 0.0,
                     'feet_slip_ang': 0.0,
-                    'halt': 0.0}
+                    'halt': 0.0,
+                    'foot_col': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self, rname = "nemo4"):
@@ -372,6 +373,9 @@ class NemoEnv(PipelineEnv):
         halt_reward = self.haltReward(data, state.info)
         reward_dict["halt"] = halt_reward * 6.0
 
+        foot_col_reward = self.footColReward(data)
+        reward_dict["foot_col"] = foot_col_reward * 5.0
+
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
 
@@ -617,3 +621,13 @@ class NemoEnv(PipelineEnv):
         l_z_rew = jnp.exp(-1 * (lp[2] ** 2) / (0.0001 * SIGMA_FAC))
         r_z_rew = jnp.exp(-1 * (rp[2] ** 2) / (0.0001 * SIGMA_FAC))
         return (l_z_rew + r_z_rew) * info["halt_cmd"]
+
+    def footColReward(self, data1):
+        lp, rp = self.footPos(data1)
+        foot_xy_dist = jnp.linalg.norm(lp[0:2] - rp[0:2])
+        tight_cost = 1.0
+        sigma = 100.0
+        b = -0.5 / (jnp.exp(-0.101 * sigma) - jnp.exp(-0.2 * sigma))
+        rew_curve = b * jnp.exp( -1 * sigma * foot_xy_dist) - b * jnp.exp(-0.2 * sigma)
+        rew = jnp.where(foot_xy_dist < 0.101, tight_cost, rew_curve)
+        return rew

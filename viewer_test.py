@@ -117,15 +117,15 @@ pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_fron
 for c in range(20000):
     if walk_forward:
         #state_info["angvel_target"] = jax.numpy.array([0.0])
-        state_info["velocity_target"] = jax.numpy.array([0.1, 0.0])
+        state_info["velocity_target"] = jax.numpy.array([0.2, 0.0])
         pp1 = data.site_xpos[pelvis_f_id]
         pp2 = data.site_xpos[pelvis_b_id]
         facing_vec = (pp1 - pp2)[0:2]
         facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
         #state_info["angvel_target"] = jnp.array([facing_vec[1] * -2])
-    if (c > 6000 and c < 7000):
-        state_info["halt"] = 1.0
-        state_info["phase"] = jnp.array([0, jnp.pi])
+    #if (c > 6000 and c < 7000):
+        #state_info["halt"] = 1.0
+        #state_info["phase"] = jnp.array([0, jnp.pi])
     if c % round(DT / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
         #print(obs[256:])
