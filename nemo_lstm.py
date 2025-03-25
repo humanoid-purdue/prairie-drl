@@ -625,7 +625,7 @@ class NemoEnv(PipelineEnv):
     def footColReward(self, data1):
         lp, rp = self.footPos(data1)
         foot_xy_dist = jnp.linalg.norm(lp[0:2] - rp[0:2])
-        tight_cost = 1.0
+        tight_cost = -1.0
         sigma = 100.0
         b = -0.5 / (jnp.exp(-0.101 * sigma) - jnp.exp(-0.2 * sigma))
         rew_curve = b * jnp.exp( -1 * sigma * foot_xy_dist) - b * jnp.exp(-0.2 * sigma)
