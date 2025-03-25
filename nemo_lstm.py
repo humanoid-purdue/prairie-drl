@@ -354,7 +354,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["periodic"] = period_rew * 2.0
 
         limit_reward = self.jointLimitReward(data)
-        reward_dict["limit"] = limit_reward * 5.0
+        reward_dict["limit"] = limit_reward * 2.0
 
         flatfoot_reward = self.flatfootReward(data, contact)
         reward_dict["flatfoot"] = flatfoot_reward * 8.0
@@ -551,8 +551,8 @@ class NemoEnv(PipelineEnv):
         center = jnp.mean(self.joint_limit[1:, :], axis = 1)
         d_top = self.joint_limit[1:, 1] - center
         d_bottom = self.joint_limit[1:, 0] - center
-        top = center + d_top * 0.99
-        bottom = center + d_bottom * 0.99
+        top = center + d_top * 0.85
+        bottom = center + d_bottom * 0.85
 
         # calculate the joint angles has larger or smaller than the limit
         top_rew = jnp.clip(data1.q[7:] - top, min = 0, max = None)
