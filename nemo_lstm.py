@@ -390,7 +390,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["foot_col"] = foot_col_reward * 10.0
 
         knee_reward = self.kneeJointReward(data)
-        reward_dict["knee"] = knee_reward * -1.0
+        reward_dict["knee"] = knee_reward * -30.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
