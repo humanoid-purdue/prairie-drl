@@ -390,7 +390,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["foot_col"] = foot_col_reward * 10.0
 
         knee_reward = self.kneeJointReward(data)
-        reward_dict["knee"] = knee_reward * -0.5
+        reward_dict["knee"] = knee_reward * -1.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
@@ -581,13 +581,9 @@ class NemoEnv(PipelineEnv):
     def kneeJointReward(self, data1):
         l_knee_pos = data1.q[self.l_knee_id + 6]
         r_knee_pos = data1.q[self.r_knee_id + 6]
-        center = 0.8
-        margin = 0.4
-        l_err = jnp.abs(l_knee_pos - center) - margin
-        r_err = jnp.abs(r_knee_pos - center) - margin
-        l_rew = jnp.clip(l_err, min = 0, max = None)
-        r_rew = jnp.clip(r_err, min = 0, max = None)
-        return l_rew + r_rew
+        lr_diff = jnp.abs(l_knee_pos - r_knee_pos) - 0.8
+        rew = jnp.clip(lr_diff, min = 0., max = None)
+        return rew
 
     def footDynamicsReward(self, info, data0, data1):
         halt_zt = jnp.array([0.0, 0.0])
