@@ -1,0 +1,21 @@
+[general]
+model_name = "nemo4"
+xml_path = "nemo4/scene.xml"
+
+[weights]
+velocity_weight = 3.0
+angvel_z_weight = 2.0
+angvel_xy_weight = -0.15
+vel_z_weight = -0.01
+energy_weight = -0.001
+action_rate_weight = -0.01
+upright_weight = 1.0
+feet_slip_weight = -0.25
+periodic_weight = 2.0
+limit_weight = 5.0
+flatfoot_weight = 4.0
+feet_z_weight = 4.0
+feet_zd_weight = 1.0
+feet_orien_weight = 0.25
+feet_slip_ang_weight = -0.25
+halt_weight = 6.0
