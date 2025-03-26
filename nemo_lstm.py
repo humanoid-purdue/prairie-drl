@@ -215,9 +215,9 @@ class NemoEnv(PipelineEnv):
         rng, key3 = jax.random.split(rng)
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
-        vel = vel * jnp.array([0.5, 0.5])
+        vel = vel * jnp.array([0.4, 0.4])
         #vel = vel + jnp.array([0.2, 0.0])
-        angvel = jax.random.uniform(key2, shape=[1], minval=-0.8, maxval=0.8)
+        angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         phase_period = jax.random.uniform(key3, shape=[1], minval=1, maxval=1.25)
         return vel, angvel, rng, phase_period
 
