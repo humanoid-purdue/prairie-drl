@@ -36,7 +36,8 @@ metrics_dict = {
                     'feet_orien': 0.0,
                     'feet_slip_ang': 0.0,
                     'halt': 0.0,
-                    'foot_col': 0.0}
+                    'foot_col': 0.0,
+                    'knee': 0.0}
 
 class NemoEnv(PipelineEnv):
     def __init__(self, rname = "nemo4"):
@@ -82,6 +83,9 @@ class NemoEnv(PipelineEnv):
         self.floor_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
         self.right_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "right_foot")
         self.left_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "left_foot")
+
+        self.l_knee_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "l_knee")
+        self.r_knee_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "r_knee")
 
         def get_sensor_data(sensor_name):
             sensor_id = system.mj_model.sensor(sensor_name).id
@@ -385,6 +389,9 @@ class NemoEnv(PipelineEnv):
         foot_col_reward = self.footColReward(data)
         reward_dict["foot_col"] = foot_col_reward * 10.0
 
+        knee_reward = self.kneeJointReward(data)
+        reward_dict["knee"] = knee_reward * -20.0
+
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
 
@@ -570,6 +577,17 @@ class NemoEnv(PipelineEnv):
         # calculate the reward
         reward = jnp.sum(top_rew + bottom_rew)
         return reward * -1
+
+    def kneeJointReward(self, data1):
+        l_knee_pos = data1.q[self.l_knee_id + 6]
+        r_knee_pos = data1.q[self.r_knee_id + 6]
+        center = 0.8
+        margin = 0.4
+        l_err = jnp.abs(l_knee_pos - center) - margin
+        r_err = jnp.abs(r_knee_pos - center) - margin
+        l_rew = jnp.clip(l_err, min = 0, max = None)
+        r_rew = jnp.clip(r_err, min = 0, max = None)
+        return l_rew + r_rew
 
     def footDynamicsReward(self, info, data0, data1):
         halt_zt = jnp.array([0.0, 0.0])
