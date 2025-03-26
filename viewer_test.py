@@ -93,7 +93,7 @@ def tanh2Action(action: jnp.ndarray):
 
 
 make_inference_fn = makeIFN()
-policy_path = 'walk_policy'
+policy_path = 'walk_policy14'
 saved_params = model.load_params(policy_path)
 inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
@@ -106,7 +106,9 @@ state_info = {
     "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
     "prev_pos": data.xpos[1],
 }
+init_qpos = mj_model.keyframe('stand').qpos
 prev_data = data
+data.qpos = init_qpos
 data.ctrl = np.zeros([ACT_SIZE])
 mujoco.mj_step(mj_model, data)
 rng = jax.random.PRNGKey(0)
@@ -122,7 +124,7 @@ for c in range(20000):
         pp2 = data.site_xpos[pelvis_b_id]
         facing_vec = (pp1 - pp2)[0:2]
         facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
-        #state_info["angvel_target"] = jnp.array([facing_vec[1] * -2])
+        state_info["angvel_target"] = jnp.array([facing_vec[1] * -2])
     #if (c > 6000 and c < 7000):
         #state_info["halt"] = 1.0
         #state_info["phase"] = jnp.array([0, jnp.pi])
