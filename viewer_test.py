@@ -93,7 +93,7 @@ def tanh2Action(action: jnp.ndarray):
 
 
 make_inference_fn = makeIFN()
-policy_path = 'walk_policy14'
+policy_path = 'walk_policy15'
 saved_params = model.load_params(policy_path)
 inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
@@ -118,16 +118,17 @@ pelvis_b_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back
 pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 for c in range(20000):
     if walk_forward:
+        state_info["halt"] = 0.0
         #state_info["angvel_target"] = jax.numpy.array([0.0])
-        state_info["velocity_target"] = jax.numpy.array([0.2, 0.0])
+        state_info["velocity_target"] = jax.numpy.array([0.3, 0.0])
         pp1 = data.site_xpos[pelvis_f_id]
         pp2 = data.site_xpos[pelvis_b_id]
         facing_vec = (pp1 - pp2)[0:2]
         facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
         state_info["angvel_target"] = jnp.array([facing_vec[1] * -2])
-    #if (c > 6000 and c < 7000):
-        #state_info["halt"] = 1.0
-        #state_info["phase"] = jnp.array([0, jnp.pi])
+    if (c > 6000 and c < 7000):
+        state_info["halt"] = 1.0
+        state_info["phase"] = jnp.array([0, jnp.pi])
     if c % round(DT / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
         #print(obs[256:])
@@ -145,8 +146,12 @@ for c in range(20000):
     state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
     mujoco.mj_step(mj_model, data)
+    viewer.cam.trackbodyid = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_BODY, 'l_hip_yaw')
+    viewer.cam.distance = 1.5  # Distance from the target
+    viewer.cam.lookat[:] = data.body("l_hip_yaw").xpos
     viewer.sync()
     t += mj_model.opt.timestep
+
 
 viewer.close()
 time.sleep(0.5)
