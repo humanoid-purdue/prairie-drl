@@ -172,6 +172,7 @@ class NemoEnv(PipelineEnv):
 
     def reset(self, rng: jax.Array) -> State:
         vel, angvel, rng, phase_period = self.makeCmd(rng)
+        new_phase, rng = self.makePhase(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
         rng, key = jax.random.split(rng)
         event_period = jax.random.uniform(key, shape = [2], minval = 0, maxval = 1)
@@ -183,7 +184,7 @@ class NemoEnv(PipelineEnv):
             "angvel": angvel,
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12]),
-            "phase": jnp.array([0, jnp.pi]),
+            "phase": new_phase,
             "phase_period": phase_period[0],
             "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
             "halt_cmd": 0,
@@ -216,13 +217,21 @@ class NemoEnv(PipelineEnv):
         phase_period = jax.random.uniform(key3, shape=[1], minval=1, maxval=1.25)
         return vel, angvel, rng, phase_period
 
+    def makePhase(self, rng):
+        rng, key = jax.random.split(rng)
+        roll = jax.random.uniform(key, shape=[1], minval = 0, maxval = 1)
+        l_first = jnp.array([0., jnp.pi])
+        r_first = jnp.array([jnp.pi, 0.])
+        return l_first * roll[0] + r_first * (1 - roll[0]), rng
+
     def periodicHalting(self, state):
         #period of ep[0] + ep[1]
         tmod = jnp.mod(state.info["time"], state.info["event_period"][0] +
                        state.info["event_period"][1])
         halt = jnp.where(tmod > state.info["event_period"][0], 1, 0)[0]
         state.info["halt_cmd"] = halt
-        state.info["phase"] = state.info["phase"] * (1 - halt) + jnp.array([0, jnp.pi]) * halt
+        new_phase, state.info["rng"] = self.makePhase(state.info["rng"])
+        state.info["phase"] = state.info["phase"] * (1 - halt) + new_phase * halt
 
     def updateCmd(self, state):
         rng = state.info["rng"]
