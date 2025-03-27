@@ -634,9 +634,15 @@ class NemoEnv(PipelineEnv):
         dpl = jnp.sum(facing_vec * l_vec)
         dpr = jnp.sum(facing_vec * r_vec)
 
+        #calculate the reward between the two legs
+        lr_cross = l_vec[0] * r_vec[1] - r_vec[0] * l_vec[1]
+
+
         l_rew = jnp.exp(-(dpl - 1) ** 2 / (0.1 * SIGMA_FAC))
         r_rew = jnp.exp(-(dpr - 1) ** 2 / (0.1 * SIGMA_FAC))
-        return l_rew + r_rew
+
+        inward_rew = jnp.where(lr_cross > 0, -0.5, 0)
+        return l_rew + r_rew + inward_rew
 
     def haltReward(self, data0, info):
         #give halt reward for foot below height

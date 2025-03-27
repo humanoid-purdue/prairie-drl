@@ -93,14 +93,14 @@ def tanh2Action(action: jnp.ndarray):
 
 
 make_inference_fn = makeIFN()
-policy_path = 'walk_policy15'
+policy_path = 'walk_policy16'
 saved_params = model.load_params(policy_path)
 inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
 state_info = {
     "halt": 0.,
     "phase": jnp.array([jnp.pi, 0]),
-    "vel_target": jnp.array([0.2, 0]),
+    "vel_target": jnp.array([0.4, 0]),
     "angvel_target": jnp.array([0.]),
     "prev_action": jnp.zeros(ACT_SIZE),
     "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
