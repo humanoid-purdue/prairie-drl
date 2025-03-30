@@ -36,37 +36,40 @@ metrics_dict = {
                     'halt': 0.0
 }
 
-# loading the toml file and assigning the variable values
-with open("input_files/nemo4.toml", "rb") as f:
-    model_info = tomllib.load(f)
-model_weights = model_info["weights"]
-
-velocity_weight = model_weights["velocity_weight"]
-angvel_z_weight = model_weights["angvel_z_weight"]
-angvel_xy_weight = model_weights["angvel_xy_weight"]
-vel_z_weight = model_weights["vel_z_weight"]
-energy_weight = model_weights["energy_weight"]
-action_rate_weight = model_weights["action_rate_weight"]
-upright_weight = model_weights["upright_weight"]
-feet_slip_weight = model_weights["feet_slip_weight"]
-periodic_weight = model_weights["periodic_weight"]
-limit_weight = model_weights["limit_weight"]
-flatfoot_weight = model_weights["flatfoot_weight"]
-feet_z_weight = model_weights["feet_z_weight"]
-feet_zd_weight = model_weights["feet_zd_weight"]
-feet_orien_weight = model_weights["feet_orien_weight"]
-feet_slip_ang_weight = model_weights["feet_slip_ang_weight"]
-halt_weight = model_weights["halt_weight"]
-
-print("Policy Network Weights:")
-for key, value in model_weights.items():
-    print(f"{key}: {value}")
 
 
 class NemoEnv(PipelineEnv):
     def __init__(self, rname = "nemo4"):
-        model = mujoco.MjModel.from_xml_path("{}/scene.xml".format(rname))
 
+        #superclass of nemo_n with data set to specific toml file
+        # loading the toml file and assigning the variable values
+        with open("input_files/{}.toml".format(rname), "rb") as f:
+            model_info = tomllib.load(f)
+        model_weights = model_info["weights"]
+        
+        velocity_weight = model_weights["velocity_weight"]
+        angvel_z_weight = model_weights["angvel_z_weight"]
+        angvel_xy_weight = model_weights["angvel_xy_weight"]
+        vel_z_weight = model_weights["vel_z_weight"]
+        energy_weight = model_weights["energy_weight"]
+        action_rate_weight = model_weights["action_rate_weight"]
+        upright_weight = model_weights["upright_weight"]
+        feet_slip_weight = model_weights["feet_slip_weight"]
+        periodic_weight = model_weights["periodic_weight"]
+        limit_weight = model_weights["limit_weight"]
+        flatfoot_weight = model_weights["flatfoot_weight"]
+        feet_z_weight = model_weights["feet_z_weight"]
+        feet_zd_weight = model_weights["feet_zd_weight"]
+        feet_orien_weight = model_weights["feet_orien_weight"]
+        feet_slip_ang_weight = model_weights["feet_slip_ang_weight"]
+        halt_weight = model_weights["halt_weight"]
+        
+        print("Policy Network Weights:")
+        for key, value in model_weights.items():
+            print(f"{key}: {value}")
+        
+        model = mujoco.MjModel.from_xml_path("{}/scene.xml".format(rname))
+        
         model.opt.solver = mujoco.mjtSolver.mjSOL_CG
         model.opt.iterations = 6
         model.opt.ls_iterations = 6
