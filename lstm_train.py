@@ -11,11 +11,9 @@ from networks.lstm import make_ppo_networks
 from nemo_randomize import domain_randomize
 import os
 
-def make_trainfns(robot = "nemo4"):
-    if robot == "nemo4":
-        envs.register_environment('nemo', Nemo4Env)
-    elif robot == "g2":
-        envs.register_environment('nemo', G2Env)
+def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
+    envs.register_environment('nemo', GenBotEnv(robot_file_path))
+    
     env = envs.get_environment('nemo')
     eval_env = envs.get_environment('nemo')
 
@@ -67,7 +65,7 @@ def make_trainfns(robot = "nemo4"):
     return train_fn, env, progress, eval_env
 
 if __name__ == "__main__":
-    train_fn, env, progress, eval_env = make_trainfns("nemo4")
+    train_fn, env, progress, eval_env = make_trainfns(robot_file_path = "input_file/nemo4.toml")
     make_inference_fn, params, _= train_fn(environment=env,
                                            progress_fn=progress,
                                            eval_env=eval_env)
