@@ -12,7 +12,11 @@ from nemo_randomize import domain_randomize
 import os
 
 def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
-    envs.register_environment('nemo', lambda **kwargs: GenBotEnv(robot_file_path, **kwargs))
+    class GenBotEnv(NemoEnv):
+        def __init__(self, input_toml_file_path):
+            super().__init__(rfile_path = input_toml_file_path)
+    
+    envs.register_environment('nemo', GenBotEnv)
     
     env = envs.get_environment('nemo')
     eval_env = envs.get_environment('nemo')
