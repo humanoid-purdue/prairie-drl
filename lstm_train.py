@@ -13,8 +13,8 @@ import os
 
 def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
     class GenBotEnv(NemoEnv):
-        def __init__(self, input_toml_file_path):
-            super().__init__(rfile_path = input_toml_file_path)
+        def __init__(self):
+            super().__init__(rfile_path = robot_file_path)
     
     envs.register_environment('nemo', GenBotEnv)
     
