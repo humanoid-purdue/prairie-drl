@@ -9,7 +9,7 @@ class G2Env(NemoEnv):
     def __init__(self):
         super().__init__(rname = "g2")
 
-class GenBot(NemoEnv):
+class GenBotEnv(NemoEnv):
     def __init__(self, input_toml_file_path):
         with open(input_toml_file_path, "rb") as f:
             model_info = tomllib.load(f)
