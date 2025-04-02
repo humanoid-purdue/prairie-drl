@@ -23,8 +23,8 @@ metrics_dict = {
                    'periodic': 0.0,
                     'upright': 0.0,
                     'limit': 0.0,
-                    'feet_z_limit': 0.0,  # NEED TO ADD TO TOML
-                    'feet_z_track': 0.0,  # NEED TO ADD TO TOML
+                    'feet_z_limit': 0.0,
+                    'feet_z_track': 0.0,
                     'feet_zd': 0.0,
                     'termination': 0.0,
                     'velocity': 0.0,
@@ -37,8 +37,9 @@ metrics_dict = {
                     'feet_orien': 0.0,
                     'feet_slip_ang': 0.0,
                     'halt': 0.0,
-                    'foot_col': 0.0, # NEED TO ADD TO TOML
-                    'knee': 0.0} # NEED TO ADD TO TOML
+                    'foot_col': 0.0,
+                    'knee': 0.0
+}
 
 
 class NemoEnv(PipelineEnv):
@@ -61,11 +62,14 @@ class NemoEnv(PipelineEnv):
         periodic_weight = model_weights["periodic_weight"]
         limit_weight = model_weights["limit_weight"]
         flatfoot_weight = model_weights["flatfoot_weight"]
-        feet_z_weight = model_weights["feet_z_weight"] # NEED TO REMOVE FROM TOML
+        feet_z_limit_weight = model_weights["feet_z_limit_weight"]
+        feet_z_track_weight = model_weights["feet_z_track_weight"]
         feet_zd_weight = model_weights["feet_zd_weight"]
         feet_orien_weight = model_weights["feet_orien_weight"]
         feet_slip_ang_weight = model_weights["feet_slip_ang_weight"]
         halt_weight = model_weights["halt_weight"]
+        foot_col_weight = model_weights["foot_col_weight"]
+        knee_weight = model_weights["knee_weight"]
         
         print("Policy Network Weights:")
         for key, value in model_weights.items():
@@ -403,8 +407,8 @@ class NemoEnv(PipelineEnv):
         reward_dict["flatfoot"] = flatfoot_reward * flatfoot_weight
 
         feet_z_limit, feet_z_track, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
-        reward_dict["feet_z_limit"] = feet_z_limit * 4.0
-        reward_dict["feet_z_track"] = feet_z_track * 0.5
+        reward_dict["feet_z_limit"] = feet_z_limit * feet_z_limit_weight
+        reward_dict["feet_z_track"] = feet_z_track * feet_z_track_weight
         reward_dict["feet_zd"] = feet_zd_rew * feet_zd_weight
 
         feet_orien_reward = self.footOrienReward(data)
@@ -417,10 +421,10 @@ class NemoEnv(PipelineEnv):
         reward_dict["halt"] = halt_reward * halt_weight
 
         foot_col_reward = self.footColReward(data)
-        reward_dict["foot_col"] = foot_col_reward * 10.0
+        reward_dict["foot_col"] = foot_col_reward * foot_col_weight
 
         knee_reward = self.kneeJointReward(data)
-        reward_dict["knee"] = knee_reward * -30.0
+        reward_dict["knee"] = knee_reward * knee_weight
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
