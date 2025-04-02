@@ -11,10 +11,10 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.035
+DT = 0.01
 
 
-mj_model = mujoco.MjModel.from_xml_path('nemo4/scene.xml')
+mj_model = mujoco.MjModel.from_xml_path('nemo4b/scene.xml')
 data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
 mj_model.opt.timestep = 0.001
@@ -86,47 +86,75 @@ def tanh2Action(action: jnp.ndarray):
     top_limit = joint_limit[1:, 1] # - q_offset
     vel_sp = vel_t * 10
 
-    pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+    #pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
+    pos_sp = pos_t * 1.0
 
-    return jnp.concatenate([vel_sp, vel_sp])
+    return jnp.concatenate([pos_sp, vel_sp])
 
 
 make_inference_fn = makeIFN()
-policy_path = 'walk_policy'
+policy_path = 'walk_policy17'
 saved_params = model.load_params(policy_path)
 inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
 state_info = {
     "halt": 0.,
-    "phase": jnp.array([0, jnp.pi]),
-    "vel_target": jnp.array([0.2, 0]),
+    "phase": jnp.array([jnp.pi, 0]),
+    "vel_target": jnp.array([0.4, 0]),
     "angvel_target": jnp.array([0.]),
     "prev_action": jnp.zeros(ACT_SIZE),
     "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
-    "prev_pos": data.xpos[1]
+    "prev_pos": data.xpos[1],
 }
+init_qpos = mj_model.keyframe('stand').qpos
 prev_data = data
+data.qpos = init_qpos
 data.ctrl = np.zeros([ACT_SIZE])
 mujoco.mj_step(mj_model, data)
 rng = jax.random.PRNGKey(0)
-print(mj_model.geom_friction)
 t = 0
-for c in range(10000):
+walk_forward = True
+pelvis_b_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
+pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
+for c in range(20000):
+    if walk_forward:
+        state_info["halt"] = 0.0
+        state_info["angvel_target"] = jax.numpy.array([-0.7])
+        state_info["velocity_target"] = jax.numpy.array([0.2, 0.0])
+        pp1 = data.site_xpos[pelvis_f_id]
+        pp2 = data.site_xpos[pelvis_b_id]
+        facing_vec = (pp1 - pp2)[0:2]
+        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+        #state_info["angvel_target"] = jnp.array([facing_vec[1] * -2])
+    if (c > 6000 and c < 7000):
+        state_info["halt"] = 1.0
+        state_info["phase"] = jnp.array([0, jnp.pi])
     if c % round(DT / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
         #print(obs[256:])
         act_rng, rng = jax.random.split(rng)
+        t = time.time()
         ctrl, _ = jit_inference_fn(obs, act_rng)
+        #print(time.time() - t)
         raw_action = ctrl[2 * HIDDEN_SIZE * DEPTH:]
+        act = tanh2Action(state_info["prev_action"])
+        #act = tanh2Action(raw_action)
+        data.ctrl = act
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
-        act = tanh2Action(raw_action)
-        data.ctrl = act
+
+    #print(np.sum(np.abs(data.qfrc_actuator * data.qvel)))
+    print(data.qfrc_actuator)
+
     state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
     mujoco.mj_step(mj_model, data)
+    viewer.cam.trackbodyid = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_BODY, 'l_hip_yaw')
+    viewer.cam.distance = 1.5  # Distance from the target
+    viewer.cam.lookat[:] = data.body("l_hip_yaw").xpos
     viewer.sync()
     t += mj_model.opt.timestep
+
 
 viewer.close()
 time.sleep(0.5)

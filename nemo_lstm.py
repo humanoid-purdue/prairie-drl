@@ -14,6 +14,8 @@ DS_PROP = 0.1
 BU_PROP = 0.5
 BU_PROP = 0.5
 
+SIGMA_FAC = 1
+
 
 metrics_dict = {
                    'reward': 0.0,
@@ -21,7 +23,8 @@ metrics_dict = {
                    'periodic': 0.0,
                     'upright': 0.0,
                     'limit': 0.0,
-                    'feet_z': 0.0,
+                    'feet_z_limit': 0.0,  # NEED TO ADD TO TOML
+                    'feet_z_track': 0.0,  # NEED TO ADD TO TOML
                     'feet_zd': 0.0,
                     'termination': 0.0,
                     'velocity': 0.0,
@@ -33,9 +36,9 @@ metrics_dict = {
                     'angvel_z': 0.0,
                     'feet_orien': 0.0,
                     'feet_slip_ang': 0.0,
-                    'halt': 0.0
-}
-
+                    'halt': 0.0,
+                    'foot_col': 0.0, # NEED TO ADD TO TOML
+                    'knee': 0.0} # NEED TO ADD TO TOML
 
 
 class NemoEnv(PipelineEnv):
@@ -58,7 +61,7 @@ class NemoEnv(PipelineEnv):
         periodic_weight = model_weights["periodic_weight"]
         limit_weight = model_weights["limit_weight"]
         flatfoot_weight = model_weights["flatfoot_weight"]
-        feet_z_weight = model_weights["feet_z_weight"]
+        feet_z_weight = model_weights["feet_z_weight"] # NEED TO REMOVE FROM TOML
         feet_zd_weight = model_weights["feet_zd_weight"]
         feet_orien_weight = model_weights["feet_orien_weight"]
         feet_slip_ang_weight = model_weights["feet_slip_ang_weight"]
@@ -110,6 +113,9 @@ class NemoEnv(PipelineEnv):
         self.floor_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "floor")
         self.right_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "right_foot")
         self.left_geom_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "left_foot")
+
+        self.l_knee_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "l_knee")
+        self.r_knee_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "r_knee")
 
         def get_sensor_data(sensor_name):
             sensor_id = system.mj_model.sensor(sensor_name).id
@@ -200,6 +206,7 @@ class NemoEnv(PipelineEnv):
 
     def reset(self, rng: jax.Array) -> State:
         vel, angvel, rng, phase_period = self.makeCmd(rng)
+        new_phase, rng = self.makePhase(rng)
         pipeline_state = self.pipeline_init(self.initial_state, jnp.zeros(self.nv))
         rng, key = jax.random.split(rng)
         event_period = jax.random.uniform(key, shape = [2], minval = 0, maxval = 1)
@@ -211,7 +218,7 @@ class NemoEnv(PipelineEnv):
             "angvel": angvel,
             "prev_action": jnp.zeros(self.nu),
             "energy_hist": jnp.zeros([100, 12]),
-            "phase": jnp.array([0, jnp.pi]),
+            "phase": new_phase,
             "phase_period": phase_period[0],
             "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
             "halt_cmd": 0,
@@ -238,11 +245,18 @@ class NemoEnv(PipelineEnv):
         rng, key3 = jax.random.split(rng)
 
         vel = jax.random.uniform(key1, shape=[2], minval = -1, maxval = 1)
-        vel = vel * jnp.array([0.2, 0.2])
+        vel = vel * jnp.array([0.4, 0.4])
         #vel = vel + jnp.array([0.2, 0.0])
         angvel = jax.random.uniform(key2, shape=[1], minval=-0.7, maxval=0.7)
         phase_period = jax.random.uniform(key3, shape=[1], minval=1, maxval=1.25)
         return vel, angvel, rng, phase_period
+
+    def makePhase(self, rng):
+        rng, key = jax.random.split(rng)
+        roll = jax.random.uniform(key, shape=[1], minval = 0, maxval = 1)
+        l_first = jnp.array([0., jnp.pi])
+        r_first = jnp.array([jnp.pi, 0.])
+        return l_first * roll[0] + r_first * (1 - roll[0]), rng
 
     def periodicHalting(self, state):
         #period of ep[0] + ep[1]
@@ -250,7 +264,8 @@ class NemoEnv(PipelineEnv):
                        state.info["event_period"][1])
         halt = jnp.where(tmod > state.info["event_period"][0], 1, 0)[0]
         state.info["halt_cmd"] = halt
-        state.info["phase"] = state.info["phase"] * (1 - halt) + jnp.array([0, jnp.pi]) * halt
+        new_phase, state.info["rng"] = self.makePhase(state.info["rng"])
+        state.info["phase"] = state.info["phase"] * (1 - halt) + new_phase * halt
 
     def updateCmd(self, state):
         rng = state.info["rng"]
@@ -297,6 +312,7 @@ class NemoEnv(PipelineEnv):
     def step(self, state: State, action: jnp.ndarray):
         raw_action = action[2 * HIDDEN_SIZE * DEPTH:]
         carry_state = action[:2 * HIDDEN_SIZE * DEPTH]
+        #scaled_action = self.tanh2Action(state.info["prev_action"])
         scaled_action = self.tanh2Action(raw_action)
 
         #apply noise to scaled action
@@ -386,8 +402,9 @@ class NemoEnv(PipelineEnv):
         flatfoot_reward = self.flatfootReward(data, contact)
         reward_dict["flatfoot"] = flatfoot_reward * flatfoot_weight
 
-        feet_z_rew, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
-        reward_dict["feet_z"] = feet_z_rew * feet_z_weight
+        feet_z_limit, feet_z_track, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
+        reward_dict["feet_z_limit"] = feet_z_limit * 4.0
+        reward_dict["feet_z_track"] = feet_z_track * 0.5
         reward_dict["feet_zd"] = feet_zd_rew * feet_zd_weight
 
         feet_orien_reward = self.footOrienReward(data)
@@ -398,6 +415,12 @@ class NemoEnv(PipelineEnv):
 
         halt_reward = self.haltReward(data, state.info)
         reward_dict["halt"] = halt_reward * halt_weight
+
+        foot_col_reward = self.footColReward(data)
+        reward_dict["foot_col"] = foot_col_reward * 10.0
+
+        knee_reward = self.kneeJointReward(data)
+        reward_dict["knee"] = knee_reward * -30.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
@@ -439,14 +462,26 @@ class NemoEnv(PipelineEnv):
 
     def velocityReward(self, state, data0, data1):
         vel = self.pelVel(data0, data1)
+        pp1 = data1.site_xpos[self.pelvis_f_id]
+        pp2 = data1.site_xpos[self.pelvis_b_id]
+        facing_vec = (pp1 - pp2)[0:2]
+        facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+        theta = jnp.arctan2(facing_vec[1], facing_vec[0])
+        rot_mat = jnp.array([[jnp.cos(-theta), -jnp.sin(-theta)],
+                             [jnp.sin(-theta), jnp.cos(-theta)]])
+        local_vel = jnp.matmul( rot_mat , vel[0:2])
+
+        #local_vel = self.get_sensor_data(data1, self.vel)[0:2]
+        #convert local vel to xy vel
+
         vel_target = state.info["velocity"]
-        vel_n = jnp.sum(jnp.square(vel[0:2] - vel_target))
-        return jnp.exp( vel_n * -1 / 0.05) * (1 - state.info["halt_cmd"])
+        vel_n = jnp.sum(jnp.square(local_vel - vel_target))
+        return jnp.exp( vel_n * -1 / (0.05 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
         angvel_err = jnp.square(angvel - state.info["angvel"][0])
-        return jnp.exp(angvel_err * -1 / 0.10) * (1 - state.info["halt_cmd"])
+        return jnp.exp(angvel_err * -1 / (0.10 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def actionRateReward(self, action, state):
         act_delta = jnp.sum(jnp.square(state.info["prev_action"] - action))
@@ -455,7 +490,7 @@ class NemoEnv(PipelineEnv):
     def angvelXYReward(self, data):
         angvel = data.xd.ang[self.pelvis_id][0:2]
         angvel_err = jnp.sum(jnp.square(angvel))
-        return jnp.exp(angvel_err * -1)
+        return jnp.exp(angvel_err * -1 / SIGMA_FAC)
 
     def velZReward(self, data0, data1):
         vel = self.pelVel(data0, data1)
@@ -465,7 +500,7 @@ class NemoEnv(PipelineEnv):
         pelvis_xy = ((data.site_xpos[self.pelvis_f_id] + data.site_xpos[self.pelvis_b_id]) / 2)[0:2]
         head_xy = data.site_xpos[self.head_id][0:2]
         xy_err = jnp.linalg.norm(pelvis_xy - head_xy)
-        return jnp.exp(xy_err * -1 / 0.1)
+        return jnp.exp(xy_err * -1 / (0.1 * SIGMA_FAC))
 
     def energyReward(self, data, info):
         halt_mult = 5.0 - 1
@@ -509,8 +544,8 @@ class NemoEnv(PipelineEnv):
                         info["halt_cmd"] * lr_halt_vel_coeff)
 
         l_grf, r_grf = self.determineGRF(data1)
-        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / 40)
-        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / 40)
+        l_f_rew = 1 - jnp.exp(-1 * jnp.sum(l_grf[0:2] ** 2) / (40 * SIGMA_FAC))
+        r_f_rew = 1 - jnp.exp(-1 * jnp.sum(r_grf[0:2] ** 2) / (40 * SIGMA_FAC))
 
         lp0, rp0 = self.footPos(data0)
         lp1, rp1 = self.footPos(data1)
@@ -518,8 +553,8 @@ class NemoEnv(PipelineEnv):
         lv = (lp1 - lp0) / self.dt
         rv = (rp1 - rp0) / self.dt
 
-        l_spd_rew = 1 - jnp.exp(-2 * jnp.sum(lv**2))
-        r_spd_rew = 1 - jnp.exp(-2 * jnp.sum(rv**2))
+        l_spd_rew = 1 - jnp.exp(-1 * jnp.sum(lv**2) / (0.001 * SIGMA_FAC))
+        r_spd_rew = 1 - jnp.exp(-1 * jnp.sum(rv**2) / (0.001 * SIGMA_FAC))
 
         grf_reward = lr_grf_coeff[0] * l_f_rew + lr_grf_coeff[1] * r_f_rew
         vel_reward = lr_vel_coeff[0] * l_spd_rew + lr_vel_coeff[1] * r_spd_rew
@@ -542,7 +577,7 @@ class NemoEnv(PipelineEnv):
             dot = jnp.cross(v1, v2)
             normal_vec = dot / jnp.linalg.norm(dot)
             ca = jnp.abs(normal_vec[2])
-            reward = jnp.exp(-1 * (ca -1) ** 2 / 0.001) - 1
+            reward = jnp.exp(-1 * (ca -1) ** 2 / (0.001 * SIGMA_FAC)) - 1
             return reward
 
         lp1 = data.site_xpos[self.left_foot_s1]
@@ -562,8 +597,8 @@ class NemoEnv(PipelineEnv):
         center = jnp.mean(self.joint_limit[1:, :], axis = 1)
         d_top = self.joint_limit[1:, 1] - center
         d_bottom = self.joint_limit[1:, 0] - center
-        top = center + d_top * 0.8
-        bottom = center + d_bottom * 0.8
+        top = center + d_top * 0.85
+        bottom = center + d_bottom * 0.85
 
         # calculate the joint angles has larger or smaller than the limit
         top_rew = jnp.clip(data1.q[7:] - top, min = 0, max = None)
@@ -572,6 +607,13 @@ class NemoEnv(PipelineEnv):
         # calculate the reward
         reward = jnp.sum(top_rew + bottom_rew)
         return reward * -1
+
+    def kneeJointReward(self, data1):
+        l_knee_pos = data1.q[self.l_knee_id + 6]
+        r_knee_pos = data1.q[self.r_knee_id + 6]
+        lr_diff = jnp.abs(l_knee_pos - r_knee_pos) - 0.8
+        rew = jnp.clip(lr_diff, min = 0., max = None)
+        return rew
 
     def footDynamicsReward(self, info, data0, data1):
         halt_zt = jnp.array([0.0, 0.0])
@@ -590,14 +632,14 @@ class NemoEnv(PipelineEnv):
         z0 = jnp.array([lp0[2], rp0[2]])
         z1 = jnp.array([lp1[2], rp1[2]])
         zd = (z1 - z0) / self.dt
-        rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / 0.05))
-        rew_z_track = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / 0.02) - 1)
-        #rew_z_track = jnp.sum(jnp.exp(-1 * jnp.abs(z1 - zt) / 0.02))
+        rew_zd_track = jnp.sum(jnp.exp(-1 * (zd - zdt) ** 2 / (0.01 * SIGMA_FAC)))
+        rew_z_limit = jnp.sum(jnp.exp(jnp.clip(z1 - zt, min = None, max = 0) / (0.02 * SIGMA_FAC)) - 1)
+        rew_z_track = jnp.sum(jnp.exp(-1 * (z1 - zt) ** 2 / 0.0001))
 
         # get reward for foot being above target
         #rew_z_above = jnp.sum(jnp.exp(-1 * jnp.clip(z1 - zt, min = 0, max = None) / 0.04)) * 0.5
         #rew_z_track += rew_z_above
-        return rew_z_track, rew_zd_track
+        return rew_z_limit, rew_z_track, rew_zd_track
 
     def energySymmetryReward(self, data):
         return
@@ -622,13 +664,31 @@ class NemoEnv(PipelineEnv):
         dpl = jnp.sum(facing_vec * l_vec)
         dpr = jnp.sum(facing_vec * r_vec)
 
-        l_rew = jnp.exp(-(dpl - 1) ** 2 / 0.1)
-        r_rew = jnp.exp(-(dpr - 1) ** 2 / 0.1)
-        return l_rew + r_rew
+        #calculate the reward between the two legs
+        lr_cross = l_vec[0] * r_vec[1] - r_vec[0] * l_vec[1]
+
+
+        l_rew = jnp.exp(-(dpl - 1) ** 2 / (0.1 * SIGMA_FAC))
+        r_rew = jnp.exp(-(dpr - 1) ** 2 / (0.1 * SIGMA_FAC))
+
+        inward_rew = jnp.where(lr_cross > 0, -0.5, 0)
+        return l_rew + r_rew + inward_rew
 
     def haltReward(self, data0, info):
         #give halt reward for foot below height
         lp, rp = self.footPos(data0)
-        l_z_rew = jnp.exp(-1 * (lp[2] ** 2) / 0.0001)
-        r_z_rew = jnp.exp(-1 * (rp[2] ** 2) / 0.0001)
+        l_z_rew = jnp.exp(-1 * (lp[2] ** 2) / (0.0001 * SIGMA_FAC))
+        r_z_rew = jnp.exp(-1 * (rp[2] ** 2) / (0.0001 * SIGMA_FAC))
         return (l_z_rew + r_z_rew) * info["halt_cmd"]
+
+    def footColReward(self, data1):
+        lp, rp = self.footPos(data1)
+        foot_xy_dist = jnp.linalg.norm(lp[0:2] - rp[0:2])
+        tight_cost = -1.0
+        sigma = 100.0
+        b = -0.5 / (jnp.exp(-0.101 * sigma) - jnp.exp(-0.2 * sigma))
+        rew_curve = b * jnp.exp( -1 * sigma * foot_xy_dist) - b * jnp.exp(-0.2 * sigma)
+        rew = jnp.where(foot_xy_dist < 0.101, tight_cost, rew_curve)
+        rew = jnp.where(foot_xy_dist < 0.2, rew, 0.0)
+        return rew
+

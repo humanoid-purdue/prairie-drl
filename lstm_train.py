@@ -75,9 +75,15 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
         entropy_cost=train_func_entropy_cost_const, 
         num_envs=train_func_num_envs_const, 
         batch_size=train_func_batch_size_const,
+        clipping_epsilon=train_func_clipping_epsilon_const,
+        num_resets_per_eval=train_func_num_resets_per_eval_const,
+        action_repeat=train_func_action_repeat_const,
+        max_grad_norm=train_func_max_grad_norm_const,
+        reward_scaling=train_func_reward_scaling_const,
         network_factory=make_networks_factory, randomization_fn=domain_randomize,
     )
     #, restore_checkpoint_path=load_checkpoint_dir included notebook save_checkpoint_path=checkpoint_dir
+    
     x_data = []
     y_data = {}
     for name in metrics_dict.keys():
