@@ -37,7 +37,7 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
         load_checkpoint_dir = os.path.join(os.path.abspath(os.getcwd()), load_checkpoint_dir)
         load_checkpoint_dir = None
 
-    with open(rfile_path, "rb") as f:
+    with open(robot_file_path, "rb") as f:
             model_info = tomllib.load(f)
 
     model_train_func_parameters = model_info['train_func_parameters']
