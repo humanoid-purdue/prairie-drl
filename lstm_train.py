@@ -10,6 +10,7 @@ from lstm_envs import *
 from networks.lstm import make_ppo_networks
 from nemo_randomize import domain_randomize
 import os
+import tomllib
 
 def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
     class GenBotEnv(NemoEnv):
@@ -36,12 +37,44 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
         load_checkpoint_dir = os.path.join(os.path.abspath(os.getcwd()), load_checkpoint_dir)
         load_checkpoint_dir = None
 
+    with open(rfile_path, "rb") as f:
+            model_info = tomllib.load(f)
 
+    model_train_func_parameters = model_info['train_func_parameters']
+
+    train_func_num_timesteps_const = model_train_func_parameters['train_func_num_timesteps_const']
+    train_func_num_evals_const = model_train_func_parameters['train_func_num_evals_const']
+    train_func_episode_length_const = model_train_func_parameters['episode_length_const']
+    train_func_normalize_observations_bool = model_train_func_parameters['train_func_normalize_observations_bool']
+    train_func_unroll_length_const = model_train_func_parameters['train_func_unroll_length_const']
+    train_func_num_minibatches_const = model_train_func_parameters['train_func_num_minibatches_const']
+    train_func_num_updates_per_batch_const = model_train_func_parameters['train_func_num_updates_per_batch_const']
+    train_func_discounting_const = model_train_func_parameters['train_func_discounting_const']
+    train_func_learning_rate_const = model_train_func_parameters['train_func_learning_rate_const']
+    train_func_entropy_cost_const = model_train_func_parameters['train_func_entropy_cost_const']
+    train_func_num_envs_const = model_train_func_parameters['train_func_num_envs_const']
+    train_func_batch_size_const = model_train_func_parameters['train_func_batch_size_const']
+    train_func_clipping_epsilon_const = model_train_func_parameters['train_func_clipping_epsilon_const']
+    train_func_num_resets_per_eval_const = model_train_func_parameters['train_func_num_resets_per_eval_const']
+    train_func_action_repeat_const = model_train_func_parameters['train_func_action_repeat_const']
+    train_func_max_grad_norm_const = model_train_func_parameters['train_func_max_grad_norm_const']
+    train_func_reward_scaling_const = model_train_func_parameters['train_func_reward_scaling_const']
+
+    
     train_fn = functools.partial(
-        ppo.train, num_timesteps=200000000, num_evals=20, episode_length=1000,
-        normalize_observations=False, unroll_length=20, num_minibatches=32,
-        num_updates_per_batch=4, discounting=0.995, learning_rate=3.0e-5,
-        entropy_cost=1e-2, num_envs=8192, batch_size=256,
+        ppo.train, 
+        num_timesteps=train_func_num_timesteps_const, 
+        num_evals=train_func_num_evals_const, 
+        episode_length=train_func_episode_length_const,
+        normalize_observations=train_func_normalize_observations_bool, 
+        unroll_length=train_func_unroll_length_const,
+        num_minibatches=train_func_num_minibatches_const,
+        num_updates_per_batch=train_func_num_updates_per_batch_const,
+        discounting=train_func_discounting_const, 
+        learning_rate=train_func_learning_rate_const,
+        entropy_cost=train_func_entropy_cost_const, 
+        num_envs=train_func_num_envs_const, 
+        batch_size=train_func_batch_size_const,
         network_factory=make_networks_factory, randomization_fn=domain_randomize,
     )
     #, restore_checkpoint_path=load_checkpoint_dir included notebook save_checkpoint_path=checkpoint_dir
