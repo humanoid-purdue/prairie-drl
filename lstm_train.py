@@ -44,7 +44,7 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
 
     train_func_num_timesteps_const = model_train_func_parameters['train_func_num_timesteps_const']
     train_func_num_evals_const = model_train_func_parameters['train_func_num_evals_const']
-    train_func_episode_length_const = model_train_func_parameters['episode_length_const']
+    train_func_episode_length_const = model_train_func_parameters['train_func_episode_length_const']
     train_func_normalize_observations_bool = model_train_func_parameters['train_func_normalize_observations_bool']
     train_func_unroll_length_const = model_train_func_parameters['train_func_unroll_length_const']
     train_func_num_minibatches_const = model_train_func_parameters['train_func_num_minibatches_const']
