@@ -68,7 +68,7 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
         num_resets_per_eval=1, action_repeat=1, max_grad_norm=1.0,
         reward_scaling=1.0,
         network_factory=make_networks_factory, randomization_fn=domain_randomize,
-    }
+    )
 
     """
     train_fn = functools.partial(
