@@ -60,7 +60,17 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
     train_func_max_grad_norm_const = model_train_func_parameters['train_func_max_grad_norm_const']
     train_func_reward_scaling_const = model_train_func_parameters['train_func_reward_scaling_const']
 
-    
+    train_fn = functools.partial(
+        ppo.train, num_timesteps=300000000, num_evals=20, episode_length=1000,
+        normalize_observations=False, unroll_length=20, num_minibatches=32,
+        num_updates_per_batch=4, discounting=0.97, learning_rate=0.00005,
+        entropy_cost=0.005, num_envs=8192, batch_size=256, clipping_epsilon=0.2,
+        num_resets_per_eval=1, action_repeat=1, max_grad_norm=1.0,
+        reward_scaling=1.0,
+        network_factory=make_networks_factory, randomization_fn=domain_randomize,
+    }
+
+    """
     train_fn = functools.partial(
         ppo.train, 
         num_timesteps=train_func_num_timesteps_const, 
@@ -82,6 +92,9 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
         reward_scaling=train_func_reward_scaling_const,
         network_factory=make_networks_factory, randomization_fn=domain_randomize,
     )
+    """
+    
+        
     #, restore_checkpoint_path=load_checkpoint_dir included notebook save_checkpoint_path=checkpoint_dir
     
     x_data = []
