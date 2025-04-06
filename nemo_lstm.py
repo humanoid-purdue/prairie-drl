@@ -129,6 +129,7 @@ class NemoEnv(PipelineEnv):
 
         self.gyro = get_sensor_data("gyro_pelvis")
         self.vel = get_sensor_data("local_linvel_pelvis")
+        self.acc = get_sensor_data("accelerometer_pelvis")
 
     def get_sensor_data(self, data, tuple):
         return data.sensordata[tuple[0]: tuple[0] + tuple[1]]
@@ -139,6 +140,8 @@ class NemoEnv(PipelineEnv):
         vel = self.get_sensor_data(data1, self.vel)
         #angvel = data1.xd.ang[self.pelvis_id - 1]
         angvel = self.get_sensor_data(data1, self.gyro)
+
+        acc = self.get_sensor_data(data1, self.acc)
 
         def joint_rel_pos(d):
             pelvis_pos = d.x.pos[self.pelvis_id]
@@ -153,6 +156,7 @@ class NemoEnv(PipelineEnv):
         locs = jnp.concatenate([locs0, locs1], axis = 0)
         z = data1.x.pos[self.pelvis_id, 2:3]
         grav_vec = math.rotate(jnp.array([0,0,-1]), inv_pelvis_rot)
+        acc = acc - grav_vec * 9.81
         #forward_vec = math.rotate(jnp.array([1., 0, 0]), inv_pelvis_rot)
         #grav_vec = jnp.concatenate([grav_vec, forward_vec], axis = 0)
         position = data1.qpos[7:]
@@ -202,7 +206,7 @@ class NemoEnv(PipelineEnv):
                                  jnp.sin(phase[1]), jnp.cos(phase[1])])
 
 
-        obs = jnp.concatenate([ carry, vel,
+        obs = jnp.concatenate([ carry, acc,
             angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
         ])
 
