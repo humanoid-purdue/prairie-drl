@@ -353,10 +353,8 @@ class NemoEnv(PipelineEnv):
         is_healthy = is_healthy * ( 1 - self.feetColliding(data))
         reward_dict["termination"] = -1000 * (1 - is_healthy)
 
-        print("Velocity Weight = " + velocity_weight);
         vel_reward = self.velocityReward(state, data0, data)
         reward_dict["velocity"] = vel_reward * self.model_weights["velocity_weight"]
-        print("Accessed Velocity Weight");
 
         angvel_z_reward = self.angvelZReward(state, data)
         reward_dict["angvel_z"] = angvel_z_reward * self.model_weights["angvel_z_weight"]
