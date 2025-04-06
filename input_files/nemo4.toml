@@ -25,20 +25,20 @@ knee_weight = -30.0
 
 
 [train_func_parameters]
-train_func_num_timesteps_const = 300000000
-train_func_num_evals_const = 20 
-train_func_episode_length_const = 1000
-train_func_normalize_observations_bool = false
-train_func_unroll_length_const = 20
-train_func_num_minibatches_const = 32
-train_func_num_updates_per_batch_const = 4
-train_func_discounting_const = 0.97
-train_func_learning_rate_const = 0.00005 
-train_func_entropy_cost_const = 0.005
-train_func_num_envs_const = 8192
-train_func_batch_size_const = 256
-train_func_clipping_epsilon_const = 0.2
-train_func_num_resets_per_eval_const = 1
-train_func_action_repeat_const = 1
-train_func_max_grad_norm_const = 1.0
-train_func_reward_scaling_const = 1.0
+num_timesteps = 300000000
+num_evals = 20 
+episode_length = 1000
+normalize_observations = false
+unroll_length = 20
+num_minibatches = 32
+num_updates_per_batch = 4
+discounting = 0.97
+learning_rate = 0.00005 
+entropy_cost = 0.005
+num_envs = 8192
+clipping_epsilon = 0.2
+batch_size = 256
+num_resets_per_eval = 1
+action_repeat = 1
+max_grad_norm = 1.0
+reward_scaling = 1.0
