@@ -375,6 +375,7 @@ class NemoEnv(PipelineEnv):
 
         vel_reward = self.velocityReward(state, data0, data)
         reward_dict["velocity"] = vel_reward * velocity_weight
+        print("Accessed Velocity Weight");
 
         angvel_z_reward = self.angvelZReward(state, data)
         reward_dict["angvel_z"] = angvel_z_reward * angvel_z_weight
