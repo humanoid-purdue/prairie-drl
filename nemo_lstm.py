@@ -47,35 +47,16 @@ class NemoEnv(PipelineEnv):
 
         #superclass of nemo_n with data set to specific toml file
         # loading the toml file and assigning the variable values
-        with open(rfile_path, "rb") as f:
-            model_info = tomllib.load(f)
-        model_weights = model_info["weights"]
+        #with open(rfile_path, "rb") as f:
+        #    model_info = tomllib.load(f)
+        #model_weights = model_info["weights"]
+
         
-        velocity_weight = model_weights["velocity_weight"]
-        angvel_z_weight = model_weights["angvel_z_weight"]
-        angvel_xy_weight = model_weights["angvel_xy_weight"]
-        vel_z_weight = model_weights["vel_z_weight"]
-        energy_weight = model_weights["energy_weight"]
-        action_rate_weight = model_weights["action_rate_weight"]
-        upright_weight = model_weights["upright_weight"]
-        feet_slip_weight = model_weights["feet_slip_weight"]
-        periodic_weight = model_weights["periodic_weight"]
-        limit_weight = model_weights["limit_weight"]
-        flatfoot_weight = model_weights["flatfoot_weight"]
-        feet_z_limit_weight = model_weights["feet_z_limit_weight"]
-        feet_z_track_weight = model_weights["feet_z_track_weight"]
-        feet_zd_weight = model_weights["feet_zd_weight"]
-        feet_orien_weight = model_weights["feet_orien_weight"]
-        feet_slip_ang_weight = model_weights["feet_slip_ang_weight"]
-        halt_weight = model_weights["halt_weight"]
-        foot_col_weight = model_weights["foot_col_weight"]
-        knee_weight = model_weights["knee_weight"]
+        #print("Policy Network Weights:")
+        #for key, value in model_weights.items():
+        #    print(f"{key}: {value}")
         
-        print("Policy Network Weights:")
-        for key, value in model_weights.items():
-            print(f"{key}: {value}")
-        
-        model = mujoco.MjModel.from_xml_path("{}/scene.xml".format(model_info["general"]["model_name"]))
+        model = mujoco.MjModel.from_xml_path("{}/scene.xml".format("nemo4b"))
         
         model.opt.solver = mujoco.mjtSolver.mjSOL_CG
         model.opt.iterations = 6
