@@ -43,18 +43,15 @@ metrics_dict = {
 
 
 class NemoEnv(PipelineEnv):
-    def __init__(self, rfile_path = "input_files/nemo4.toml"):
+    def __init__(self, model_info):
 
-        #superclass of nemo_n with data set to specific toml file
-        # loading the toml file and assigning the variable values
-        with open(rfile_path, "rb") as f:
-            self.model_info = tomllib.load(f)
+        self.model_info = model_info
                 
         print("Policy Network Weights:")
-        for key, value in model_weights.items():
+        for key, value in self.model_info['weights'].items():
             print(f"{key}: {value}")
         
-        model = mujoco.MjModel.from_xml_path("{}/scene.xml".format(model_info["general"]["model_name"]))
+        model = mujoco.MjModel.from_xml_path("{}/scene.xml".format(self.model_info["general"]["model_name"]))
         
         model.opt.solver = mujoco.mjtSolver.mjSOL_CG
         model.opt.iterations = 6
