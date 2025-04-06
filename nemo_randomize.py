@@ -62,7 +62,7 @@ def domain_randomize(model: mjx.Model, rng: jax.Array):
 
     # Randomize timestep
     rng, key = jax.random.split(rng)
-    timestep = jax.random.uniform(key, minval=0.002, maxval=0.004)
+    timestep = jax.random.uniform(key, minval=0.001, maxval=0.002)
 
     return (
         geom_friction,
