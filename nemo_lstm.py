@@ -49,7 +49,7 @@ class NemoEnv(PipelineEnv):
         # loading the toml file and assigning the variable values
         with open(rfile_path, "rb") as f:
             self.model_info = tomllib.load(f)
-        self.model_weights = model_info["weights"]
+        self.model_weights = self.model_info["weights"]
                 
         print("Policy Network Weights:")
         for key, value in model_weights.items():
