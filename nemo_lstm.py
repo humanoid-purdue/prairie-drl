@@ -48,29 +48,9 @@ class NemoEnv(PipelineEnv):
         #superclass of nemo_n with data set to specific toml file
         # loading the toml file and assigning the variable values
         with open(rfile_path, "rb") as f:
-            model_info = tomllib.load(f)
-        model_weights = model_info["weights"]
-        
-        velocity_weight = model_weights["velocity_weight"]
-        angvel_z_weight = model_weights["angvel_z_weight"]
-        angvel_xy_weight = model_weights["angvel_xy_weight"]
-        vel_z_weight = model_weights["vel_z_weight"]
-        energy_weight = model_weights["energy_weight"]
-        action_rate_weight = model_weights["action_rate_weight"]
-        upright_weight = model_weights["upright_weight"]
-        feet_slip_weight = model_weights["feet_slip_weight"]
-        periodic_weight = model_weights["periodic_weight"]
-        limit_weight = model_weights["limit_weight"]
-        flatfoot_weight = model_weights["flatfoot_weight"]
-        feet_z_limit_weight = model_weights["feet_z_limit_weight"]
-        feet_z_track_weight = model_weights["feet_z_track_weight"]
-        feet_zd_weight = model_weights["feet_zd_weight"]
-        feet_orien_weight = model_weights["feet_orien_weight"]
-        feet_slip_ang_weight = model_weights["feet_slip_ang_weight"]
-        halt_weight = model_weights["halt_weight"]
-        foot_col_weight = model_weights["foot_col_weight"]
-        knee_weight = model_weights["knee_weight"]
-        
+            self.model_info = tomllib.load(f)
+        self.model_weights = model_info["weights"]
+                
         print("Policy Network Weights:")
         for key, value in model_weights.items():
             print(f"{key}: {value}")
@@ -373,59 +353,60 @@ class NemoEnv(PipelineEnv):
         is_healthy = is_healthy * ( 1 - self.feetColliding(data))
         reward_dict["termination"] = -1000 * (1 - is_healthy)
 
+        print("Velocity Weight = " + velocity_weight);
         vel_reward = self.velocityReward(state, data0, data)
-        reward_dict["velocity"] = vel_reward * velocity_weight
+        reward_dict["velocity"] = vel_reward * self.model_weights["velocity_weight"]
         print("Accessed Velocity Weight");
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * angvel_z_weight
+        reward_dict["angvel_z"] = angvel_z_reward * self.model_weights["angvel_z_weight"]
 
         angvel_xy_reward = self.angvelXYReward(data)
-        reward_dict["angvel_xy"] = angvel_xy_reward * angvel_xy_weight
+        reward_dict["angvel_xy"] = angvel_xy_reward * self.model_weights["angvel_xy_weight"]
 
         vel_z_reward = self.velZReward(data0, data)
-        reward_dict["vel_z"] = vel_z_reward * vel_z_weight
+        reward_dict["vel_z"] = vel_z_reward * self.model_weights["vel_z_weight"]
 
         energy_reward = self.energyReward(data, state.info)
-        reward_dict["energy"] = energy_reward * energy_weight
+        reward_dict["energy"] = energy_reward * self.model_weights["energy_weight"]
 
         action_r_reward = self.actionRateReward(action, state)
-        reward_dict["action_rate"] = action_r_reward * action_rate_weight
+        reward_dict["action_rate"] = action_r_reward * self.model_weights["action_rate_weight"]
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * upright_weight
+        reward_dict["upright"] = upright_reward * self.model_weights["upright_weight"]
 
         slip_reward = self.feetSlipReward(data0, data, contact)
-        reward_dict["feet_slip"] = slip_reward * feet_slip_weight
+        reward_dict["feet_slip"] = slip_reward * self.model_weights["feet_slip_weight"]
 
         period_rew = self.periodicReward(state.info, data0, data)
-        reward_dict["periodic"] = period_rew * periodic_weight
+        reward_dict["periodic"] = period_rew * self.model_weights["periodic_weight"]
 
         limit_reward = self.jointLimitReward(data)
-        reward_dict["limit"] = limit_reward * limit_weight
+        reward_dict["limit"] = limit_reward * self.model_weights["limit_weight"]
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * flatfoot_weight
+        reward_dict["flatfoot"] = flatfoot_reward * self.model_weights["flatfoot_weight"]
 
         feet_z_limit, feet_z_track, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
-        reward_dict["feet_z_limit"] = feet_z_limit * feet_z_limit_weight
-        reward_dict["feet_z_track"] = feet_z_track * feet_z_track_weight
-        reward_dict["feet_zd"] = feet_zd_rew * feet_zd_weight
+        reward_dict["feet_z_limit"] = feet_z_limit * self.model_weights["feet_z_limit_weight"]
+        reward_dict["feet_z_track"] = feet_z_track * self.model_weights["feet_z_track_weight"]
+        reward_dict["feet_zd"] = feet_zd_rew * self.model_weights["feet_zd_weight"]
 
         feet_orien_reward = self.footOrienReward(data)
-        reward_dict["feet_orien"] = feet_orien_reward * feet_orien_weight
+        reward_dict["feet_orien"] = feet_orien_reward * self.model_weights["feet_orien_weight"]
 
         angslip_reward = self.feetSlipAngReward(data, contact)
-        reward_dict["feet_slip_ang"] = angslip_reward * feet_slip_ang_weight
+        reward_dict["feet_slip_ang"] = angslip_reward * self.model_weights["feet_slip_ang_weight"]
 
         halt_reward = self.haltReward(data, state.info)
-        reward_dict["halt"] = halt_reward * halt_weight
+        reward_dict["halt"] = halt_reward * self.model_weights["halt_weight"]
 
         foot_col_reward = self.footColReward(data)
-        reward_dict["foot_col"] = foot_col_reward * foot_col_weight
+        reward_dict["foot_col"] = foot_col_reward * self.model_weights["foot_col_weight"]
 
         knee_reward = self.kneeJointReward(data)
-        reward_dict["knee"] = knee_reward * knee_weight
+        reward_dict["knee"] = knee_reward * self.model_weights["knee_weight"]
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
