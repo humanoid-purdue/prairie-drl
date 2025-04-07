@@ -11,7 +11,7 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.02
+DT = 0.01
 
 
 mj_model = mujoco.MjModel.from_xml_path('nemo4b/scene.xml')
@@ -126,7 +126,7 @@ pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_fron
 for c in range(20000):
     if walk_forward:
         state_info["halt"] = 0.0
-        state_info["angvel_target"] = jax.numpy.array([0.0])
+        state_info["angvel_target"] = jax.numpy.array([0.7])
         state_info["velocity_target"] = jax.numpy.array([0.4, 0.0])
         pp1 = data.site_xpos[pelvis_f_id]
         pp2 = data.site_xpos[pelvis_b_id]
