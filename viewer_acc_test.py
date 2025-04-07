@@ -11,7 +11,7 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.01
+DT = 0.02
 
 
 mj_model = mujoco.MjModel.from_xml_path('nemo4b/scene.xml')
@@ -100,7 +100,7 @@ def tanh2Action(action: jnp.ndarray):
 
 
 make_inference_fn = makeIFN()
-policy_path = 'walk_policy_acc2'
+policy_path = 'walk_policy_acc3'
 saved_params = model.load_params(policy_path)
 inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)

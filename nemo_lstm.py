@@ -66,7 +66,7 @@ class NemoEnv(PipelineEnv):
 
         system = mjcf.load_model(model)
 
-        n_frames = 10
+        n_frames = 8
 
         super().__init__(sys = system,
             backend='mjx',
@@ -397,7 +397,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["feet_zd"] = feet_zd_rew * 0.5  #feet_zd_weight
 
         feet_orien_reward = self.footOrienReward(data)
-        reward_dict["feet_orien"] = feet_orien_reward * 0.25  #feet_orien_weight
+        reward_dict["feet_orien"] = feet_orien_reward * 0.5  #feet_orien_weight
 
         angslip_reward = self.feetSlipAngReward(data, contact)
         reward_dict["feet_slip_ang"] = angslip_reward * -0.25  #feet_slip_ang_weight
@@ -653,15 +653,20 @@ class NemoEnv(PipelineEnv):
         dpl = jnp.sum(facing_vec * l_vec)
         dpr = jnp.sum(facing_vec * r_vec)
 
+        center_vec = l_vec + r_vec
+        center_vec = center_vec / jnp.linalg.norm(center_vec)
+        dpc = jnp.sum(center_vec * facing_vec)
+
         #calculate the reward between the two legs
         lr_cross = l_vec[0] * r_vec[1] - r_vec[0] * l_vec[1]
 
 
-        l_rew = jnp.exp(-(dpl - 1) ** 2 / (0.1 * SIGMA_FAC))
-        r_rew = jnp.exp(-(dpr - 1) ** 2 / (0.1 * SIGMA_FAC))
+        l_rew = jnp.exp((dpl - 1) / (0.2 * SIGMA_FAC))
+        r_rew = jnp.exp((dpr - 1) / (0.2 * SIGMA_FAC))
+        c_rew = jnp.exp((dpc - 1) / (0.1 * SIGMA_FAC))
 
         inward_rew = jnp.where(lr_cross > 0, -0.5, 0)
-        return l_rew + r_rew + inward_rew
+        return l_rew + r_rew + inward_rew + c_rew
 
     def haltReward(self, data0, info):
         #give halt reward for foot below height
