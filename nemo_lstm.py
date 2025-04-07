@@ -66,7 +66,7 @@ class NemoEnv(PipelineEnv):
 
         system = mjcf.load_model(model)
 
-        n_frames = 10
+        n_frames = 4
 
         super().__init__(sys = system,
             backend='mjx',
@@ -465,7 +465,7 @@ class NemoEnv(PipelineEnv):
 
         vel_target = state.info["velocity"]
         vel_n = jnp.sum(jnp.square(local_vel - vel_target))
-        return jnp.exp( vel_n * -1 / (0.05 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
+        return jnp.exp( vel_n * -1 / (0.10 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
