@@ -66,7 +66,7 @@ class NemoEnv(PipelineEnv):
 
         system = mjcf.load_model(model)
 
-        n_frames = 4
+        n_frames = 10
 
         super().__init__(sys = system,
             backend='mjx',
