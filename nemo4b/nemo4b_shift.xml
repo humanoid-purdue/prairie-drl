@@ -82,7 +82,7 @@
           -->
           <body name="l_knee" pos="0.0 0.0 -0.07875">
             <inertial pos="0.0 5e-05 -0.10289321" mass="0.58007416" fullinertia="0.0070466 0.00513742 0.00225232 -0.0 0.0 -0.0" />
-            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-47.4 47.4" name="l_knee" axis="0 1 0" range="-2 2" />
+            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-47.4 47.4" name="l_knee" axis="0 1 0" range="-0.3 2" />
             <geom type="mesh" class="visual" mesh="l_knee" />
             <!--
             <geom class="collision" name="l_knee_col" pos="0 0 -0.103" size="0.03178 0.07465 0.01145" type="box"/>
@@ -124,7 +124,7 @@
           -->
           <body name="r_knee" pos="0.0 -0.0 -0.07875">
             <inertial pos="0.0 5e-05 -0.10289321" mass="0.58007416" fullinertia="0.0070466 0.00513742 0.00225232 -0.0 0.0 -0.0" />
-            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-47.4 47.4" name="r_knee" axis="0 1 0" range="-2 2" />
+            <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-47.4 47.4" name="r_knee" axis="0 1 0" range="-0.3 2" />
             <geom type="mesh" class="visual" mesh="l_knee" />
             <!--
             <geom class="collision" name="r_knee_col" pos="0 0 -0.103" size="0.03178 0.07465 0.01145" type="box"/>
