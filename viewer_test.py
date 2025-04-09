@@ -50,6 +50,8 @@ def _get_obs(data1, s_info):
     phase_clock = jnp.array([jnp.sin(phase[0]), jnp.cos(phase[0]),
                              jnp.sin(phase[1]), jnp.cos(phase[1])])
 
+    print(vel, angvel, grav_vec, position, velocity, phase_clock, cmd)
+
     obs = jnp.concatenate([carry, vel,
                            angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
                            ])

@@ -44,7 +44,6 @@ metrics_dict = {
 
 class NemoEnv(PipelineEnv):
     def __init__(self, model_info):
-
         self.model_info = model_info
                 
         print("Policy Network Weights:")
@@ -61,7 +60,7 @@ class NemoEnv(PipelineEnv):
 
         system = mjcf.load_model(model)
 
-        n_frames = 10
+        n_frames = 8
 
         super().__init__(sys = system,
             backend='mjx',
@@ -105,6 +104,7 @@ class NemoEnv(PipelineEnv):
 
         self.gyro = get_sensor_data("gyro_pelvis")
         self.vel = get_sensor_data("local_linvel_pelvis")
+        self.acc = get_sensor_data("accelerometer_pelvis")
 
     def get_sensor_data(self, data, tuple):
         return data.sensordata[tuple[0]: tuple[0] + tuple[1]]
@@ -115,6 +115,8 @@ class NemoEnv(PipelineEnv):
         vel = self.get_sensor_data(data1, self.vel)
         #angvel = data1.xd.ang[self.pelvis_id - 1]
         angvel = self.get_sensor_data(data1, self.gyro)
+
+        acc = self.get_sensor_data(data1, self.acc)
 
         def joint_rel_pos(d):
             pelvis_pos = d.x.pos[self.pelvis_id]
@@ -129,6 +131,7 @@ class NemoEnv(PipelineEnv):
         locs = jnp.concatenate([locs0, locs1], axis = 0)
         z = data1.x.pos[self.pelvis_id, 2:3]
         grav_vec = math.rotate(jnp.array([0,0,-1]), inv_pelvis_rot)
+        acc = acc - grav_vec * 9.81
         #forward_vec = math.rotate(jnp.array([1., 0, 0]), inv_pelvis_rot)
         #grav_vec = jnp.concatenate([grav_vec, forward_vec], axis = 0)
         position = data1.qpos[7:]
@@ -178,7 +181,7 @@ class NemoEnv(PipelineEnv):
                                  jnp.sin(phase[1]), jnp.cos(phase[1])])
 
 
-        obs = jnp.concatenate([ carry, vel,
+        obs = jnp.concatenate([ carry, acc,
             angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
         ])
 
@@ -457,7 +460,7 @@ class NemoEnv(PipelineEnv):
 
         vel_target = state.info["velocity"]
         vel_n = jnp.sum(jnp.square(local_vel - vel_target))
-        return jnp.exp( vel_n * -1 / (0.05 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
+        return jnp.exp( vel_n * -1 / (0.10 * SIGMA_FAC)) * (1 - state.info["halt_cmd"])
 
     def angvelZReward(self, state, data):
         angvel = data.xd.ang[self.pelvis_id][2]
@@ -645,15 +648,20 @@ class NemoEnv(PipelineEnv):
         dpl = jnp.sum(facing_vec * l_vec)
         dpr = jnp.sum(facing_vec * r_vec)
 
+        center_vec = l_vec + r_vec
+        center_vec = center_vec / jnp.linalg.norm(center_vec)
+        dpc = jnp.sum(center_vec * facing_vec)
+
         #calculate the reward between the two legs
         lr_cross = l_vec[0] * r_vec[1] - r_vec[0] * l_vec[1]
 
 
-        l_rew = jnp.exp(-(dpl - 1) ** 2 / (0.1 * SIGMA_FAC))
-        r_rew = jnp.exp(-(dpr - 1) ** 2 / (0.1 * SIGMA_FAC))
+        l_rew = jnp.exp((dpl - 1) / (0.2 * SIGMA_FAC))
+        r_rew = jnp.exp((dpr - 1) / (0.2 * SIGMA_FAC))
+        c_rew = jnp.exp((dpc - 1) / (0.1 * SIGMA_FAC))
 
         inward_rew = jnp.where(lr_cross > 0, -0.5, 0)
-        return l_rew + r_rew + inward_rew
+        return l_rew + r_rew + inward_rew + c_rew
 
     def haltReward(self, data0, info):
         #give halt reward for foot below height

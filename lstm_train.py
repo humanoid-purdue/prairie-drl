@@ -40,8 +40,8 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
     if not os.path.exists(load_checkpoint_dir):
         load_checkpoint_dir = os.path.join(os.path.abspath(os.getcwd()), load_checkpoint_dir)
         load_checkpoint_dir = None
-    
-    train_fn = functools.partial(
+
+        train_fn = functools.partial(
         ppo.train, 
         num_timesteps =             model_info['train_func_parameters']['num_timesteps'], 
         num_evals =                 model_info['train_func_parameters']['num_evals'], 
@@ -63,6 +63,7 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
         
         network_factory=make_networks_factory, randomization_fn=domain_randomize,
     )
+        
     #, restore_checkpoint_path=load_checkpoint_dir included notebook save_checkpoint_path=checkpoint_dir
     
     x_data = []
