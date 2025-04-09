@@ -43,20 +43,14 @@ metrics_dict = {
 
 
 class NemoEnv(PipelineEnv):
-    def __init__(self, rfile_path = "input_files/nemo4.toml"):
-
-        #superclass of nemo_n with data set to specific toml file
-        # loading the toml file and assigning the variable values
-        #with open(rfile_path, "rb") as f:
-        #    model_info = tomllib.load(f)
-        #model_weights = model_info["weights"]
-
+    def __init__(self, model_info):
+        self.model_info = model_info
+                
+        print("Policy Network Weights:")
+        for key, value in self.model_info['weights'].items():
+            print(f"{key}: {value}")
         
-        #print("Policy Network Weights:")
-        #for key, value in model_weights.items():
-        #    print(f"{key}: {value}")
-        
-        model = mujoco.MjModel.from_xml_path("{}/scene.xml".format("nemo4b"))
+        model = mujoco.MjModel.from_xml_path("{}/scene.xml".format(self.model_info["general"]["model_name"]))
         
         model.opt.solver = mujoco.mjtSolver.mjSOL_CG
         model.opt.iterations = 6
@@ -358,58 +352,59 @@ class NemoEnv(PipelineEnv):
         is_healthy = is_healthy * ( 1 - self.feetColliding(data))
         reward_dict["termination"] = -1000 * (1 - is_healthy)
 
+      
         vel_reward = self.velocityReward(state, data0, data)
-        reward_dict["velocity"] = vel_reward * 4.0  #velocity_weight
+        reward_dict["velocity"] = vel_reward * self.model_info["weights"]["velocity_weight"]
 
         angvel_z_reward = self.angvelZReward(state, data)
-        reward_dict["angvel_z"] = angvel_z_reward * 4.0  #angvel_z_weight
+        reward_dict["angvel_z"] = angvel_z_reward * self.model_info["weights"]["angvel_z_weight"]
 
         angvel_xy_reward = self.angvelXYReward(data)
-        reward_dict["angvel_xy"] = angvel_xy_reward * -0.15  #angvel_xy_weight
+        reward_dict["angvel_xy"] = angvel_xy_reward * self.model_info["weights"]["angvel_xy_weight"]
 
         vel_z_reward = self.velZReward(data0, data)
-        reward_dict["vel_z"] = vel_z_reward * -0.01  #vel_z_weight
+        reward_dict["vel_z"] = vel_z_reward * self.model_info["weights"]["vel_z_weight"]
 
         energy_reward = self.energyReward(data, state.info)
-        reward_dict["energy"] = energy_reward * -0.001  #energy_weight
+        reward_dict["energy"] = energy_reward * self.model_info["weights"]["energy_weight"]
 
         action_r_reward = self.actionRateReward(action, state)
-        reward_dict["action_rate"] = action_r_reward * -0.01  #action_rate_weight
+        reward_dict["action_rate"] = action_r_reward * self.model_info["weights"]["action_rate_weight"]
 
         upright_reward = self.uprightReward(data)
-        reward_dict["upright"] = upright_reward * 2.0  #upright_weight
+        reward_dict["upright"] = upright_reward * self.model_info["weights"]["upright_weight"]
 
         slip_reward = self.feetSlipReward(data0, data, contact)
-        reward_dict["feet_slip"] = slip_reward * -0.25  #feet_slip_weight
+        reward_dict["feet_slip"] = slip_reward * self.model_info["weights"]["feet_slip_weight"]
 
         period_rew = self.periodicReward(state.info, data0, data)
-        reward_dict["periodic"] = period_rew * 2.0  #periodic_weight
+        reward_dict["periodic"] = period_rew * self.model_info["weights"]["periodic_weight"]
 
         limit_reward = self.jointLimitReward(data)
-        reward_dict["limit"] = limit_reward * 2.0  #limit_weight
+        reward_dict["limit"] = limit_reward * self.model_info["weights"]["limit_weight"]
 
         flatfoot_reward = self.flatfootReward(data, contact)
-        reward_dict["flatfoot"] = flatfoot_reward * 8.0  #flatfoot_weight
+        reward_dict["flatfoot"] = flatfoot_reward * self.model_info["weights"]["flatfoot_weight"]
 
         feet_z_limit, feet_z_track, feet_zd_rew = self.footDynamicsReward(state.info, data0, data)
-        reward_dict["feet_z_limit"] = feet_z_limit * 4.0  #feet_z_limit_weight
-        reward_dict["feet_z_track"] = feet_z_track * 0.5  #feet_z_track_weight
-        reward_dict["feet_zd"] = feet_zd_rew * 0.5  #feet_zd_weight
+        reward_dict["feet_z_limit"] = feet_z_limit * self.model_info["weights"]["feet_z_limit_weight"]
+        reward_dict["feet_z_track"] = feet_z_track * self.model_info["weights"]["feet_z_track_weight"]
+        reward_dict["feet_zd"] = feet_zd_rew * self.model_info["weights"]["feet_zd_weight"]
 
         feet_orien_reward = self.footOrienReward(data)
-        reward_dict["feet_orien"] = feet_orien_reward * 0.5  #feet_orien_weight
+        reward_dict["feet_orien"] = feet_orien_reward * self.model_info["weights"]["feet_orien_weight"]
 
         angslip_reward = self.feetSlipAngReward(data, contact)
-        reward_dict["feet_slip_ang"] = angslip_reward * -0.25  #feet_slip_ang_weight
+        reward_dict["feet_slip_ang"] = angslip_reward * self.model_info["weights"]["feet_slip_ang_weight"]
 
         halt_reward = self.haltReward(data, state.info)
-        reward_dict["halt"] = halt_reward * 6.0  #halt_weight
+        reward_dict["halt"] = halt_reward * self.model_info["weights"]["halt_weight"]
 
         foot_col_reward = self.footColReward(data)
-        reward_dict["foot_col"] = foot_col_reward * 10.0  #foot_col_weight
+        reward_dict["foot_col"] = foot_col_reward * self.model_info["weights"]["foot_col_weight"]
 
         knee_reward = self.kneeJointReward(data)
-        reward_dict["knee"] = knee_reward * -30.0  #knee_weight
+        reward_dict["knee"] = knee_reward * self.model_info["weights"]["knee_weight"]
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
