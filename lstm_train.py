@@ -90,7 +90,7 @@ def make_trainfns(robot_file_path = "input_files/nemo4.toml"):
     return train_fn, env, progress, eval_env
 
 if __name__ == "__main__":
-    train_fn, env, progress, eval_env = make_trainfns(robot_file_path = "input_file/nemo4.toml")
+    train_fn, env, progress, eval_env = make_trainfns(robot_file_path = "input_files/nemo4.toml")
     make_inference_fn, params, _= train_fn(environment=env,
                                            progress_fn=progress,
                                            eval_env=eval_env)
