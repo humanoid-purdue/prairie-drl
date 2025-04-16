@@ -96,6 +96,13 @@ class NemoEnv(PipelineEnv):
         self.l_knee_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "l_knee")
         self.r_knee_id = mujoco.mj_name2id(system.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "r_knee")
 
+        self.push_config = {
+            push_enabled = True,
+            push_interval_range = [1000, 10000],
+            push_magnitude_range = [0.1, 2.0],
+        }
+
+
         def get_sensor_data(sensor_name):
             sensor_id = system.mj_model.sensor(sensor_name).id
             sensor_adr = system.mj_model.sensor_adr[sensor_id]
@@ -210,11 +217,6 @@ class NemoEnv(PipelineEnv):
             "push_interval_steps": 100,
         }
         metrics = metrics_dict.copy()
-        push_config = {
-            "push_enabled": 1,
-            "push_interval_range": [1000, 10000],
-            "push_magnitude_range": [0.1, 2.0],
-        }
 
         obs = self._get_obs(pipeline_state, pipeline_state)
         state_info["lstm_carry"] = obs[: 2 * HIDDEN_SIZE * DEPTH]
@@ -226,7 +228,6 @@ class NemoEnv(PipelineEnv):
             done=done,
             metrics=metrics,
             info=state_info,
-            push_config=push_config,
         )
         return state
 
@@ -330,13 +331,13 @@ class NemoEnv(PipelineEnv):
         push_theta = jax.random.uniform(push1_rng, maxval=2 * jnp.pi)
         push_magnitude = jax.random.uniform(
           push2_rng,
-          minval=state.push_config["push_magnitude_range"][0],
-          maxval=state.push_config["push_magnitude_range"][1],
+          minval=self.push_config.push_magnitude_range[0],
+          maxval=self.push_config.push_magnitude_range[1],
         )
         push = jnp.array([jnp.cos(push_theta), jnp.sin(push_theta)])
 
         should_push = (state.info["push_step"] + 1) % state.info["push_interval_steps"] == 0
-        push = push * should_push * state.push_config["push_enabled"]
+        push = push * should_push * self.push_config.push_enabled
 
         qvel = state.pipeline_state.qvel
         qvel = qvel.at[:2].set(push * push_magnitude + qvel[:2])
@@ -346,8 +347,8 @@ class NemoEnv(PipelineEnv):
             new_interval = jax.random.randint(
                 new_rng,
                 shape=(),
-                minval=state.push_config["push_interval_range"][0],
-                maxval=state.push_config["push_interval_range"][1] + 1,
+                minval=self.push_config.push_interval_range[0],
+                maxval=self.push_config.push_interval_range[1] + 1,
             )
             info = state.info.copy()
             info["push_step"] = 0
