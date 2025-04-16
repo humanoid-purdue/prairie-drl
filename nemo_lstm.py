@@ -207,7 +207,7 @@ class NemoEnv(PipelineEnv):
             "halt_cmd": 0,
             "event_period": event_period,
             "push_step": 0,
-            "push_interval_steps": 1,
+            "push_interval_steps": 100,
         }
         metrics = metrics_dict.copy()
         push_config = {
@@ -341,7 +341,6 @@ class NemoEnv(PipelineEnv):
         qvel = state.pipeline_state.qvel
         qvel = qvel.at[:2].set(push * push_magnitude + qvel[:2])
 
-        # Randomize new push interval if push happens
         def reset_push(state, rng):
             rng, new_rng = jax.random.split(rng)
             new_interval = jax.random.randint(
@@ -350,9 +349,10 @@ class NemoEnv(PipelineEnv):
                 minval=state.push_config["push_interval_range"][0],
                 maxval=state.push_config["push_interval_range"][1] + 1,
             )
-            state.info["push_step"] = 0
-            state.info["push_interval_steps"] = new_interval
-            return state, rng
+            info = state.info.copy()
+            info["push_step"] = 0
+            info["push_interval_steps"] = new_interval
+            return state.replace(info=info), rng
         
         def no_reset(state, rng):
             return state, rng
