@@ -205,9 +205,16 @@ class NemoEnv(PipelineEnv):
             "phase_period": phase_period[0],
             "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
             "halt_cmd": 0,
-            "event_period": event_period
+            "event_period": event_period,
+            "push_step": 0,
+            "push_interval_steps": 1,
         }
         metrics = metrics_dict.copy()
+        push_config = {
+            "push_enabled": 1,
+            "push_interval_range": [1000, 10000],
+            "push_magnitude_range": [0.1, 2.0],
+        }
 
         obs = self._get_obs(pipeline_state, pipeline_state)
         state_info["lstm_carry"] = obs[: 2 * HIDDEN_SIZE * DEPTH]
@@ -218,7 +225,8 @@ class NemoEnv(PipelineEnv):
             reward=reward,
             done=done,
             metrics=metrics,
-            info=state_info
+            info=state_info,
+            push_config=push_config,
         )
         return state
 
@@ -315,7 +323,51 @@ class NemoEnv(PipelineEnv):
 
         #scaled_action = jnp.concatenate([pos_action, vel_action])
 
-        data0 = state.pipeline_state
+        # RANDOMIZED PUSHES
+        rng = state.info["rng"]
+        rng, push1_rng, push2_rng = jax.random.split(rng, 3)
+
+        push_theta = jax.random.uniform(push1_rng, maxval=2 * jnp.pi)
+        push_magnitude = jax.random.uniform(
+          push2_rng,
+          minval=state.push_config["push_magnitude_range"][0],
+          maxval=state.push_config["push_magnitude_range"][1],
+        )
+        push = jnp.array([jnp.cos(push_theta), jnp.sin(push_theta)])
+
+        should_push = (state.info["push_step"] + 1) % state.info["push_interval_steps"] == 0
+        push = push * should_push * state.push_config["push_enabled"]
+
+        qvel = state.pipeline_state.qvel
+        qvel = qvel.at[:2].set(push * push_magnitude + qvel[:2])
+
+        # Randomize new push interval if push happens
+        def reset_push(state, rng):
+            rng, new_rng = jax.random.split(rng)
+            new_interval = jax.random.randint(
+                new_rng,
+                shape=(),
+                minval=state.push_config["push_interval_range"][0],
+                maxval=state.push_config["push_interval_range"][1] + 1,
+            )
+            state.info["push_step"] = 0
+            state.info["push_interval_steps"] = new_interval
+            return state, rng
+        
+        def no_reset(state, rng):
+            return state, rng
+        
+        state, rng = jax.lax.cond(
+            should_push,
+            reset_push,
+            no_reset,
+            operand=(state, rng)
+        )
+
+        # MODIFIED FOR RANDOMIZED PUSHES
+        data0 = state.pipeline_state.replace(qvel=qvel)
+        # END RANDOMIZED PUSHES
+      
         data1 = self.pipeline_step(data0, scaled_action)
 
         contact = rewards.feet_contact(data1, self.floor_id, self.left_geom_id, self.right_geom_id)
@@ -328,8 +380,11 @@ class NemoEnv(PipelineEnv):
         state.info["phase"] += 2 * jnp.pi * self.dt / state.info["phase_period"]
         state.info["phase"] = jnp.mod(state.info["phase"], jnp.pi * 2)
 
-        self.zeroStates(state)
+        # state.info["push"] = push
+        state.info["rng"] = rng
+        state.info["push_step"] += 1
 
+        self.zeroStates(state)
         self.updateCmd(state)
         self.periodicHalting(state)
 
