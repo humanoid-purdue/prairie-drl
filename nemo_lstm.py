@@ -342,8 +342,7 @@ class NemoEnv(PipelineEnv):
         qvel = state.pipeline_state.qvel
         qvel = qvel.at[:2].set(push * push_magnitude + qvel[:2])
 
-        def reset_push(operand):
-            state, rng = operand
+        def reset_push(state, rng):
             rng, new_rng = jax.random.split(rng)
             new_interval = jax.random.randint(
                 new_rng,
@@ -356,15 +355,13 @@ class NemoEnv(PipelineEnv):
             info["push_interval_steps"] = new_interval
             return state.replace(info=info), rng
         
-        def no_reset(operand):
-            return operand
+        def no_reset(state, rng):
+            return state, rng
         
-        state, rng = jax.lax.cond(
-            should_push,
-            reset_push,
-            no_reset,
-            (state, rng)
-        )
+        if should_push:
+            reset_push(state, rng)
+        else:
+            no_reset(state, rng)
 
         # MODIFIED FOR RANDOMIZED PUSHES
         data0 = state.pipeline_state.replace(qvel=qvel)
