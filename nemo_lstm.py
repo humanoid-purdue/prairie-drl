@@ -363,7 +363,7 @@ class NemoEnv(PipelineEnv):
             should_push,
             reset_push,
             no_reset,
-            operand=(state, rng)
+            (state, rng)
         )
 
         # MODIFIED FOR RANDOMIZED PUSHES
