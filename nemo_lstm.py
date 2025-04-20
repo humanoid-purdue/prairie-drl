@@ -339,7 +339,8 @@ class NemoEnv(PipelineEnv):
         push = jnp.array([jnp.cos(push_theta), jnp.sin(push_theta)])
 
         should_push = (state.info["push_step"] + 1) % state.info["push_interval_steps"] == 0
-        push = push * should_push * self.push_config["push_enabled"]
+        push = push * should_push
+        push = push * self.push_config["push_enabled"]
 
         qvel = state.pipeline_state.qvel
         qvel = qvel.at[:2].set(push * push_magnitude + qvel[:2])
