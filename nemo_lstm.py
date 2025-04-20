@@ -201,6 +201,8 @@ class NemoEnv(PipelineEnv):
         rng, key = jax.random.split(rng)
         event_period = jax.random.uniform(key, shape = [2], minval = 0, maxval = 1)
         event_period = event_period * jnp.array([3, 2.]) + jnp.array([4, 0.])
+        push_interval_steps = jp.round(push_interval / self.dt).astype(jp.int32)
+
         state_info = {
             "rng": rng,
             "time": jnp.zeros(1),
@@ -214,7 +216,7 @@ class NemoEnv(PipelineEnv):
             "halt_cmd": 0,
             "event_period": event_period,
             "push_step": 0,
-            "push_interval_steps": 100,
+            "push_interval_steps": push_interval_steps,
         }
         metrics = metrics_dict.copy()
 
