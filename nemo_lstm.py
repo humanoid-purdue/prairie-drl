@@ -181,7 +181,7 @@ class NemoEnv(PipelineEnv):
                                  jnp.sin(phase[1]), jnp.cos(phase[1])])
 
 
-        obs = jnp.concatenate([ carry, acc,
+        obs = jnp.concatenate([ carry, vel,
             angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
         ])
 
