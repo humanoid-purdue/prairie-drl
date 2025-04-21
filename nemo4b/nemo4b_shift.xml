@@ -24,6 +24,9 @@
   <visual>
     <global ellipsoidinertia="true" />
   </visual>
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+  </visual>
   <default>
     <geom contype="0" conaffinity="0" condim="3" solref="0.005 1" />
     <equality solref="0.005 1" />
@@ -116,6 +119,7 @@
         <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23.7 23.7" name="r_hip_roll" axis="1 0 0" range="-1.5 0.40" />
         <geom type="mesh" class="visual" mesh="r_hip_roll" />
         <body name="r_hip_yaw" pos="0.00715 -0.0 -0.1263">
+          <camera name="cam" mode="fixed"/>
           <inertial pos="3.205e-05 -0.0 -0.06053076999999999" mass="1.8670971" fullinertia="0.00358009 0.00363357 0.00265583 -0.0 -1.09e-06 -2e-07" />
           <joint armature="0.005" damping="2" frictionloss="0.1" actuatorfrcrange="-23.7 23.7" name="r_hip_yaw" axis="0 0 1" range="-1.0 1.0" />
           <geom type="mesh" class="visual" mesh="r_hip_yaw" />

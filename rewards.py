@@ -314,10 +314,10 @@ def quintic_foot_phase(phase, ds_prop):
         ds_d = jnp.pi * ds_prop
         nt = (t - ds_d) / (2 * (np.pi - ds_d * 2))
         z2 = (coeffs[0] * nt +
-             coeffs[1] * nt**2 +
-             coeffs[2] * nt**3 +
-             coeffs[3] * nt**4 +
-             coeffs[4] * nt**5)
+              coeffs[1] * nt**2 +
+              coeffs[2] * nt**3 +
+              coeffs[3] * nt**4 +
+              coeffs[4] * nt**5)
         zd2 = (coeffs[0] +
               coeffs[1] * 2 * nt +
               coeffs[2] * 3 * nt**2 +

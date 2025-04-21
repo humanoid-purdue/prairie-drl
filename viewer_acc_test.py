@@ -8,6 +8,7 @@ import jax
 from brax import math
 from networks.lstm import HIDDEN_SIZE, DEPTH
 from brax.io import html, mjcf, model
+import mediapy
 
 OBS_SIZE = 334
 ACT_SIZE = 24
@@ -19,6 +20,7 @@ data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
 mj_model.opt.timestep = 0.001
 
+#renderer = mujoco.Renderer(mj_model, width = 1920, height = 1080)
 
 def get_sensor_data(sensor_name):
     sensor_id = mj_model.sensor(sensor_name).id
@@ -85,6 +87,8 @@ def makeIFN():
 
 joint_limit = jnp.array(mj_model.jnt_range)
 
+frames = []
+
 def tanh2Action(action: jnp.ndarray):
     pos_t = action[:ACT_SIZE//2]
     vel_t = action[ACT_SIZE//2:]
@@ -100,7 +104,7 @@ def tanh2Action(action: jnp.ndarray):
 
 
 make_inference_fn = makeIFN()
-policy_path = 'walk_policy_acc4'
+policy_path = 'walk_policy_acc5'
 saved_params = model.load_params(policy_path)
 inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
@@ -123,10 +127,12 @@ t = 0
 walk_forward = True
 pelvis_b_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
 pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
-for c in range(20000):
+
+trajectory = np.zeros([10000, 25])
+for c in range(10000):
     if walk_forward:
         state_info["halt"] = 0.0
-        state_info["angvel_target"] = jax.numpy.array([0.7])
+        state_info["angvel_target"] = jax.numpy.array([0.0])
         state_info["velocity_target"] = jax.numpy.array([0.4, 0.0])
         pp1 = data.site_xpos[pelvis_f_id]
         pp2 = data.site_xpos[pelvis_b_id]
@@ -152,6 +158,11 @@ for c in range(20000):
 
     #print(np.sum(np.abs(data.qfrc_actuator * data.qvel)))
     print(data.qfrc_actuator)
+    jps = data.qpos[7:]
+    jvs = data.qvel[6:]
+    trajectory[c, 0] = t
+    trajectory[c, 1:13] = jps
+    trajectory[c, 13:25] = jvs
 
     state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
@@ -162,6 +173,13 @@ for c in range(20000):
     viewer.sync()
     t += mj_model.opt.timestep
 
-
+    camera_id = mj_model.camera("cam")
+    #renderer.update_scene(data)
+    #pixels = renderer.render()
+    #frame = np.copy(pixels)
+    #frames.append(frame)
+#renderer.close()
+#mediapy.write_video('nemo_simulation.mp4', frames, fps=60)
+#np.savetxt("nemo_traj.csv", trajectory, delimiter = ',')
 viewer.close()
 time.sleep(0.5)
