@@ -19,7 +19,6 @@ mj_model = mujoco.MjModel.from_xml_path('nemo4b/scene.xml')
 data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
 mj_model.opt.timestep = 0.001
-
 #renderer = mujoco.Renderer(mj_model, width = 1920, height = 1080)
 
 def get_sensor_data(sensor_name):
@@ -98,7 +97,8 @@ def tanh2Action(action: jnp.ndarray):
     vel_sp = vel_t * 10
 
     #pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
-    pos_sp = pos_t * 1.0
+    base = mj_model.keyframe('stand').qpos[7:]
+    pos_sp = pos_t * 1.5 + base
 
     return jnp.concatenate([pos_sp, vel_sp])
 
@@ -110,7 +110,7 @@ inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
 state_info = {
     "halt": 0.,
-    "phase": jnp.array([jnp.pi, 0]),
+    "phase": jnp.array([0, jnp.pi]),
     "vel_target": jnp.array([0.4, 0]),
     "angvel_target": jnp.array([0.]),
     "prev_action": jnp.zeros(ACT_SIZE),
@@ -157,7 +157,6 @@ for c in range(60000):
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
 
     #print(np.sum(np.abs(data.qfrc_actuator * data.qvel)))
-    print(data.qfrc_actuator)
     jps = data.qpos[7:]
     jvs = data.qvel[6:]
     trajectory[c, 0] = t
@@ -182,6 +181,6 @@ for c in range(60000):
     #frames.append(frame)
 #renderer.close()
 #mediapy.write_video('nemo_simulation.mp4', frames, fps=60)
-np.savetxt("nemo_traj.csv", trajectory, delimiter = ',')
+#np.savetxt("nemo_traj.csv", trajectory, delimiter = ',')
 viewer.close()
 time.sleep(0.5)

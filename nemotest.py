@@ -19,7 +19,13 @@ def makeRollout(lstm = False, walk_forward = True, robot = "nemo4"):
     elif robot == "nemo4b" and lstm:
         print("nemo4b")
         model_n = mujoco.MjModel.from_xml_path("nemo4b/scene.xml")
-        c_env = Nemo4bEnv
+        with open("input_files/nemo4.toml", "rb") as f:
+            model_info = tomllib.load(f)
+        class GenBotEnv(NemoEnv):
+            def __init__(self):
+                super().__init__(model_info=model_info)
+
+        c_env = GenBotEnv
     pelvis_b_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
     pelvis_f_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 
