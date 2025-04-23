@@ -128,8 +128,8 @@ walk_forward = True
 pelvis_b_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
 pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 
-trajectory = np.zeros([10000, 25])
-for c in range(10000):
+trajectory = np.zeros([60000, 49])
+for c in range(60000):
     if walk_forward:
         state_info["halt"] = 0.0
         state_info["angvel_target"] = jax.numpy.array([0.0])
@@ -139,9 +139,9 @@ for c in range(10000):
         facing_vec = (pp1 - pp2)[0:2]
         facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
         #state_info["angvel_target"] = jnp.array([facing_vec[1] * -2])
-    if (c > 6000 and c < 7000):
-        state_info["halt"] = 1.0
-        state_info["phase"] = jnp.array([0, jnp.pi])
+    #if (c > 6000 and c < 7000):
+    #    state_info["halt"] = 1.0
+    #    state_info["phase"] = jnp.array([0, jnp.pi])
     if c % round(DT / mj_model.opt.timestep) == 0:
         obs = _get_obs(data, state_info)
         #print(obs[256:])
@@ -163,6 +163,8 @@ for c in range(10000):
     trajectory[c, 0] = t
     trajectory[c, 1:13] = jps
     trajectory[c, 13:25] = jvs
+    trajectory[c, 25:37] = data.ctrl[0:12]
+    trajectory[c, 37:49] = data.ctrl[12:]
 
     state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
@@ -180,6 +182,6 @@ for c in range(10000):
     #frames.append(frame)
 #renderer.close()
 #mediapy.write_video('nemo_simulation.mp4', frames, fps=60)
-#np.savetxt("nemo_traj.csv", trajectory, delimiter = ',')
+np.savetxt("nemo_traj.csv", trajectory, delimiter = ',')
 viewer.close()
 time.sleep(0.5)

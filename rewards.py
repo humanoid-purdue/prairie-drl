@@ -334,9 +334,9 @@ def quintic_foot_phase(phase, ds_prop):
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     phase = jnp.array([0, jnp.pi])
-    lr = jnp.zeros([1000, 2])
-    lrz = jnp.zeros([1000, 4])
-    for c in range(1000):
+    lr = jnp.zeros([500, 2])
+    lrz = jnp.zeros([500, 4])
+    for c in range(500):
         lr = lr.at[c, :].set(lr_phase_coeff( phase,0.1, 0.5))
         z, zd = quintic_foot_phase(phase, 0.1)
         lrz = lrz.at[c, :2].set(z)
@@ -347,6 +347,9 @@ if __name__ == "__main__":
     #plt.plot(lrz[:, 1])
     #plt.plot(lrz[:, 2])
     #plt.plot(lrz[:, 3])
-    plt.plot(lr[:, 0])
-    plt.plot(lr[:, 1])
+    x = np.arange(500) * 0.02
+    plt.plot(x, lrz[:, 0], label = "left foot")
+    plt.plot(x, lrz[:, 1], label = "right_foot")
+
+    plt.legend()
     plt.show()
