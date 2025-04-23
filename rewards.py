@@ -350,6 +350,5 @@ if __name__ == "__main__":
     x = np.arange(500) * 0.02
     plt.plot(x, lrz[:, 0], label = "left foot")
     plt.plot(x, lrz[:, 1], label = "right_foot")
-
     plt.legend()
     plt.show()
