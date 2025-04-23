@@ -5,7 +5,7 @@ xml_path = "nemo4/scene.xml"
 [weights]
 velocity_weight = 4.0
 angvel_z_weight = 4.0
-angvel_xy_weight = -0.15
+angvel_xy_weight = 0.15
 vel_z_weight = -0.01
 energy_weight = -0.001
 action_rate_weight = -0.01

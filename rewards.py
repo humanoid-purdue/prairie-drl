@@ -350,5 +350,8 @@ if __name__ == "__main__":
     x = np.arange(500) * 0.02
     plt.plot(x, lrz[:, 0], label = "left foot")
     plt.plot(x, lrz[:, 1], label = "right_foot")
+    plt.xlabel("Phase")
+    plt.ylabel("Foot Height (m)")
+    plt.title("Foot Height Function")
     plt.legend()
     plt.show()
