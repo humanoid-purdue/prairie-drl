@@ -285,7 +285,7 @@ class NemoEnv(PipelineEnv):
             vel_sp = vel_t * 10
 
             #pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
-            pos_sp = pos_t * 1.5 + self.initial_state[7:]
+            pos_sp = pos_t * 1.0 + self.initial_state[7:]
             return jnp.concatenate([pos_sp, vel_sp])
 
     def zeroStates(self, state):
@@ -365,7 +365,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["angvel_z"] = angvel_z_reward * 4.0  #angvel_z_weight
 
         angvel_xy_reward = self.angvelXYReward(data)
-        reward_dict["angvel_xy"] = angvel_xy_reward * -0.15  #angvel_xy_weight
+        reward_dict["angvel_xy"] = angvel_xy_reward * 0.15  #angvel_xy_weight
 
         vel_z_reward = self.velZReward(data0, data)
         reward_dict["vel_z"] = vel_z_reward * -0.01  #vel_z_weight
