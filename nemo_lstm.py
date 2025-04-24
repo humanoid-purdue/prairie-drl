@@ -285,7 +285,7 @@ class NemoEnv(PipelineEnv):
             vel_sp = vel_t * 10
 
             #pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
-            pos_sp = pos_t * 1.0 + self.initial_state[7:]
+            pos_sp = pos_t * 2.0 + self.initial_state[7:]
             return jnp.concatenate([pos_sp, vel_sp])
 
     def zeroStates(self, state):
