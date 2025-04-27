@@ -697,8 +697,8 @@ class NemoEnv(PipelineEnv):
         joint_powers = (jv * data1.qfrc_actuator)
         l_joints = jnp.sum(joint_powers[6:12], keepdims=True) * self.dt
         r_joints = jnp.sum(joint_powers[12:18], keepdims=True) * self.dt
-        info["energy_hist_l"] = jnp.concat([l_joints, info["energy_hist_l"][:99]], axis = 0)
-        info["energy_hist_r"] = jnp.concat([r_joints, info["energy_hist_r"][:99]], axis = 0)
+        info["energy_hist_l"] = jnp.concat([l_joints, info["energy_hist_l"][:199]], axis = 0)
+        info["energy_hist_r"] = jnp.concat([r_joints, info["energy_hist_r"][:199]], axis = 0)
 
     def symReward(self, data1, info):
         self.leg_powers(data1, info)
