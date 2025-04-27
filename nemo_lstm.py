@@ -415,7 +415,7 @@ class NemoEnv(PipelineEnv):
         reward_dict["knee"] = knee_reward * -30.0  #knee_weight
 
         sym_reward = self.symReward(data, state.info)
-        reward_dict["energy_sym"] = sym_reward * 2.0
+        reward_dict["energy_sym"] = sym_reward * 4.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
