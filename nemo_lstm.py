@@ -38,7 +38,8 @@ metrics_dict = {
                     'feet_slip_ang': 0.0,
                     'halt': 0.0,
                     'foot_col': 0.0,
-                    'knee': 0.0
+                    'knee': 0.0,
+                    'energy_sym': 0.0
 }
 
 
@@ -211,7 +212,9 @@ class NemoEnv(PipelineEnv):
             "phase_period": phase_period[0],
             "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
             "halt_cmd": 0,
-            "event_period": event_period
+            "event_period": event_period,
+            "energy_hist_l": jnp.zeros([200]),
+            "energy_hist_r": jnp.zeros([200])
         }
         metrics = metrics_dict.copy()
 
@@ -410,6 +413,9 @@ class NemoEnv(PipelineEnv):
 
         knee_reward = self.kneeJointReward(data)
         reward_dict["knee"] = knee_reward * -30.0  #knee_weight
+
+        sym_reward = self.symReward(data, state.info)
+        reward_dict["energy_sym"] = sym_reward * 2.0
 
         for key in reward_dict.keys():
             reward_dict[key] *= 0.035
@@ -686,3 +692,17 @@ class NemoEnv(PipelineEnv):
         rew = jnp.where(foot_xy_dist < 0.2, rew, 0.0)
         return rew
 
+    def leg_powers(self, data1, info):
+        jv = data1.qvel
+        joint_powers = (jv * data1.qfrc_actuator)
+        l_joints = jnp.sum(joint_powers[6:12], keepdims=True) * self.dt
+        r_joints = jnp.sum(joint_powers[12:18], keepdims=True) * self.dt
+        info["energy_hist_l"] = jnp.concat([l_joints, info["energy_hist_l"][:99]], axis = 0)
+        info["energy_hist_r"] = jnp.concat([r_joints, info["energy_hist_r"][:99]], axis = 0)
+
+    def symReward(self, data1, info):
+        self.leg_powers(data1, info)
+        l_energy = jnp.sum(info["energy_hist_l"])
+        r_energy = jnp.sum(info["energy_hist_r"])
+        rew = jnp.exp(-(l_energy - r_energy) ** 2 / 20)
+        return rew

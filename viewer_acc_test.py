@@ -11,7 +11,7 @@ from brax.io import html, mjcf, model
 
 OBS_SIZE = 334
 ACT_SIZE = 24
-DT = 0.01
+DT = 0.02
 
 
 mj_model = mujoco.MjModel.from_xml_path('nemo4b/scene.xml')
@@ -19,6 +19,7 @@ data = mujoco.MjData(mj_model)
 viewer = mujoco.viewer.launch_passive(mj_model, data)
 mj_model.opt.timestep = 0.001
 
+print(mj_model.keyframe('stand').qpos[7:])
 
 def get_sensor_data(sensor_name):
     sensor_id = mj_model.sensor(sensor_name).id
@@ -29,6 +30,9 @@ def get_sensor_data(sensor_name):
 gyro = get_sensor_data("gyro_pelvis")
 vel_p = get_sensor_data("local_linvel_pelvis")
 acc_p = get_sensor_data("accelerometer_pelvis")
+
+pelvis_b_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
+pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 
 def _get_obs(data1, s_info):
     inv_pelvis_rot = math.quat_inv(data1.xquat[1])
@@ -55,7 +59,6 @@ def _get_obs(data1, s_info):
     phase_clock = jnp.array([jnp.sin(phase[0]), jnp.cos(phase[0]),
                              jnp.sin(phase[1]), jnp.cos(phase[1])])
 
-    print(vel, angvel, grav_vec, position, velocity, phase_clock, cmd)
 
     obs = jnp.concatenate([carry, acc,
                            angvel, grav_vec, position, velocity, prev_action, phase_clock, cmd
@@ -95,10 +98,21 @@ def tanh2Action(action: jnp.ndarray):
 
     #pos_sp = ((pos_t + 1) * (top_limit - bottom_limit) / 2 + bottom_limit)
     base = mj_model.keyframe('stand').qpos[7:]
-    pos_sp = pos_t * 1.0 + base
+    pos_sp = pos_t * 2.0 + base
 
     return jnp.concatenate([pos_sp, vel_sp])
 
+def get_local_xy_vel(data):
+    vel = data.qvel[0:3]
+    pp1 = data.site_xpos[pelvis_f_id]
+    pp2 = data.site_xpos[pelvis_b_id]
+    facing_vec = (pp1 - pp2)[0:2]
+    facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
+    theta = jnp.arctan2(facing_vec[1], facing_vec[0])
+    rot_mat = jnp.array([[jnp.cos(-theta), -jnp.sin(-theta)],
+                         [jnp.sin(-theta), jnp.cos(-theta)]])
+    local_vel = jnp.matmul(rot_mat, vel[0:2])
+    return local_vel
 
 make_inference_fn = makeIFN()
 policy_path = 'walk_policy_acc0'
@@ -107,8 +121,8 @@ inference_fn = make_inference_fn(saved_params)
 jit_inference_fn = jax.jit(inference_fn)
 state_info = {
     "halt": 0.,
-    "phase": jnp.array([jnp.pi, 0]),
-    "vel_target": jnp.array([0.4, 0]),
+    "phase": jnp.array([0, jnp.pi]),
+    "vel_target": jnp.array([0.2, 0]),
     "angvel_target": jnp.array([0.]),
     "prev_action": jnp.zeros(ACT_SIZE),
     "lstm_carry": jnp.zeros([HIDDEN_SIZE * DEPTH * 2]),
@@ -124,16 +138,20 @@ t = 0
 walk_forward = True
 pelvis_b_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
 pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
-for c in range(20000):
+trajectory = np.zeros([60000, 25])
+vel_trajectory = np.zeros([60000, 4])
+for c in range(60000):
     if walk_forward:
         state_info["halt"] = 0.0
         state_info["angvel_target"] = jax.numpy.array([0.0])
-        state_info["velocity_target"] = jax.numpy.array([0.4, 0.0])
+        y_pos = data.qpos[1] * -0.1
+        y_pos = max(min(y_pos, 0.2), -0.2)
+        state_info["vel_target"] = jax.numpy.array([0.4, y_pos])
         pp1 = data.site_xpos[pelvis_f_id]
         pp2 = data.site_xpos[pelvis_b_id]
         facing_vec = (pp1 - pp2)[0:2]
         facing_vec = facing_vec / jnp.linalg.norm(facing_vec)
-        #state_info["angvel_target"] = jnp.array([facing_vec[1] * -2])
+        state_info["angvel_target"] = jnp.array([facing_vec[1] * -2])
     #if (c > 6000 and c < 7000):
     #    state_info["halt"] = 1.0
     #    state_info["phase"] = jnp.array([0, jnp.pi])
@@ -151,8 +169,26 @@ for c in range(20000):
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
 
+    jps = data.qpos[7:]
+    jvs = data.qvel[6:]
+    trajectory[c, 0] = t
+    trajectory[c, 1:13] = jps
+    trajectory[c, 13:25] = jvs
+
+    linvel = get_local_xy_vel(data)
+    angvel_z = data.qvel[5]
+
+    vel_trajectory[c, 0] = t
+    vel_trajectory[c, 1:3] = linvel
+    vel_trajectory[c, 3] = angvel_z
+
+
     #print(np.sum(np.abs(data.qfrc_actuator * data.qvel)))
-    print(data.qfrc_actuator)
+    pwrs = data.qfrc_actuator * data.qvel
+    lpwr = pwrs[6:12]
+    rpwr = pwrs[12:18]
+    print(jnp.sum(lpwr), jnp.sum(rpwr))
+    #print(data.qfrc_actuator)
 
     state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0
     state_info["phase"] = jnp.mod(state_info["phase"], jnp.pi * 2)
@@ -163,6 +199,8 @@ for c in range(20000):
     viewer.sync()
     t += mj_model.opt.timestep
 
+#np.savetxt("joint_traj.csv", trajectory, delimiter = ',')
+#np.savetxt("centroid_traj_fwd.csv", vel_trajectory, delimiter =',')
 
 viewer.close()
 time.sleep(0.5)
