@@ -140,6 +140,8 @@ pelvis_b_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back
 pelvis_f_id = mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 trajectory = np.zeros([60000, 25])
 vel_trajectory = np.zeros([60000, 4])
+energy_hist_l = np.zeros([200])
+energy_hist_r = np.zeros([200])
 for c in range(60000):
     if walk_forward:
         state_info["halt"] = 0.0
@@ -169,6 +171,14 @@ for c in range(60000):
         state_info["prev_action"] = raw_action
         state_info["lstm_carry"] = ctrl[:2 * HIDDEN_SIZE * DEPTH]
 
+        pwrs = data.qfrc_actuator * data.qvel
+        lpwr = np.sum(pwrs[6:12], keepdims = True) * DT
+        rpwr = np.sum(pwrs[12:18], keepdims = True) * DT
+
+        energy_hist_l = np.concatenate([lpwr, energy_hist_l[0:199]])
+        energy_hist_r = np.concatenate([rpwr, energy_hist_r[0:199]])
+        print(np.sum(energy_hist_l), np.sum(energy_hist_r))
+
     jps = data.qpos[7:]
     jvs = data.qvel[6:]
     trajectory[c, 0] = t
@@ -184,10 +194,7 @@ for c in range(60000):
 
 
     #print(np.sum(np.abs(data.qfrc_actuator * data.qvel)))
-    pwrs = data.qfrc_actuator * data.qvel
-    lpwr = pwrs[6:12]
-    rpwr = pwrs[12:18]
-    print(jnp.sum(lpwr), jnp.sum(rpwr))
+
     #print(data.qfrc_actuator)
 
     state_info["phase"] += 2 * jnp.pi * mj_model.opt.timestep / 1.0

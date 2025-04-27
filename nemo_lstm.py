@@ -704,5 +704,5 @@ class NemoEnv(PipelineEnv):
         self.leg_powers(data1, info)
         l_energy = jnp.sum(info["energy_hist_l"])
         r_energy = jnp.sum(info["energy_hist_r"])
-        rew = jnp.exp(-(l_energy - r_energy) ** 2 / 20)
+        rew = jnp.exp(-((l_energy - r_energy) ** 2 ) / 400)
         return rew
