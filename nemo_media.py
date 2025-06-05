@@ -18,7 +18,7 @@ def generate_rollout(lstm=True):
         from nemo_env_pd import NemoEnv
 
     # Loading xml models
-    model_n = mujoco.MjModel.from_xml_path("nemo2/scene.xml")
+    model_n = mujoco.MjModel.from_xml_path("nemo4b/scene.xml")
     pelvis_b_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_back')
     pelvis_f_id = mujoco.mj_name2id(model_n, mujoco.mjtObj.mjOBJ_SITE, 'pelvis_front')
 
@@ -34,7 +34,7 @@ def generate_rollout(lstm=True):
     frames = []  # Store frames for video
 
     # Load policy
-    saved_params = model.load_params('walk_policy')
+    saved_params = model.load_params('policies/walk_policy_acc7')
     rng = jax.random.PRNGKey(0)
 
     # Setup inference function
