@@ -2,3 +2,6 @@
 **/__pycache__/
 *.py[cod]
 .python-version
+
+.DS_Store
+**/.DS_Store
